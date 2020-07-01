@@ -44,8 +44,10 @@ parser.add_argument("--emd_cost", default='l2sq',
 parser.add_argument("--sink_reg", type=float, default=0.01,
                     help='sinkhorn regularization param.')
 parser.add_argument("--L", type=int, default=100,
-                    help='sinkhorn iterations.')
-parser.add_argument("--save_model", default='True',
+                    help='sinkhorn iterations num.')
+parser.add_argument("--vizu_sinkit", default='True',
+                    help='plot and vizu sinkhorn iterations.')
+parser.add_argument("--save_model",
                     help='save final model weights [True/False]')
 parser.add_argument("--save_data", default='True',
                     help='save training data [True/False]')
@@ -96,22 +98,12 @@ def main():
     else:
         opts['fid'] = False
 
-    # Opt set up
-    opts['lr'] = 0.001
-    opts['batch_size'] = 200
-
-    # Model set up
-    if FLAGS.exp == 'celebA':
-        opts['zdim'] = 20
-    else:
-        opts['zdim'] = 2
+    # Obj set up
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
     if FLAGS.sink_reg:
         opts['sinkhorn_reg'] = FLAGS.sink_reg
     if FLAGS.L:
         opts['sinkhorn_iterations'] = FLAGS.L
-
-    # Objective Function Coefficients
     if FLAGS.exp == 'mnist':
         beta = [1, 2, 5, 10, 20, 50, 100]
     elif FLAGS.exp == 'celebA':
@@ -127,7 +119,6 @@ def main():
     if FLAGS.net_archi:
         opts['net_archi'] = FLAGS.net_archi
     opts['network'] = net_configs[opts['net_archi']]
-
 
     # Create directories
     if FLAGS.out_dir:
@@ -158,6 +149,8 @@ def main():
     opts['print_every'] = int(opts['epoch_num'] / 10.) * int(data.num_points/opts['batch_size'])-1
     opts['evaluate_every'] = int(opts['print_every'] / 2.) + 1
     opts['save_every'] = 1000000000
+    if FLAGS.vizu_sinkit:
+        opts['vizu_sinkhorn'] = FLAGS.vizu_sinkit
     if FLAGS.save_model=='True':
         opts['save_final'] = True
     else:

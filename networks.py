@@ -17,28 +17,24 @@ import pdb
 
 def encoder(opts, input, output_dim, scope=None,
                                         reuse=False,
-                                        is_training=False,
-                                        dropout_rate=1.):
+                                        is_training=False):
     with tf.variable_scope(scope, reuse=reuse):
         if opts['network']['e_arch'] == 'mlp':
             # Encoder uses only fully connected layers with ReLUs
             outputs = mlp_encoder(opts, input, output_dim,
                                             reuse,
-                                            is_training,
-                                            dropout_rate)
+                                            is_training)
         elif opts['network']['e_arch'] == 'dcgan':
             # Fully convolutional architecture similar to DCGAN
             outputs = dcgan_encoder(opts, input, output_dim,
                                             reuse,
-                                            is_training,
-                                            dropout_rate)
+                                            is_training)
         elif opts['network']['e_arch'] == 'resnet':
             assert False, 'To Do'
             # Resnet archi similar to Improved training of WAGAN
             outputs = resnet_encoder(opts, input, output_dim,
                                             reuse,
-                                            is_training,
-                                            dropout_rate)
+                                            is_training)
         else:
             raise ValueError('%s : Unknown encoder architecture' % opts['network']['e_arch'])
 
@@ -61,28 +57,24 @@ def encoder(opts, input, output_dim, scope=None,
 
 def decoder(opts, input, output_dim, scope=None,
                                         reuse=False,
-                                        is_training=False,
-                                        dropout_rate=1.):
+                                        is_training=False):
     with tf.variable_scope(scope, reuse=reuse):
         if opts['network']['d_arch'] == 'mlp':
             # Encoder uses only fully connected layers with ReLUs
             outputs = mlp_decoder(opts, input, output_dim,
                                             reuse,
-                                            is_training,
-                                            dropout_rate)
+                                            is_training)
         elif opts['network']['d_arch'] == 'dcgan':
             # Fully convolutional architecture similar to DCGAN
             outputs = dcgan_decoder(opts, input, output_dim,
                                             reuse,
-                                            is_training,
-                                            dropout_rate)
+                                            is_training)
         elif opts['network']['d_arch'] == 'resnet':
             assert False, 'To Do'
             # Fully convolutional architecture similar to improve Wasserstein nGAN
             outputs = resnet_decoder(opts, input, output_dim,
                                             reuse,
-                                            is_training,
-                                            dropout_rate)
+                                            is_training)
         else:
             raise ValueError('%s Unknown encoder architecture for mixtures' % opts['network']['d_arch'])
 
@@ -104,8 +96,7 @@ def decoder(opts, input, output_dim, scope=None,
 
 
 def mlp_encoder(opts, input, output_dim, reuse=False,
-                                        is_training=False,
-                                        dropout_rate=1.):
+                                        is_training=False):
     layer_x = input
     for i in range(opts['network']['e_nlayers']):
         layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
@@ -122,8 +113,7 @@ def mlp_encoder(opts, input, output_dim, reuse=False,
 
 
 def dcgan_encoder(opts, input, output_dim, reuse=False,
-                                        is_training=False,
-                                        dropout_rate=1.):
+                                        is_training=False):
     """
     DCGAN style network with stride 2 at each hidden convolution layers.
     Final dense layer with output of size output_dim.
@@ -143,8 +133,7 @@ def dcgan_encoder(opts, input, output_dim, reuse=False,
 
 
 def mlp_decoder(opts, input, output_dim, reuse=False,
-                                        is_training=False,
-                                        dropout_rate=1.):
+                                        is_training=False):
     # Architecture with only fully connected layers and ReLUs
     layer_x = input
     for i in range(opts['network']['d_nlayers']):
@@ -162,8 +151,7 @@ def mlp_decoder(opts, input, output_dim, reuse=False,
 
 
 def  dcgan_decoder(opts, input, output_dim, reuse,
-                                            is_training,
-                                            dropout_rate=1.):
+                                            is_training):
     """
     DCGAN style network with stride 2 at each hidden deconvolution layers.
     First dense layer reshape to [out_h/2**num_layers,out_w/2**num_layers,num_units].

@@ -62,15 +62,13 @@ class Run(object):
             = self.model.loss(inputs=self.batch,
                               samples=self.samples_pz,
                               beta=self.beta,
-                              is_training=self.is_training,
-                              dropout_rate=self.dropout_rate)
+                              is_training=self.is_training)
 
         if opts['model']=='WAE':
             self.sinkhorn_it = self.model.sinkhorn(x1=self.batch, x2=self.recon_x)
 
         self.z_samples, self.z_mean, self.z_logvar, _, _, _ = self.model.forward_pass(inputs=self.batch,
                                                                           is_training=self.is_training,
-                                                                          dropout_rate=self.dropout_rate,
                                                                           reuse=True)
 
         self.generated_x = self.model.sample_x_from_prior(noise=self.samples_pz)
@@ -102,7 +100,6 @@ class Run(object):
     def add_training_placeholders(self):
         self.lr_decay = tf.placeholder(tf.float32, name='rate_decay_ph')
         self.is_training = tf.placeholder(tf.bool, name='is_training_ph')
-        self.dropout_rate = tf.placeholder(tf.float32, name='dropout_rate_ph')
         self.batch_size = tf.placeholder(tf.int32, name='batch_size_ph')
         self.beta = tf.placeholder(tf.float32, name='beta_ph')
 
@@ -228,7 +225,6 @@ class Run(object):
                              self.samples_pz: batch_pz_samples,
                              self.lr_decay: decay,
                              self.beta: opts['beta'],
-                             self.dropout_rate: 1.,
                              self.is_training: True}
                 [_, loss, loss_rec, loss_latent, enc_sigmastats] = self.sess.run([
                                                 self.opt,
@@ -265,7 +261,6 @@ class Run(object):
                         test_feed_dict = {self.batch: batch_images_test,
                                           self.samples_pz: batch_pz_samples_test,
                                           self.beta: opts['beta'],
-                                          self.dropout_rate: 1.,
                                           self.is_training: False}
                         [loss, l_rec, l_latent, z, z_mean] = self.sess.run([self.objective,
                                                          self.loss_rec,
@@ -289,12 +284,10 @@ class Run(object):
                                                  self.generated_x],
                                                 feed_dict={self.batch: data.vizu_data[0:npics],
                                                            self.samples_pz: fixed_noise,
-                                                           self.dropout_rate: 1.,
                                                            self.is_training: False})
                     # Auto-encoding training images
                     reconstructions_train = self.sess.run(self.recon_x,
                                                   feed_dict={self.batch: data.data[0:0+npics],
-                                                             self.dropout_rate: 1.,
                                                              self.is_training: False})
 
                     # - Plotting embeddings, Sigma, latent interpolation, and saving
@@ -316,7 +309,6 @@ class Run(object):
                     if opts['vizu_sinkhorn'] and opts['model']=='WAE':
                         sink_it = self.sess.run(self.sinkhorn_it,
                                                   feed_dict={self.batch: batch_images_test,
-                                                             self.dropout_rate: 1.,
                                                              self.is_training: False})
                         plot_sinkhorn(opts,
                                       sink_it,
@@ -414,7 +406,6 @@ class Run(object):
             test_feed_dict = {self.batch: batch_images_test,
                               self.samples_pz: batch_pz_samples_test,
                               self.beta: opts['beta'],
-                              self.dropout_rate: 1.,
                               self.is_training: False}
             [loss, l_rec, l_latent, z, z_mean] = self.sess.run([self.objective,
                                              self.loss_reconstruct,
@@ -505,7 +496,6 @@ class Run(object):
             test_feed_dict = {self.batch: batch_images_test,
                               self.samples_pz: batch_pz_samples_test,
                               self.beta: opts['beta'],
-                              self.dropout_rate: 1.,
                               self.is_training: False}
             [loss, l_rec, divergences, z, z_mean, samples] = self.sess.run([self.objective,
                                              self.loss_reconstruct,
@@ -675,7 +665,6 @@ class Run(object):
                                      self.generated_x],
                                     feed_dict={self.batch: data.plot_data,
                                                self.samples_pz: fixed_noise,
-                                               self.dropout_rate: 1.,
                                                self.is_training: False})
         # - get kl(q(z_i),p(z_i)) on test data to plot latent traversals
         test_size = np.shape(data.test_data)[0]
@@ -687,7 +676,6 @@ class Run(object):
             batch_images_test = data.test_data[data_ids].astype(np.float32)
             kl = self.sess.run(self.kl_to_prior, feed_dict={
                                                 self.batch: batch_images_test,
-                                                self.dropout_rate: 1.,
                                                 self.is_training: False})
             kl_to_prior += kl / batches_num_te
 
@@ -713,7 +701,6 @@ class Run(object):
         # - Reconstructing latent transversals
         obs_transversal = self.sess.run(self.generated_x,
                                     feed_dict={self.samples_pz: np.reshape(latent_transversal,[-1, opts['zdim']]),
-                                               self.dropout_rate: 1.,
                                                self.is_training: False})
         obs_transversal = np.reshape(obs_transversal, [-1, opts['zdim'], num_steps]+im_shape)
         kl_to_prior_sorted = np.argsort(kl_to_prior)[::-1]

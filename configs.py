@@ -24,7 +24,7 @@ config_celebA['celebA_data_source_url'] = 'https://docs.google.com/uc?export=dow
 config_celebA['celebA_crop'] = 'closecrop' # closecrop, resizecrop
 config_celebA['input_normalize_sym'] = True
 # Experiment set up
-config_celebA['batch_size'] = 128
+config_celebA['batch_size'] = 200
 config_celebA['epoch_num'] = 101
 config_celebA['model'] = 'WAE' #VAE, WAE
 config_celebA['use_trained'] = False #train from pre-trained model
@@ -38,16 +38,15 @@ config_celebA['lr_schedule'] = False
 config_celebA['normalization'] = 'batchnorm' #batchnorm, layernorm, none
 config_celebA['batch_norm_eps'] = 1e-05
 config_celebA['batch_norm_momentum'] = 0.99
-config_celebA['dropout_rate'] = 1.
 # Objective set up
 config_celebA['cost'] = 'emd' #l2, l2sq, l2sq_norm, l1, emd
 config_celebA['mmd_kernel'] = 'IMQ' # RBF, IMQ
-config_celebA['sinkhorn_iterations'] = 50 # number of sinkhorn it for emd cost
+config_celebA['sinkhorn_iterations'] = 150 # number of sinkhorn it for emd cost
 config_celebA['sinkhorn_reg'] = 1. # regularization param for emd cost
 config_celebA['pen_enc_sigma'] = False
 config_celebA['lambda_pen_enc_sigma'] = 0.001
 # Model set up
-config_celebA['zdim'] = 10
+config_celebA['zdim'] = 64
 config_celebA['pz_scale'] = 1.
 config_celebA['prior'] = 'gaussian' # dirichlet, gaussian
 config_celebA['encoder'] = 'gauss' # deterministic, gaussian
@@ -86,7 +85,7 @@ config_mnist['MNIST_data_source_url'] = 'http://yann.lecun.com/exdb/mnist/'
 config_mnist['input_normalize_sym'] = False
 
 # Experiment set up
-config_mnist['batch_size'] = 128
+config_mnist['batch_size'] = 200
 config_mnist['epoch_num'] = 101
 config_mnist['model'] = 'WAE' #vae, wae
 config_mnist['use_trained'] = False #train from pre-trained model
@@ -100,7 +99,6 @@ config_mnist['lr_schedule'] = False
 config_mnist['normalization'] = 'batchnorm' #batchnorm, layernorm, none
 config_mnist['batch_norm_eps'] = 1e-05
 config_mnist['batch_norm_momentum'] = 0.99
-config_mnist['dropout_rate'] = 1.
 # Objective set up
 config_mnist['cost'] = 'emd' #l2, l2sq, l2sq_norm, l1, emd
 config_mnist['mmd_kernel'] = 'IMQ' # RBF, IMQ
@@ -109,7 +107,7 @@ config_mnist['sinkhorn_reg'] = 0.1 # regularization param for emd cost
 config_mnist['pen_enc_sigma'] = False
 config_mnist['lambda_pen_enc_sigma'] = 0.001
 # Model set up
-config_mnist['zdim'] = 10
+config_mnist['zdim'] = 8
 config_mnist['pz_scale'] = 1.
 config_mnist['prior'] = 'gaussian' # dirichlet, gaussian
 config_mnist['encoder'] = 'gauss' # deterministic, gaussian

@@ -20,31 +20,28 @@ class Model(object):
         self.pz_mean = np.zeros(opts['zdim'], dtype='float32')      # TODO don't hardcode this
         self.pz_sigma = np.ones(opts['zdim'], dtype='float32')
 
-    def forward_pass(self, inputs, is_training, dropout_rate, reuse=False):
+    def forward_pass(self, inputs, is_training, reuse=False):
 
         enc_z, enc_mean, enc_Sigma = encoder(self.opts,
                                              input=inputs,
                                              output_dim=2 * self.opts['zdim'],
                                              scope='encoder',
                                              reuse=reuse,
-                                             is_training=is_training,
-                                             dropout_rate=dropout_rate)
+                                             is_training=is_training)
 
         dec_x, dec_mean, dec_Sigma = decoder(self.opts,
                                              input=enc_z,
                                              output_dim=self.output_dim,
                                              scope='decoder',
                                              reuse=reuse,
-                                             is_training=is_training,
-                                             dropout_rate=dropout_rate)
+                                             is_training=is_training)
         return enc_z, enc_mean, enc_Sigma, dec_x, dec_mean, dec_Sigma
 
-    def loss(self, inputs, samples, beta, is_training, dropout_rate):
+    def loss(self, inputs, samples, beta, is_training):
 
         # --- Encoding and reconstructing
         enc_z, enc_mean, enc_Sigma, recon_x, dec_mean, dec_Sigma = self.forward_pass(inputs=inputs,
-                                                                                is_training=is_training,
-                                                                                dropout_rate=dropout_rate)
+                                                                                is_training=is_training)
 
         loss_reconstruct = self.reconstruction_loss(inputs, recon_x, dec_mean, dec_Sigma)
         match_penalty = beta*self.match_penalty(samples, self.pz_mean, self.pz_sigma, enc_z, enc_mean, enc_Sigma)
@@ -70,8 +67,7 @@ class Model(object):
                                                       output_dim=self.output_dim,
                                                       scope='decoder',
                                                       reuse=True,
-                                                      is_training=False,
-                                                      dropout_rate=1.)
+                                                      is_training=False)
         return sample_x         #, sample_mean, sample_Sigma
 
 
