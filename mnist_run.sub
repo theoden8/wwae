@@ -4,13 +4,15 @@
 
 #$ -wd /home/bgaujac/diswae
 
-#$ -l gpu=1
-#$ -l tmem=4G
-#$ -l h_rt=20:00:00
+#$ -l gpu=True
+#$ -l tmem=5G
+#$ -l h_rt=10:00:00
 
-#$ -N v1_mnist
+#$ -t 1-7
+
+#$ -N eps1mnist
 
 source /share/apps/examples/source_files/python/python-3.6.4.source
 source /share/apps/examples/source_files/cuda/cuda-9.0.source
 
-python3 run.py --out_dir mnist_1/1  --lmba0 1 --lmba1 1
+python3 run.py --num_it 100000 --idx $SGE_TASK_ID --save_data False --save_model False --exp mnist --cost emd --model WAE --L 100 --out_dir mnist_eps_1 --sink_reg 1
