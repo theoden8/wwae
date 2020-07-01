@@ -29,37 +29,40 @@ parser.add_argument("--exp_dir", type=str, default='res',
                     help='directory in which exp. outputs are saved')
 parser.add_argument("--num_it", type=int, default=300000,
                     help='iteration number')
-parser.add_argument("--net_archi", default='mlp',
-                    help='networks architecture [mlp/conv_locatello]')
+parser.add_argument("--net_archi",
+                    help='networks architecture [mlp/dcgan/resnet]')
 parser.add_argument("--idx", type=int, default=0,
                     help='idx latent reg weight setup')
 parser.add_argument("--sigma_pen", default='False',
                     help='penalization of Sigma_q')
 parser.add_argument("--sp", type=float, default=0.01,
                     help='value of penalization of Sigma_q')
-parser.add_argument("--cost", default='xentropy',
-                    help='ground cost [l2, l2sq, l2sq_norm, l1, xentropy]')
+parser.add_argument("--cost", default='l2sq',
+                    help='ground cost [l2, l2sq, l2sq_norm, l1, xentropy, emd]')
+parser.add_argument("--emd_cost", default='l2sq',
+                    help='ground cost of emd cost [l2, l2sq, l2sq_norm, l1, xentropy]')
+parser.add_argument("--sink_reg", type=float, default=0.01,
+                    help='sinkhorn regularization param.')
+parser.add_argument("--L", type=int, default=100,
+                    help='sinkhorn iterations.')
 parser.add_argument("--save_model", default='True',
                     help='save final model weights [True/False]')
 parser.add_argument("--save_data", default='True',
                     help='save training data [True/False]')
 parser.add_argument("--weights_file")
-parser.add_argument('--gpu_id', default='cpu',
-                    help='gpu id for DGX box. Default is cpu')
 
 
 FLAGS = parser.parse_args()
 
 
 # --- Network architectures
-mlp_config = { 'e_arch': 'mlp' , 'e_nlayers': 2, 'e_nfilters': [1200, 1200], 'e_nonlinearity': 'relu',
-        'd_arch': 'mlp' , 'd_nlayers': 3, 'd_nfilters': [1200, 1200, 1200], 'd_nonlinearity': 'tanh'}
+mlp_config = { 'e_arch': 'mlp' , 'e_nlayers': 2, 'e_nfilters': [2048, 2048], 'e_nonlinearity': 'relu',
+        'd_arch': 'mlp' , 'd_nlayers': 2, 'd_nfilters': [2048, 2048], 'd_nonlinearity': 'relu'}
+dcgan_config = { 'e_arch': 'dcgan' , 'e_nlayers': 4, 'e_nfilters': [32,64,128,256], 'e_nonlinearity': 'relu',
+        'd_arch': 'dcgan' , 'd_nlayers': 4, 'd_nfilters': [32,64,128,256], 'd_nonlinearity': 'relu',
+        'filter_size': [4,4,4,4]}
 
-conv_config = { 'e_arch': 'conv_locatello' , 'e_nlayers': 4, 'e_nfilters': [32,32,64,64], 'e_nonlinearity': 'relu',
-        'd_arch': 'conv_locatello' , 'd_nlayers': 4, 'd_nfilters': [32,32,32,64], 'd_nonlinearity': 'relu',
-        'filter_size': [4,4,4,4], 'downsample': [None,None,None,None], 'upsample': [None,None,None,None]}
-
-net_configs = {'mlp': mlp_config, 'conv_locatello': conv_config}
+net_configs = {'mlp': mlp_config, 'dcgan': dcgan_config}
 
 
 def main():
@@ -94,111 +97,49 @@ def main():
         opts['fid'] = False
 
     # Opt set up
-    opts['lr'] = 0.0001
+    opts['lr'] = 0.001
+    opts['batch_size'] = 200
 
     # Model set up
     if FLAGS.exp == 'celebA':
-        opts['zdim'] = 32
-        opts['batch_size'] = 128
-        opts['lr'] = 0.0001
-    elif FLAGS.exp == '3Dchairs':
-        opts['zdim'] = 10
-        opts['batch_size'] = 128
-        opts['lr'] = 0.0001
+        opts['zdim'] = 20
     else:
-        opts['zdim'] = 10
-        opts['batch_size'] = 64
-        opts['lr'] = 0.0004
+        opts['zdim'] = 2
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
-    if opts['model']!='TCWAE_MWS' and opts['model']!='TCWAE_GAN' and opts['model']!='WAE':
-        opts['input_normalize_sym'] = False
+    if FLAGS.sink_reg:
+        opts['sinkhorn_reg'] = FLAGS.sink_reg
+    if FLAGS.L:
+        opts['sinkhorn_iterations'] = FLAGS.L
+
     # Objective Function Coefficients
-    if opts['model'] == 'BetaVAE':
-        beta = [1, 2, 4, 6, 8, 10, 20]
-        opts['obj_fn_coeffs'] = beta[FLAGS.idx-1]
-    elif opts['model'] == 'BetaTCVAE':
-        if FLAGS.exp == 'celebA':
-            beta = [1, 5, 10, 15, 20, 50]
-        else:
-            beta = [1, 2, 4, 6, 8, 10, 20]
-        opts['obj_fn_coeffs'] = beta[FLAGS.idx-1]
-    elif opts['model'] == 'FactorVAE':
-        if FLAGS.exp == 'celebA':
-            gamma = [1, 5, 10, 15, 20, 50]
-        else:
-            gamma = [1, 10, 20, 30, 40, 50, 100]
-        opts['obj_fn_coeffs'] = gamma[FLAGS.idx-1]
-    elif opts['model'] == 'WAE':
-        if opts['cost'] == 'xentropy':
-            # toy experiment with xent
-            if FLAGS.exp == 'dsprites':
-                lmba = [1, 10, 20, 50, 100, 150, 200]
-            elif FLAGS.exp == 'smallNORB':
-                lmba = [1, 50, 100, 150, 200, 500, 1000]
-            else:
-                lmba = [1, 10, 20, 50, 100, 150, 200]
-        else:
-            lmba = [1, 10, 20, 50, 100, 150, 200]
-        opts['obj_fn_coeffs'] = lmba[FLAGS.idx-1]
-    elif opts['model'] == 'TCWAE_MWS' or opts['model'] == 'TCWAE_GAN':
-        if FLAGS.exp == 'smallNORB':
-            if opts['cost'] == 'xentropy':
-                lmba0 = [1, 5, 10, 25, 50, 100]
-                lmba1 = [1, 5, 10, 25, 50, 100]
-            else:
-                lmba0 = [1, 2, 4 ,6, 8, 10]
-                lmba1 = [1, 2, 4 ,6, 8, 10]
-        elif FLAGS.exp == 'dsprites':
-            lmba0 = [1, 5, 10, 50, 100, 150]
-            lmba1 = [1, 5, 10, 50, 100, 150]
-            # lmba0 = [1, 2, 5, 10, 25, 50, 75, 100, 125, 150]
-            # lmba1 = [1, 2, 5, 10, 25, 50, 75, 100, 125, 150]
-        elif FLAGS.exp == '3Dchairs':
-            lmba0 = [1, 2, 5, 10, 15, 20]
-            lmba1 = [1, 2, 5, 10, 15, 20]
-        elif FLAGS.exp == 'celebA':
-            lmba0 = [1, 2, 5, 10, 15, 20]
-            lmba1 = [1, 2, 5, 10, 15, 20]
-        else:
-            lmba0 = [1, 2, 4, 6, 8, 10]
-            lmba1 = [1, 2, 4, 6, 8, 10]
-        lmba = list(itertools.product(lmba0,lmba1))
-        opts['obj_fn_coeffs'] = list(lmba[FLAGS.idx-1])
+    if FLAGS.exp == 'mnist':
+        beta = [1, 2, 5, 10, 20, 50, 100]
+    elif FLAGS.exp == 'celebA':
+        beta = [1, 10, 20, 50, 100, 200, 500]
     else:
-        assert False, 'unknown model {}'.format(opts['model'])
+        assert False, 'Unknow {} dataset' % FLAGS.exp
+    opts['beta'] = beta[FLAGS.idx-1]
     # Penalty Sigma_q
     opts['pen_enc_sigma'] = FLAGS.sigma_pen=='True'
-    if FLAGS.exp == 'celebA':
-        opts['lambda_pen_enc_sigma'] = FLAGS.sp
-    elif FLAGS.exp == 'smallNORB':
-        opts['lambda_pen_enc_sigma'] = .2
-    elif FLAGS.exp == '3Dchairs':
-        opts['lambda_pen_enc_sigma'] = FLAGS.sp
-    else:
-        opts['lambda_pen_enc_sigma'] = .1
+    opts['lambda_pen_enc_sigma'] = FLAGS.sp
 
     # NN set up
-    opts['network'] = net_configs[FLAGS.net_archi]
+    if FLAGS.net_archi:
+        opts['net_archi'] = FLAGS.net_archi
+    opts['network'] = net_configs[opts['net_archi']]
+
 
     # Create directories
     if FLAGS.out_dir:
         opts['out_dir'] = FLAGS.out_dir
     if FLAGS.exp_dir:
         opts['exp_dir'] = FLAGS.exp_dir
-    if opts['model'] == 'disWAE' or opts['model'] == 'TCWAE_MWS' or opts['model'] == 'TCWAE_GAN':
-        exp_dir = os.path.join(opts['out_dir'],
-                               opts['model'],
-                               '{}_{}_{}_{:%Y_%m_%d_%H_%M}'.format(
-                                    opts['exp_dir'],
-                                    opts['obj_fn_coeffs'][0],
-                                    opts['obj_fn_coeffs'][1],datetime.now()), )
-    else :
-        exp_dir = os.path.join(opts['out_dir'],
-                               opts['model'],
-                               '{}_{}_{:%Y_%m_%d_%H_%M}'.format(
-                                    opts['exp_dir'],
-                                    opts['obj_fn_coeffs'],
-                                    datetime.now()), )
+    exp_dir = os.path.join(opts['out_dir'],
+                           opts['model'],
+                           '{}_{}_{:%Y_%m_%d_%H_%M}'.format(
+                                opts['exp_dir'],
+                                opts['beta'],
+                                datetime.now()), )
     opts['exp_dir'] = exp_dir
     if not tf.gfile.IsDirectory(exp_dir):
         utils.create_dir(exp_dir)
@@ -214,7 +155,7 @@ def main():
 
     # Experiemnts set up
     opts['epoch_num'] = int(FLAGS.num_it / int(data.num_points/opts['batch_size']))
-    opts['print_every'] = int(opts['epoch_num'] / 5.) * int(data.num_points/opts['batch_size'])-1
+    opts['print_every'] = int(opts['epoch_num'] / 20.) * int(data.num_points/opts['batch_size'])-1
     opts['evaluate_every'] = int(opts['print_every'] / 2.) + 1
     opts['save_every'] = 1000000000
     if FLAGS.save_model=='True':
@@ -242,7 +183,6 @@ def main():
                 text.write('%s : %s\n' % (key, opts[key]))
         run.train(data, FLAGS.weights_file)
     else:
-        assert False, 'Unknown mode %s' % FLAGS.mode
-
+        assert False, 'To implement.'
 
 main()

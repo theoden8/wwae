@@ -30,13 +30,10 @@ import utils
 import pdb
 
 datashapes = {}
-datashapes['dsprites'] = [64, 64, 1]
-datashapes['3dshapes'] = [64, 64, 3]
-datashapes['smallNORB'] = [64, 64, 1]
-datashapes['3Dchairs'] = [64, 64, 3]
 datashapes['celebA'] = [64, 64, 3]
 datashapes['mnist'] = [28, 28, 1]
 datashapes['svhn'] = [32, 32, 3]
+datashapes['cifar'] = [32, 32, 3]
 
 
 def _data_dir(opts):
@@ -50,31 +47,27 @@ def maybe_download(opts):
     data_path = os.path.join(opts['data_dir'], opts['dataset'])
     if not tf.gfile.Exists(data_path):
         tf.gfile.MakeDirs(data_path)
-    if opts['dataset']=='dsprites':
-        filename = 'dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz?raw=true'
-        file_path = os.path.join(data_path, filename[:-9])
-        if not tf.gfile.Exists(file_path):
-            download_file(file_path,filename,opts['DSprites_data_source_url'])
-    elif opts['dataset']=='3dshapes':
-        filename = '3dshapes.h5'
-        file_path = os.path.join(data_path, filename)
-        if not tf.gfile.Exists(file_path):
-            assert False, 'To implement'
-            download_file(file_path,filename,opts['3dshapes_data_source_url'])
-    elif opts['dataset']=='smallNORB':
-        filename = 'smallnorb-5x46789x9x18x6x2x96x96-training-dat.mat.gz'
-        file_path = os.path.join(data_path, filename)
-        if not tf.gfile.Exists(file_path):
-            download_file(file_path,filename,opts['smallNORB_data_source_url'])
-        filename = 'smallnorb-5x01235x9x18x6x2x96x96-testing-dat.mat.gz'
-        file_path = os.path.join(data_path, filename)
-        if not tf.gfile.Exists(file_path):
-            download_file(file_path,filename,opts['smallNORB_data_source_url'])
-    elif opts['dataset']=='3Dchairs':
-        filename = 'rendered_chairs.tar'
-        file_path = os.path.join(data_path, filename)
-        if not tf.gfile.Exists(file_path):
-            download_file(file_path,filename,opts['3Dchairs_data_source_url'])
+    if opts['dataset']=='mnist':
+        maybe_download_file(data_path,'train-images-idx3-ubyte.gz',opts['MNIST_data_source_url'])
+        maybe_download_file(data_path,'train-labels-idx1-ubyte.gz',opts['MNIST_data_source_url'])
+        maybe_download_file(data_path,'t10k-images-idx3-ubyte.gz',opts['MNIST_data_source_url'])
+        maybe_download_file(data_path,'t10k-labels-idx1-ubyte.gz',opts['MNIST_data_source_url'])
+    elif opts['dataset']=='zalando':
+        maybe_download_file(data_path,'train-images-idx3-ubyte.gz',opts['Zalando_data_source_url'])
+        maybe_download_file(data_path,'train-labels-idx1-ubyte.gz',opts['Zalando_data_source_url'])
+        maybe_download_file(data_path,'t10k-images-idx3-ubyte.gz',opts['Zalando_data_source_url'])
+        maybe_download_file(data_path,'t10k-labels-idx1-ubyte.gz',opts['Zalando_data_source_url'])
+    elif opts['dataset']=='svhn':
+        maybe_download_file(data_path,'train_32x32.mat',opts['SVHN_data_source_url'])
+        maybe_download_file(data_path,'test_32x32.mat',opts['SVHN_data_source_url'])
+        if opts['use_extra']:
+            maybe_download_file(data_path,'extra_32x32.mat',opts['SVHN_data_source_url'])
+    elif opts['dataset']=='cifar10':
+        maybe_download_file(data_path,'cifar-10-python.tar.gz',opts['cifar10_data_source_url'])
+        tar = tarfile.open(os.path.join(data_path,'cifar-10-python.tar.gz'))
+        tar.extractall(path=data_path)
+        tar.close()
+        data_path = os.path.join(data_path,'cifar-10-batches-py')
     elif opts['dataset']=='celebA':
         filename = 'img_align_celeba'
         file_path = os.path.join(data_path, filename)
@@ -93,47 +86,18 @@ def maybe_download(opts):
             os.remove(file_path)
             # os.rename(os.path.join(data_path, zip_dir), os.path.join(data_path, 'img_align_celeba'))
         data_path = os.path.join(data_path,'img_align_celeba')
-    elif opts['dataset']=='mnist':
-        download_file(data_path,'train-images-idx3-ubyte.gz',opts['MNIST_data_source_url'])
-        download_file(data_path,'train-labels-idx1-ubyte.gz',opts['MNIST_data_source_url'])
-        download_file(data_path,'t10k-images-idx3-ubyte.gz',opts['MNIST_data_source_url'])
-        download_file(data_path,'t10k-labels-idx1-ubyte.gz',opts['MNIST_data_source_url'])
-    elif opts['dataset']=='svhn':
-        download_file(data_path,'train_32x32.mat',opts['SVHN_data_source_url'])
-        download_file(data_path,'test_32x32.mat',opts['SVHN_data_source_url'])
-        if opts['use_extra']:
-            download_file(data_path,'extra_32x32.mat',opts['SVHN_data_source_url'])
     else:
         assert False, 'Unknow dataset'
 
     return data_path
 
-def download_file(file_path,filename,url):
-    file_path, _ = urllib.request.urlretrieve(url + filename, file_path)
-    with tf.gfile.GFile(file_path) as f:
-        size = f.size()
-    print('Successfully downloaded', filename, size, 'bytes.')
-
-def download_file_from_google_drive(file_path, filename, url):
-
-    def get_confirm_token(response):
-        for key, value in response.cookies.items():
-            if key.startswith('download_warning'):
-                return value
-        return None
-    session = requests.Session()
-    id = '0B7EVK8r0v71pZjFTYXZWM3FlRnM'
-    response = session.get(url, params={ 'id': id}, stream=True)
-    token = get_confirm_token(response)
-    if token:
-        params = { 'id': id, 'confirm': token }
-        response = session.get(url, params=params, stream=True)
-    total_size = int(response.headers.get('content-length', 0))
-    with open(file_path, "wb") as f:
-        for chunk in tqdm(response.iter_content(32*1024), total=total_size,
-            unit='B', unit_scale=True, desc=file_path):
-            if chunk: # filter out keep-alive new chunks
-                f.write(chunk)
+def maybe_download_file(name,filename,url):
+    filepath = os.path.join(name, filename)
+    if not tf.gfile.Exists(filepath):
+        filepath, _ = urllib.request.urlretrieve(url + filename, filepath)
+        with tf.gfile.GFile(filepath) as f:
+            size = f.size()
+        print('Successfully downloaded', filename, size, 'bytes.')
 
 def load_cifar_batch(fpath, label_key='labels'):
     """Internal utility for parsing CIFAR data.
@@ -334,20 +298,14 @@ class DataHandler(object):
         """Load a dataset and fill all the necessary variables.
 
         """
-        if opts['dataset'] == 'dsprites':
-            self._load_dsprites(opts)
-        elif opts['dataset'] == '3dshapes':
-            self._load_3dshapes(opts)
-        elif opts['dataset'] == 'smallNORB':
-            self._load_smallNORB(opts)
-        elif opts['dataset'] == '3Dchairs':
-            self._load_3Dchairs(opts)
-        elif opts['dataset'] == 'celebA':
+        if opts['dataset'] == 'celebA':
             self._load_celebA(opts)
         elif opts['dataset'] == 'mnist':
             self._load_mnist(opts)
         elif opts['dataset'] == 'svhn':
             self._load_svhn(opts)
+        elif opts['dataset'] == 'cifar':
+            self._load_cifar(opts)
         else:
             raise ValueError('Unknown %s' % opts['dataset'])
 
@@ -357,243 +315,6 @@ class DataHandler(object):
                 self.data.X = (self.data.X - 0.5) * 2.
                 self.test_data.X = (self.test_data.X - 0.5) * 2.
             # Else we will normalyze while reading from disk
-
-    def _load_dsprites(self, opts):
-        """Load data from dsprites dataset
-
-        """
-
-        logging.error('Loading dsprites...')
-        # Loading data
-        data_dir = _data_dir(opts)
-        data_path = os.path.join(data_dir, 'dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz')
-        X = np.load(data_path, allow_pickle=True)['imgs'][:,:,:,None].astype(np.float32)
-        Y = np.load(data_path, allow_pickle=True)['latents_classes'][:,1:]
-        # labels informations
-        self.factor_indices = list(range(5))
-        self.factor_sizes = np.array(np.load(data_path, allow_pickle=True, encoding="latin1")['metadata'][()]["latents_sizes"],dtype=np.int64)[1:]
-        self.factor_bases = np.prod(self.factor_sizes) / np.cumprod(
-            self.factor_sizes)
-        # Creating shuffling mask
-        seed = 123
-        shuffling_mask = np.arange(len(Y))
-        np.random.seed(seed)
-        np.random.shuffle(shuffling_mask)
-        np.random.seed()
-        np.random.shuffle(shuffling_mask[opts['plot_num_pics']:])
-        self.data_order_idx = np.argsort(shuffling_mask)
-        # training set
-        self.data = Data(opts, X[shuffling_mask[:-10000]])
-        self.labels = Data(opts, Y[shuffling_mask[:-10000]])
-        # testing set
-        # test_size = 10000 - opts['plot_num_pics']
-        self.test_data = Data(opts, X[shuffling_mask[-10000:-opts['plot_num_pics']]])
-        self.test_labels = Data(opts, Y[shuffling_mask[-10000:-opts['plot_num_pics']]])
-        # vizu set
-        self.vizu_data = Data(opts, X[shuffling_mask[-opts['plot_num_pics']:]])
-        self.vizu_labels = Data(opts, Y[shuffling_mask[-opts['plot_num_pics']:]])
-        # plot set
-        idx = np.arange(41488,len(Y),34816)
-        self.plot_data = Data(opts, X[idx])
-        # data informations
-        self.data_shape = datashapes[opts['dataset']]
-        self.num_points = len(self.data)
-
-        logging.error('Loading Done.')
-
-    def _load_3dshapes(self, opts):
-        """Load data from 3Dshapes dataset
-
-        """
-
-        def get_factors_from_labels(labels):
-            """Convert labels values to factors categories
-            """
-            num_factors = labels.shape[-1]
-            factors = []
-            for i in range(num_factors):
-                _, factor = np.unique(labels[:,i],return_inverse=True)
-                factors.append(factor)
-            return np.stack(factors,axis=-1)
-
-        logging.error('Loading 3Dshapes...')
-        # Loading data
-        data_dir = _data_dir(opts)
-        data_path = os.path.join(data_dir, '3dshapes.h5')
-        dataset = h5py.File(data_path, 'r')
-        X = np.array(dataset['images']).astype(np.float32) / 255.
-        Y = np.array(dataset['labels'])
-        # labels informations
-        self.factor_indices = list(range(6))
-        self.factor_sizes = np.array([10,10,10,8,4,15])
-        self.factor_bases = np.prod(self.factor_sizes) / np.cumprod(
-            self.factor_sizes)
-        # Creating shuffling mask
-        seed = 123
-        shuffling_mask = np.arange(len(X))
-        np.random.seed(seed)
-        np.random.shuffle(shuffling_mask)
-        np.random.seed()
-        np.random.shuffle(shuffling_mask[opts['plot_num_pics']:])
-        self.data_order_idx = np.argsort(shuffling_mask)
-        # training set
-        self.data = Data(opts, X[shuffling_mask[:-10000]])
-        self.labels = Data(opts, Y[shuffling_mask[:-10000]])
-        # testing set
-        # test_size = 10000 - opts['plot_num_pics']
-        self.test_data = Data(opts, X[shuffling_mask[-10000:-opts['plot_num_pics']]])
-        self.test_labels = Data(opts, Y[shuffling_mask[-10000:-opts['plot_num_pics']]])
-        # vizu set
-        self.vizu_data = Data(opts, X[shuffling_mask[-opts['plot_num_pics']:]])
-        self.vizu_labels = Data(opts, Y[shuffling_mask[-opts['plot_num_pics']:]])
-        # data informations
-        self.data_shape = datashapes[opts['dataset']]
-        self.num_points = len(self.data)
-
-        logging.error('Loading Done.')
-
-    def _load_smallNORB(self, opts):
-        """Load data from smallNORB dataset
-
-        """
-
-        logging.error('Loading smallNORB...')
-        # Loading data
-        data_dir = _data_dir(opts)
-        SMALLNORB_CHUNKS = ['smallnorb-5x46789x9x18x6x2x96x96-training-{0}.mat.gz',
-                            'smallnorb-5x01235x9x18x6x2x96x96-testing-{0}.mat.gz']
-        list_of_images = []
-        list_of_labels = []
-        list_of_infos = []
-        for chunk_name in SMALLNORB_CHUNKS:
-            # Loading data
-            file_path = os.path.join(data_dir, chunk_name.format('dat'))
-            with gzip.open(file_path, mode='rb') as f:
-                header = _parse_smallNORB_header(f)
-                num_examples, channels, height, width = header['dimensions']
-                images = np.zeros(shape=(num_examples, 2, height, width), dtype=np.uint8)
-                for i in range(num_examples):
-                    # Read raw image data and restore shape as appropriate
-                    image = struct.unpack('<' + height * width * 'B', f.read(height * width))
-                    image = np.uint8(np.reshape(image, newshape=(height, width)))
-                    images[i] = image
-            list_of_images.append(_resize_images(images[:, 0]))
-            # Loading category
-            file_path = os.path.join(data_dir, chunk_name.format('cat'))
-            with gzip.open(file_path, mode='rb') as f:
-                header = _parse_smallNORB_header(f)
-                num_examples, = header['dimensions']
-                struct.unpack('<BBBB', f.read(4))  # ignore this integer
-                struct.unpack('<BBBB', f.read(4))  # ignore this integer
-                categories = np.zeros(shape=num_examples, dtype=np.int32)
-                for i in tqdm(range(num_examples), disable=True, desc='Loading categories...'):
-                    category, = struct.unpack('<i', f.read(4))
-                    categories[i] = category
-            # Loading infos
-            file_path = os.path.join(data_dir, chunk_name.format('info'))
-            with gzip.open(file_path, mode='rb') as f:
-                header = _parse_smallNORB_header(f)
-                struct.unpack('<BBBB', f.read(4))  # ignore this integer
-                num_examples, num_info = header['dimensions']
-                infos = np.zeros(shape=(num_examples, num_info), dtype=np.int32)
-                for r in tqdm(range(num_examples), disable=True, desc='Loading info...'):
-                    for c in range(num_info):
-                        info, = struct.unpack('<i', f.read(4))
-                        infos[r, c] = info
-            list_of_labels.append((np.column_stack((categories, infos))))
-        X = np.concatenate(list_of_images, axis=0)
-        self.Y = np.concatenate(list_of_labels, axis=0)
-        X = np.expand_dims(X,axis=-1)
-        self.Y[:, 3] = self.Y[:, 3] / 2  # azimuth values are 0, 2, 4, ..., 24
-        # labels informations
-        self.factor_indices = [0, 2, 3, 4]
-        self.factor_sizes = np.array([5, 10, 9, 18, 6])
-        self.factor_bases = np.prod(self.factor_sizes) / np.cumprod(
-            self.factor_sizes)
-        # Creating shuffling mask
-        seed = 123
-        shuffling_mask = np.arange(len(X))
-        np.random.seed(seed)
-        np.random.shuffle(shuffling_mask)
-        np.random.seed()
-        np.random.shuffle(shuffling_mask[opts['plot_num_pics']:])
-        self.data_order_idx = np.argsort(shuffling_mask)
-        # training set
-        self.data = Data(opts, X[shuffling_mask[:-10000]])
-        self.labels = Data(opts, self.Y[shuffling_mask[:-10000]])
-        # testing set
-        # test_size = 10000 - opts['plot_num_pics']
-        self.test_data = Data(opts, X[shuffling_mask[-10000:-opts['plot_num_pics']]])
-        self.test_labels = Data(opts, self.Y[shuffling_mask[-10000:-opts['plot_num_pics']]])
-        # vizu set
-        self.vizu_data = Data(opts, X[shuffling_mask[-opts['plot_num_pics']:]])
-        self.vizu_labels = Data(opts, self.Y[shuffling_mask[-opts['plot_num_pics']:]])
-        # plot set
-        idx = np.arange(0+18*6,40+18*6,2)
-        self.plot_data = Data(opts, X[idx])
-        # data informations
-        self.data_shape = datashapes[opts['dataset']]
-        self.num_points = len(self.data)
-
-        logging.error('Loading Done.')
-
-    def _load_3Dchairs(self, opts):
-        """Load data from 3Dchairs dataset
-
-        """
-        logging.error('Loading 3Dchairs')
-        filename = os.path.join(_data_dir(opts), 'rendered_chairs.npz')
-        # Extracting data and saving as npz if necessary
-        if not tf.gfile.Exists(filename):
-            tar = tarfile.open(filename[:-4] +'.tar')
-            tar.extractall(path=_data_dir(opts))
-            tar.close()
-            X = []
-            n = 0
-            root_dir = os.path.join(_data_dir(opts), 'rendered_chairs')
-            # Iterate over all the dir
-            for dir in os.listdir(root_dir):
-                # Create full path
-                if dir!='all_chair_names.mat':
-                    subdir = os.path.join(root_dir, dir, 'renders')
-                    for file in os.listdir(subdir):
-                        path_to_file = os.path.join(subdir,file)
-                        im = Image.open(path_to_file)
-                        im = im.resize((64, 64), Image.ANTIALIAS)
-                        X.append(np.array(im.getdata()))
-                        n += 1
-                        if n%10000==0:
-                            print('{} images unizped'.format(n))
-            np.savez_compressed(filename,data=np.array(X).reshape([-1,]+datashapes['3Dchairs']) / 255.)
-            shutil.rmtree(root_dir)
-
-        # loading data
-        X = np.load(filename,allow_pickle=True)['data']
-        seed = 123
-        shuffling_mask = np.arange(len(X))
-        np.random.seed(seed)
-        np.random.shuffle(shuffling_mask)
-        np.random.seed()
-        np.random.shuffle(shuffling_mask[opts['plot_num_pics']:])
-        np.random.shuffle(shuffling_mask[opts['plot_num_pics']:])
-        # training set
-        self.data = Data(opts, X[shuffling_mask[:-10000]])
-        # testing set
-        # test_size = 10000 - opts['plot_num_pics']
-        self.test_data = Data(opts, X[shuffling_mask[-10000:-opts['plot_num_pics']]])
-        # vizu set
-        self.vizu_data = Data(opts, X[shuffling_mask[-opts['plot_num_pics']:]])
-        # plot set
-        np.random.seed(456)
-        idx = np.random.randint(0, 10000, 50)
-        # idx = np.arange(100)
-        self.plot_data = Data(opts, X[idx])
-        np.random.seed()
-        # data informations
-        self.data_shape = datashapes[opts['dataset']]
-        self.num_points = len(self.data)
-
-        logging.error('Loading Done.')
 
     def _load_celebA(self, opts):
         """Load CelebA
@@ -638,13 +359,6 @@ class DataHandler(object):
         else:
             logging.error('Loading MNIST')
         data_dir = _data_dir(opts)
-        # pylint: disable=invalid-name
-        # Let us use all the bad variable names!
-        tr_X = None
-        tr_Y = None
-        te_X = None
-        te_Y = None
-
         with gzip.open(os.path.join(data_dir, 'train-images-idx3-ubyte.gz')) as fd:
             fd.read(16)
             loaded = np.frombuffer(fd.read(60000*28*28*1), dtype=np.uint8)
@@ -669,45 +383,35 @@ class DataHandler(object):
         te_Y = np.asarray(te_Y)
 
         X = np.concatenate((tr_X, te_X), axis=0)
-        y = np.concatenate((tr_Y, te_Y), axis=0)
+        Y = np.concatenate((tr_Y, te_Y), axis=0)
         X = X / 255.
 
+        # Creating shuffling mask
         seed = 123
+        shuffling_mask = np.arange(len(Y))
         np.random.seed(seed)
-        np.random.shuffle(X)
-        np.random.seed(seed)
-        np.random.shuffle(y)
+        np.random.shuffle(shuffling_mask)
         np.random.seed()
-
-        self.data_shape = (28, 28, 1)
-        test_size = 10000
-
-        if modified:
-            self.original_mnist = X
-            n = opts['toy_dataset_size']
-            n += test_size
-            points = []
-            labels = []
-            for _ in range(n):
-                idx = np.random.randint(len(X))
-                point = X[idx]
-                modes = ['n', 'i', 'sl', 'sr', 'su', 'sd']
-                mode = modes[np.random.randint(len(modes))]
-                point = transform_mnist(point, mode)
-                points.append(point)
-                labels.append(y[idx])
-            X = np.array(points)
-            y = np.array(y)
-        if opts['train_dataset_size']==-1:
-            self.data = Data(opts, X[:-test_size])
-        else:
-            self.data = Data(opts, X[:opts['train_dataset_size']])
-        self.test_data = Data(opts, X[-test_size:])
-        self.labels = y[:-test_size]
-        self.test_labels = y[-test_size:]
+        np.random.shuffle(shuffling_mask[opts['plot_num_pics']:])
+        self.data_order_idx = np.argsort(shuffling_mask)
+        # training set
+        self.data = Data(opts, X[shuffling_mask[:-10000]])
+        self.labels = Data(opts, Y[shuffling_mask[:-10000]])
+        # testing set
+        # test_size = 10000 - opts['plot_num_pics']
+        self.test_data = Data(opts, X[shuffling_mask[-10000:-opts['plot_num_pics']]])
+        self.test_labels = Data(opts, Y[shuffling_mask[-10000:-opts['plot_num_pics']]])
+        # vizu set
+        self.vizu_data = Data(opts, X[shuffling_mask[-opts['plot_num_pics']:]])
+        self.vizu_labels = Data(opts, Y[shuffling_mask[-opts['plot_num_pics']:]])
+        # plot set
+        idx = np.arange(20)
+        self.plot_data = Data(opts, X[idx])
+        # data informations
+        self.data_shape = datashapes[opts['dataset']]
         self.num_points = len(self.data)
 
-        logging.error('Loading Done: Train size: %d, Test size: %d' % (self.num_points,len(self.test_data)))
+        logging.error('Loading Done.')
 
     def _load_svhn(self, opts):
         """Load data from SVHN files.
