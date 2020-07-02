@@ -196,10 +196,6 @@ def emd(opts, x1, x2):
     Compute entropy-regularization of the Wasserstein distance
     with shinkhorn algorithm
     """
-    # kernel function
-    def M(u,v):
-        "$M_{ij} = (-c_{ij} + u_i + v_j) / \epsilon$"
-        return (-C + tf.expand_dims(u, axis=2) + tf.expand_dims(v, axis=1)) / eps
     # params
     n = opts['batch_size']
     d = x1.get_shape().as_list()[-1]
@@ -212,6 +208,10 @@ def emd(opts, x1, x2):
     x2 /= tf.reduce_sum(x2, axis=-1, keepdims=True)
     # distance matrix
     C = square_dist_emd(x1, x2)
+    # kernel function
+    def M(u,v):
+        "$M_{ij} = (-c_{ij} + u_i + v_j) / \epsilon$"
+        return (-C + tf.expand_dims(u, axis=2) + tf.expand_dims(v, axis=1)) / eps
     # Initialization
     sinkhorn_it = []
     u, v = tf.zeros([n,d]), tf.zeros([n,d])
