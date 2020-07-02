@@ -33,7 +33,7 @@ datashapes = {}
 datashapes['celebA'] = [64, 64, 3]
 datashapes['mnist'] = [28, 28, 1]
 datashapes['svhn'] = [32, 32, 3]
-datashapes['cifar'] = [32, 32, 3]
+datashapes['cifar10'] = [32, 32, 3]
 
 
 def _data_dir(opts):
@@ -304,7 +304,7 @@ class DataHandler(object):
             self._load_mnist(opts)
         elif opts['dataset'] == 'svhn':
             self._load_svhn(opts)
-        elif opts['dataset'] == 'cifar':
+        elif opts['dataset'] == 'cifar10':
             self._load_cifar(opts)
         else:
             raise ValueError('Unknown %s' % opts['dataset'])
@@ -492,124 +492,58 @@ class DataHandler(object):
 
         logging.error('Loading Done: Train size: %d, Test size: %d' % (self.num_points,len(self.test_data)))
 
-    def sample_observations_from_factors(self, dataset, factors):
-        if dataset == 'dsprites':
-            indices = np.dot(factors, self.factor_bases).astype(dtype=np.int32)
-            images, labels = self.sample_from_factor_indices(indices)
-        elif dataset == '3dshapes':
-            indices = np.dot(factors, self.factor_bases).astype(dtype=np.int32)
-            images, labels = self.sample_from_factor_indices(indices)
-        elif dataset == 'smallNORB':
-            feature_state_space_index = np.array(np.dot(self.Y, self.factor_bases), dtype=np.int32)
-            num_total_atoms = np.prod(self.factor_sizes)
-            state_space_to_save_space_index = np.zeros(num_total_atoms, dtype=np.int32)
-            state_space_to_save_space_index[feature_state_space_index] = np.arange(num_total_atoms)
-            state_space_index = np.dot(factors, self.factor_bases).astype(dtype=np.int32)
-            indices = state_space_to_save_space_index[state_space_index]
-            images, labels = self.sample_from_factor_indices(indices)
-        elif dataset == '3Dchairs':
-            assert False, 'to do'
-        elif dataset == 'celebA':
-            assert False, 'to do'
-        elif dataset == 'mnist':
-            assert False, 'to do'
-        elif dataset == 'svhn':
-            assert False, 'to do'
-        else:
-            raise ValueError('Unknown %s' % opts['dataset'])
+    def _load_cifar(self, opts):
+        """Load CIFAR10
 
-        return images, labels
+        """
+        logging.error('Loading CIFAR10 dataset')
 
-    def sample_from_factor_indices(self, indices):
-        indices_to_order = self.data_order_idx[indices]
-        images = np.zeros([len(indices)]+self.data_shape)
-        labels = np.zeros([len(indices),len(self.factor_sizes)])
-        for i, idx in enumerate(list(indices_to_order)):
-            if idx<self.num_points:
-                images[i] = self.data[idx]
-                labels[i] = self.labels[idx]
-            elif idx>=self.num_points and idx<(self.num_points+len(self.test_data)):
-                images[i] = self.test_data[idx-self.num_points]
-                labels[i] = self.test_labels[idx-self.num_points]
-            else:
-                images[i] = self.vizu_data[idx-(self.num_points+len(self.test_data))]
-                labels[i] = self.vizu_labels[idx-(self.num_points+len(self.test_data))]
+        num_train_samples = 50000
+        data_dir = _data_dir(opts)
+        x_train = np.zeros((num_train_samples, 3, 32, 32), dtype='uint8')
+        y_train = np.zeros((num_train_samples,), dtype='uint8')
 
-        return images, labels
+        for i in range(1, 6):
+            fpath = os.path.join(data_dir, 'data_batch_' + str(i))
+            data, labels = load_cifar_batch(fpath)
+            x_train[(i - 1) * 10000: i * 10000, :, :, :] = data
+            y_train[(i - 1) * 10000: i * 10000] = labels
 
+        fpath = os.path.join(data_dir, 'test_batch')
+        x_test, y_test = load_cifar_batch(fpath)
 
-def matrix_type_from_magic(magic_number):
-    """
-    Get matrix data type from magic number
-    See here: https://cs.nyu.edu/~ylclab/data/norb-v1.0-small/readme for details.
-    Parameters
-    ----------
-    magic_number: tuple
-        First 4 bytes read from small NORB files
-    Returns
-    -------
-    element type of the matrix
-    """
-    convention = {'1E3D4C51': 'single precision matrix',
-                  '1E3D4C52': 'packed matrix',
-                  '1E3D4C53': 'double precision matrix',
-                  '1E3D4C54': 'integer matrix',
-                  '1E3D4C55': 'byte matrix',
-                  '1E3D4C56': 'short matrix'}
-    magic_str = bytearray(reversed(magic_number)).hex().upper()
-    return convention[magic_str]
+        y_train = np.reshape(y_train, (len(y_train), 1))
+        y_test = np.reshape(y_test, (len(y_test), 1))
+        x_train = x_train.transpose(0, 2, 3, 1)
+        x_test = x_test.transpose(0, 2, 3, 1)
 
-def _parse_smallNORB_header(file_pointer):
-    """
-    Parse header of small NORB binary file
+        X = np.vstack([x_train, x_test])
+        X = X/255.
+        Y = np.vstack([y_train, y_test])
 
-    Parameters
-    ----------
-    file_pointer: BufferedReader
-        File pointer just opened in a small NORB binary file
-    Returns
-    -------
-    file_header_data: dict
-        Dictionary containing header information
-    """
-    # Read magic number
-    magic = struct.unpack('<BBBB', file_pointer.read(4))  # '<' is little endian)
+        # Creating shuffling mask
+        seed = 123
+        shuffling_mask = np.arange(len(Y))
+        np.random.seed(seed)
+        np.random.shuffle(shuffling_mask)
+        np.random.seed()
+        np.random.shuffle(shuffling_mask[opts['plot_num_pics']:])
+        self.data_order_idx = np.argsort(shuffling_mask)
+        # training set
+        self.data = Data(opts, X[shuffling_mask[:-10000]])
+        self.labels = Data(opts, Y[shuffling_mask[:-10000]])
+        # testing set
+        # test_size = 10000 - opts['plot_num_pics']
+        self.test_data = Data(opts, X[shuffling_mask[-10000:-opts['plot_num_pics']]])
+        self.test_labels = Data(opts, Y[shuffling_mask[-10000:-opts['plot_num_pics']]])
+        # vizu set
+        self.vizu_data = Data(opts, X[shuffling_mask[-opts['plot_num_pics']:]])
+        self.vizu_labels = Data(opts, Y[shuffling_mask[-opts['plot_num_pics']:]])
+        # plot set
+        idx = np.arange(20)
+        self.plot_data = Data(opts, X[idx])
+        # data informations
+        self.data_shape = datashapes[opts['dataset']]
+        self.num_points = len(self.data)
 
-    # Read dimensions
-    dimensions = []
-    num_dims, = struct.unpack('<i', file_pointer.read(4))  # '<' is little endian)
-    for _ in range(num_dims):
-        dimensions.extend(struct.unpack('<i', file_pointer.read(4)))
-
-    file_header_data = {'magic_number': magic,
-                        'matrix_type': matrix_type_from_magic(magic),
-                        'dimensions': dimensions}
-    return file_header_data
-
-def _read_binary_matrix(filename):
-    """Reads and returns binary formatted matrix stored in filename."""
-    with tf.gfile.GFile(filename, "rb") as f:
-        s = f.read()
-        magic = int(np.frombuffer(s, "int32", 1))
-        ndim = int(np.frombuffer(s, "int32", 1, 4))
-        eff_dim = max(3, ndim)
-        raw_dims = np.frombuffer(s, "int32", eff_dim, 8)
-        dims = []
-        for i in range(0, ndim):
-            dims.append(raw_dims[i])
-
-        dtype_map = {507333717: "int8",
-                    507333716: "int32",
-                    507333713: "float",
-                    507333715: "double"}
-        data = np.frombuffer(s, dtype_map[magic], offset=8 + eff_dim * 4)
-    data = data.reshape(tuple(dims))
-    return data
-
-def _resize_images(integer_images):
-    resized_images = np.zeros((integer_images.shape[0], 64, 64))
-    for i in range(integer_images.shape[0]):
-        image = Image.fromarray(integer_images[i, :, :])
-        image = image.resize((64, 64), Image.ANTIALIAS)
-        resized_images[i, :, :] = image
-    return resized_images.astype(np.float32) / 255.
+        logging.error('Loading Done.')

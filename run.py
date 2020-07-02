@@ -70,18 +70,16 @@ net_configs = {'mlp': mlp_config, 'dcgan': dcgan_config}
 def main():
 
     # Select dataset to use
-    if FLAGS.exp == 'dsprites':
-        opts = configs.config_dsprites
-    elif FLAGS.exp == 'smallNORB':
-        opts = configs.config_smallNORB
-    elif FLAGS.exp == '3dshapes':
-        opts = configs.config_3dshapes
-    elif FLAGS.exp == '3Dchairs':
-        opts = configs.config_3Dchairs
+    if FLAGS.exp == 'mnist':
+        opts = configs.config_mnist
     elif FLAGS.exp == 'celebA':
         opts = configs.config_celebA
     elif FLAGS.exp == 'mnist':
         opts = configs.config_mnist
+    elif FLAGS.exp == 'svhn':
+        opts = configs.config_svhn
+    elif FLAGS.exp == 'cifar10':
+        opts = configs.config_cifar10
     else:
         assert False, 'Unknown experiment dataset'
 
@@ -109,7 +107,7 @@ def main():
     elif FLAGS.exp == 'celebA':
         beta = [1, 10, 20, 50, 100, 200, 500]
     else:
-        assert False, 'Unknow {} dataset' % FLAGS.exp
+        beta = [1, 10, 20, 50, 100]
     opts['beta'] = beta[FLAGS.idx-1]
     # Penalty Sigma_q
     opts['pen_enc_sigma'] = FLAGS.sigma_pen=='True'
@@ -146,7 +144,7 @@ def main():
 
     # Experiemnts set up
     opts['epoch_num'] = int(FLAGS.num_it / int(data.num_points/opts['batch_size']))
-    opts['print_every'] = int(opts['epoch_num'] / 10.) * int(data.num_points/opts['batch_size'])-1
+    opts['print_every'] = int(opts['epoch_num'] / 20.) * int(data.num_points/opts['batch_size'])-1
     opts['evaluate_every'] = int(opts['print_every'] / 2.) + 1
     opts['save_every'] = 1000000000
     if FLAGS.vizu_sinkit:

@@ -37,7 +37,6 @@ def mmd_penalty(opts, sample_qz, sample_pz):
     n = tf.cast(n, tf.int32)
     nf = tf.cast(n, tf.float32)
     half_size = tf.cast((n * n - n) / 2, tf.int32)
-
     distances_pz = square_dist(sample_pz, sample_pz)
     distances_qz = square_dist(sample_qz, sample_qz)
     distances = square_dist(sample_qz, sample_pz)
@@ -104,6 +103,18 @@ def square_dist(sample_x, sample_y):
     x = tf.expand_dims(sample_x,axis=1)
     y = tf.expand_dims(sample_y,axis=0)
     squared_dist = tf.reduce_sum(tf.square(x - y),axis=-1)
+    return squared_dist
+
+def square_dist_emd(sample_x, sample_y):
+    """
+    Wrapper 2 to compute square distance on pixel space
+    sample_x [batch,d]
+    sample_y [batch,d]
+    squared_dist [batch,d,d]
+    """
+    x = tf.expand_dims(sample_x,axis=2)
+    y = tf.expand_dims(sample_y,axis=1)
+    squared_dist = tf.square(x - y)
     return squared_dist
 
 
@@ -185,25 +196,30 @@ def emd(opts, x1, x2):
     Compute entropy-regularization of the Wasserstein distance
     with shinkhorn algorithm
     """
-    L = opts['sinkhorn_iterations']
-    eps = opts['sinkhorn_reg']
-    # distance matrix
-    C = square_dist(x1, x2)
     # kernel function
     def M(u,v):
         "$M_{ij} = (-c_{ij} + u_i + v_j) / \epsilon$"
-        return (-C + tf.expand_dims(u, axis=1) + tf.expand_dims(v, axis=0)) / eps
-    # Initialization
+        return (-C + tf.expand_dims(u, axis=2) + tf.expand_dims(v, axis=1)) / eps
+    # params
     n = opts['batch_size']
-    mu = tf.ones(n) / n
-    nu = tf.ones(n) / n
+    d = x1.get_shape().as_list()[-1]
+    mu = tf.ones([n,d]) / d
+    nu = tf.ones([n,d]) / d
+    L = opts['sinkhorn_iterations']
+    eps = opts['sinkhorn_reg']
+    # normailing images
+    x1 /= tf.reduce_sum(x1, axis=-1, keepdims=True)
+    x2 /= tf.reduce_sum(x2, axis=-1, keepdims=True)
+    # distance matrix
+    C = square_dist_emd(x1, x2)
+    # Initialization
     sinkhorn_it = []
-    u, v = tf.zeros(n), tf.zeros(n)
+    u, v = tf.zeros([n,d]), tf.zeros([n,d])
     # Sinkhorn iterations
     for l in range(L):
-        u = eps * (tf.log(mu) - tf.squeeze(tf.math.reduce_logsumexp(M(u,v), axis=1))) + u
-        v = eps * (tf.log(nu) - tf.squeeze(tf.math.reduce_logsumexp(M(u,v), axis=0))) + v
-        sinkhorn_it.append(tf.reduce_sum(tf.exp(M(u,v)) * C))
-    sinkhorn = tf.reduce_sum(tf.exp(M(u,v)) * C)
+        u = eps * (tf.log(mu) - tf.squeeze(tf.math.reduce_logsumexp(M(u,v), axis=2))) + u
+        v = eps * (tf.log(nu) - tf.squeeze(tf.math.reduce_logsumexp(M(u,v), axis=1))) + v
+        sinkhorn_it.append(tf.reduce_mean(tf.reduce_sum(tf.exp(M(u,v)) * C, axis=-1)))
+    sinkhorn = tf.reduce_mean(tf.reduce_sum(tf.exp(M(u,v)) * C, axis=-1))
     sinkhorn_it.append(sinkhorn)
     return sinkhorn, sinkhorn_it
