@@ -85,7 +85,7 @@ config_mnist['MNIST_data_source_url'] = 'http://yann.lecun.com/exdb/mnist/'
 config_mnist['input_normalize_sym'] = False
 
 # Experiment set up
-config_mnist['batch_size'] = 128
+config_mnist['batch_size'] = 100
 config_mnist['epoch_num'] = 101
 config_mnist['model'] = 'WAE' #vae, wae
 config_mnist['use_trained'] = False #train from pre-trained model
