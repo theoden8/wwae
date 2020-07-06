@@ -58,8 +58,8 @@ FLAGS = parser.parse_args()
 
 
 # --- Network architectures
-mlp_config = { 'e_arch': 'mlp' , 'e_nlayers': 2, 'e_nfilters': [2048, 2048], 'e_nonlinearity': 'relu',
-        'd_arch': 'mlp' , 'd_nlayers': 2, 'd_nfilters': [2048, 2048], 'd_nonlinearity': 'relu'}
+mlp_config = { 'e_arch': 'mlp' , 'e_nlayers': 2, 'e_nfilters': [1024, 1024], 'e_nonlinearity': 'relu',
+        'd_arch': 'mlp' , 'd_nlayers': 2, 'd_nfilters': [1024, 1024], 'd_nonlinearity': 'relu'}
 dcgan_config = { 'e_arch': 'dcgan' , 'e_nlayers': 4, 'e_nfilters': [32,64,128,256], 'e_nonlinearity': 'relu',
         'd_arch': 'dcgan' , 'd_nlayers': 4, 'd_nfilters': [32,64,128,256], 'd_nonlinearity': 'relu',
         'filter_size': [4,4,4,4]}
@@ -97,6 +97,8 @@ def main():
         opts['fid'] = False
 
     # Obj set up
+    opts['batch_size'] = 64
+    opts['vizu_sinkhorn'] = False
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
     if FLAGS.sink_reg:
         opts['sinkhorn_reg'] = FLAGS.sink_reg

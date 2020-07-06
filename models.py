@@ -117,7 +117,5 @@ class WAE(Model):
         """
         Compute shinkhorn distance
         """
-        x1 = tf.layers.flatten(x1)
-        x2 = tf.layers.flatten(x2)
         _, sinkhorn_itertions = emd(self.opts, x1, x2)
         return sinkhorn_itertions

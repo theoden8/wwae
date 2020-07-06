@@ -1,7 +1,10 @@
 from math import pi
 import tensorflow as tf
+import numpy as np
 
-import utils
+from utils import get_batch_size
+from ops._ops import logsumexp
+
 
 import pdb
 
@@ -33,7 +36,7 @@ def mmd_penalty(opts, sample_qz, sample_pz):
     """
     sigma2_p = opts['pz_scale'] ** 2
     kernel = opts['mmd_kernel']
-    n = utils.get_batch_size(sample_qz)
+    n = get_batch_size(sample_qz)
     n = tf.cast(n, tf.int32)
     nf = tf.cast(n, tf.float32)
     half_size = tf.cast((n * n - n) / 2, tf.int32)
@@ -105,17 +108,14 @@ def square_dist(sample_x, sample_y):
     squared_dist = tf.reduce_sum(tf.square(x - y),axis=-1)
     return squared_dist
 
-def square_dist_emd(sample_x, sample_y):
+def square_dist_emd(x1, x2):
     """
-    Wrapper 2 to compute square distance on pixel space
-    sample_x [batch,d]
-    sample_y [batch,d]
-    squared_dist [batch,d,d]
+    Wrapper 2 to compute square distance on pixel idx
+    x1,2:[batch,w,h,c]: input images
+    squared_dist[batch,w,h,w,h,c]: squared_dist[:,i,j,k,l,:] = x1[:,i,j,:]-x2[:,k,l,:]^2
     """
-    x = tf.expand_dims(sample_x,axis=2)
-    y = tf.expand_dims(sample_y,axis=1)
-    squared_dist = tf.square(x - y)
-    return squared_dist
+    squared_dist = tf.expand_dims(x1,axis=2)-tf.expand_dims(x2,axis=1)
+    return tf.square(squared_dist)
 
 
 def ground_cost(opts, x1, x2):
@@ -124,9 +124,9 @@ def ground_cost(opts, x1, x2):
     x1: image data             [batch,im_dim]
     x2: image reconstruction   [batch,im_dim]
     """
-    # Flatten last dim input
-    x1 = tf.layers.flatten(x1)
-    x2 = tf.layers.flatten(x2)
+    # # Flatten last dim input
+    # x1 = tf.layers.flatten(x1)
+    # x2 = tf.layers.flatten(x2)
     # Compute chosen cost
     if opts['cost'] == 'l2':
         cost = l2_cost(x1, x2)
@@ -145,26 +145,26 @@ def ground_cost(opts, x1, x2):
 
 def l2_cost(x1, x2):
     # c(x,y) = ||x - y||_2
-    cost = tf.reduce_sum(tf.square(x1 - x2), axis=-1)
+    cost = tf.reduce_sum(tf.square(x1 - x2), axis=[-3,-2,-1])
     cost = tf.sqrt(1e-10 + cost)
     return tf.reduce_mean(cost)
 
 
 def l2sq_cost(x1,x2):
     # c(x,y) = sum_i(||x - y||_2^2[:,i])
-    cost = tf.reduce_sum(tf.square(x1 - x2), axis=-1)
+    cost = tf.reduce_sum(tf.square(x1 - x2), axis=[-3,-2,-1])
     return tf.reduce_mean(cost)
 
 
 def l2sq_norm_cost(x1, x2):
     # c(x,y) = mean_i(||x - y||_2^2[:,i])
-    cost = tf.reduce_mean(tf.square(x1 - x2), axis=-1)
+    cost = tf.reduce_mean(tf.square(x1 - x2), axis=[-3,-2,-1])
     return tf.reduce_mean(cost)
 
 
 def l1_cost(x1, x2):
     # c(x,y) = ||x - y||_1
-    cost = tf.reduce_sum(tf.abs(x1 - x2), axis=-1)
+    cost = tf.reduce_sum(tf.abs(x1 - x2), axis=[-3,-2,-1])
     return tf.reduce_mean(cost)
 
 
@@ -198,28 +198,32 @@ def emd(opts, x1, x2):
     """
     # params
     n = opts['batch_size']
-    d = x1.get_shape().as_list()[-1]
-    mu = tf.ones([n,d]) / d
-    nu = tf.ones([n,d]) / d
+    shape = x1.get_shape().as_list()[1:]
+    mu = tf.ones([shape[0]*shape[1],shape[-1]]) / np.prod(shape[:-1])
+    nu = tf.ones([shape[0]*shape[1],shape[-1]]) / np.prod(shape[:-1])
     L = opts['sinkhorn_iterations']
     eps = opts['sinkhorn_reg']
     # normailing images
-    x1 /= tf.reduce_sum(x1, axis=-1, keepdims=True)
-    x2 /= tf.reduce_sum(x2, axis=-1, keepdims=True)
+    x1 /= tf.reduce_sum(x1, axis=[1,2], keepdims=True)
+    x1 = tf.reshape(x1, [-1,shape[0]*shape[1], shape[-1]])
+    x2 /= tf.reduce_sum(x2, axis=[1,2], keepdims=True)
+    x2 = tf.reshape(x2, [-1,shape[0]*shape[1], shape[-1]])
     # distance matrix
     C = square_dist_emd(x1, x2)
     # kernel function
-    def M(u,v):
+    def M(a,b):
         "$M_{ij} = (-c_{ij} + u_i + v_j) / \epsilon$"
-        return (-C + tf.expand_dims(u, axis=2) + tf.expand_dims(v, axis=1)) / eps
+        a = tf.expand_dims(a, axis=2)
+        b = tf.expand_dims(b, axis=1)
+        return (-C + a + b) / eps
     # Initialization
     sinkhorn_it = []
-    u, v = tf.zeros([n,d]), tf.zeros([n,d])
+    u, v = tf.zeros([n,shape[0]*shape[1],shape[-1]]), tf.zeros([n,shape[0]*shape[1],shape[-1]])
     # Sinkhorn iterations
     for l in range(L):
-        u = eps * (tf.log(mu) - tf.squeeze(tf.math.reduce_logsumexp(M(u,v), axis=2))) + u
-        v = eps * (tf.log(nu) - tf.squeeze(tf.math.reduce_logsumexp(M(u,v), axis=1))) + v
-        sinkhorn_it.append(tf.reduce_mean(tf.reduce_sum(tf.exp(M(u,v)) * C, axis=-1)))
-    sinkhorn = tf.reduce_mean(tf.reduce_sum(tf.exp(M(u,v)) * C, axis=-1))
+        u = eps * (tf.log(mu) - logsumexp(M(u,v), axis=2, keepdims=False)) + u
+        v = eps * (tf.log(nu) - logsumexp(M(u,v), axis=1, keepdims=False)) + v
+        sinkhorn_it.append(tf.reduce_mean(tf.reduce_sum(tf.exp(M(u,v)) * C, axis=[-3,-2,-1])))
+    sinkhorn = tf.reduce_mean(tf.reduce_sum(tf.exp(M(u,v)) * C, axis=[-3,-2,-1]))
     sinkhorn_it.append(sinkhorn)
     return sinkhorn, sinkhorn_it

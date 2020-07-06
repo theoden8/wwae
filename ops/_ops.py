@@ -34,7 +34,7 @@ def downsample(input_, d_h=2, d_w=2, conv_filters_dim=None, scope=None, reuse=No
     return result
 
 def logsumexp(logits,axis=1,keepdims=True):
-    eps = 1e-06
+    eps = 1e-10
     tmp = tf.reduce_sum(tf.exp(logits),axis=axis,keepdims=keepdims)
     return tf.log(tmp + eps)
 
