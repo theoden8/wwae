@@ -2,9 +2,9 @@ import numpy as np
 import torch
 
 def projection(X,L):
-    """This function takes as imput a batch of images, i.e. a tensor of size
+    '''This function takes as imput a batch of images, i.e. a tensor of size
     (B,C,N,N), and returns a ....
-    """
+    '''
     B = X.size(0)
     C = X.size(1)
     N = X.size(-1)
@@ -27,4 +27,13 @@ def projection(X,L):
     return X_proj
 
 
-    
+    def inverse_cdf(X_proj):
+        ''' Takes as input a tensor of size (L,B,C,N**2,2) corresponding to
+        sliced images. In X_proj, the last two dims correspond to the values of
+        the Diracs and the positions. For the inverse cdf we just have to
+        permute them I think.
+        '''
+        x1 = X_proj[...,0]
+        x2 = X_proj[...,1]
+
+        return torch.stack((x2, x1), dim=-1)
