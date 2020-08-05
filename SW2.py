@@ -30,11 +30,10 @@ def projection(X,L):
     def inverse_cdf(X_proj):
         ''' Takes as input a tensor of size (L,B,C,N**2,2) corresponding to
         sliced images. In X_proj, the last two dims correspond to the values of
-        the Diracs and the positions. For the inverse cdf we just have to
-        permute them, and change the weights to cumultaive weights I think.
+        the Diracs and the respective positions. For the inverse cdf have to
+        sort, permute, and take the cumulative sum.
         '''
-        x1 = X_proj[...,0]
-        x2 = X_proj[...,1]
+
 
         ...
 
