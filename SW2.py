@@ -34,6 +34,10 @@ def projection(X,L):
         sort, permute, and take the cumulative sum.
         '''
 
+        N2 = X_proj.size(-2)
+        cum_sum_matrix = torch.flip(torch.triu(torch.ones(N2,N2)), (0,1))  # (N^2,N^2)
+
+        X_p_sorted = torch.sort(X_proj, dim=-1)  # # (L,B,C,N**2,2)
 
         ...
 
