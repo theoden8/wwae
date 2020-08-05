@@ -31,9 +31,18 @@ def projection(X,L):
         ''' Takes as input a tensor of size (L,B,C,N**2,2) corresponding to
         sliced images. In X_proj, the last two dims correspond to the values of
         the Diracs and the positions. For the inverse cdf we just have to
-        permute them I think.
+        permute them, and change the weights to cumultaive weights I think.
         '''
         x1 = X_proj[...,0]
         x2 = X_proj[...,1]
 
-        return torch.stack((x2, x1), dim=-1)
+        ...
+
+
+    def sw (X, Y, L):
+        ''' This function takes as input two batches of images, and returns
+        the batch sliced wasserstein distance between them
+        '''
+
+        X_icdf = inverse_cdf(projection(X))  # (L,B,C,N**2,2)
+        Y_icdf = inverse_cdf(projection(Y))  # (L,B,C,N**2,2)
