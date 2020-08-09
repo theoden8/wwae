@@ -64,17 +64,24 @@ def projection(X,L):
         '''
         (B,C,N) = X[...,0].size()
 
+
+        # At last dim, we add a new col. of +1/-1 for substraction
         X_icdf = inverse_cdf(projection(X))  # (L,B,C,N**2,2)
         X_icdf = torch.cat((X_icdf, torch.ones(L,B,C,N**2,1)), dim=-1)
         Y_icdf = inverse_cdf(projection(Y))  # (L,B,C,N**2,2)
         Y_icdf = torch.cat((Y_icdf, -torch.ones(L,B,C,N**2,1)), dim=-1)
 
+        # We concatenate and take sorting indedices
         concat = torch.cat((X_icdf, Y_icdf), dim=-2)
         indices = torch.argsort(concat[...,1], dim=-1)
 
-        diff0 = torch.index_select(concat[...,0], -1, indices)
+        # Ordered cumsum of weights
+        diff0 = torch.index_select(concat[...,1], -1, indices)
 
+        # Ordered times
         diff1 = torch.index_select(concat[...,1], -1, indices)
+
+        # We take the time lapses to reintegrate with coeff +1/-1
         z= torch.cat((torch.zeros(L,B,C,1), diff1[...,:-1]), dim=-1)
         diff1_ = (diff1 - z)*torch.index_select(concat[...,2], -1, indices)
 
