@@ -29,30 +29,61 @@ def projection(X,L):
 
     def inverse_cdf(X_proj):
         ''' Takes as input a tensor of size (L,B,C,N**2,2) corresponding to
-        sliced images. In X_proj, the last two dims correspond to the values of
-        the Diracs and the respective positions. For the inverse cdf have to
-        sort, permute, and take the cumulative sum.
+        sliced images. In X_proj, the last two dims correspond to the weights of
+        the Diracs and the respective positions.
         '''
 
-        (L,B,C,N2) = X_proj[...0].size()
+        (L,B,C,N2) = X_proj[...,0].size()
 
+        # We build a triangular matrix to transform the weights to the
+        # cumulative sum of weights
         cum_sum_mat = torch.flip(torch.triu(torch.ones(N2,N2)), (0,1))  # (N^2,N2)
         cum_sum_mat = cum_sum_mat.unsqueeze(0).unsqueeze(0).unsqueeze(0)
 
+        # We take the indices of ordered pixels positions
         X_p_sorted_indices = torch.argsort(X_proj[...,1])  # (L,B,C,N**2)
 
+        # We sort the weights and take the cum. sum
         x_ = torch.index_select(X_proj[...,0], -1, X_p_sorted_indices)
-        x = torch.matmul(cum_sum_mat, x_.unsqueeze(-1)).view(L,B,C,N2)
+        x = torch.matmul(cum_sum_mat, x_.unsqueeze(-2)).view(L,B,C,N2)
+
+        # We sort the pixel positions
         y = torch.index_select(X_proj[...,1], -1, X_p_sorted_indices)
-        X_p_sorted = torch.cat((x,y), dim=-1)
+
+        # Last dim: ordered pix. positions and respective cumsum of weights
+        X_p_sorted = torch.cat((y, x), dim=-1)
 
         return X_p_sorted
 
 
     def sw (X, Y, L):
         ''' This function takes as input two batches of images, and returns
-        the batch sliced wasserstein distance between them
+        the batch sliced wasserstein distance between them. We concatenate
+        the icdf of X and Y, take the indexes of the sorted cumsum concatenation
+        and ...
         '''
+        (B,C,N) = X[...,0].size()
 
         X_icdf = inverse_cdf(projection(X))  # (L,B,C,N**2,2)
+        X_icdf = torch.cat((X_icdf, torch.ones(L,B,C,N**2,1)), dim=-1)
         Y_icdf = inverse_cdf(projection(Y))  # (L,B,C,N**2,2)
+        Y_icdf = torch.cat((Y_icdf, -torch.ones(L,B,C,N**2,1)), dim=-1)
+
+        concat = torch.cat((X_icdf, Y_icdf), dim=-2)
+        indices = torch.argsort(concat[...,1], dim=-1)
+
+        diff0 = torch.index_select(concat[...,0], -1, indices)
+
+        diff1 = torch.index_select(concat[...,1], -1, indices)
+        z= torch.cat((torch.zeros(L,B,C,1), diff1[...,:-1]), dim=-1)
+        diff1_ = (diff1 - z)*torch.index_select(concat[...,2], -1, indices)
+
+        cum_sum_mat = torch.flip(torch.triu(torch.ones(N2,N2)), (0,1))  # (N^2,N2)
+        cum_sum_mat = cum_sum_mat.unsqueeze(0).unsqueeze(0).unsqueeze(0)
+
+        diff1 = torch.matmul(cum_sum_mat, diff1_.unsqueeze(-2)).view(L,B,C,N**2)
+
+
+        diff = (diff0*diff1*diff1).sum(dim=-1).mean(dim=0)
+
+        return diff
