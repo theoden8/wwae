@@ -71,7 +71,7 @@ def projection(X,L):
         Y_icdf = inverse_cdf(projection(Y))  # (L,B,C,N**2,2)
         Y_icdf = torch.cat((Y_icdf, -torch.ones(L,B,C,N**2,1)), dim=-1)
 
-        # We concatenate and take sorting indedices
+        # We concatenate and take sorting indices
         concat = torch.cat((X_icdf, Y_icdf), dim=-2)
         indices = torch.argsort(concat[...,1], dim=-1)
 
