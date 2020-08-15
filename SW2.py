@@ -75,6 +75,23 @@ def projection(X,L):
         concat = torch.cat((X_icdf, Y_icdf), dim=-2)
         indices = torch.argsort(concat[...,1], dim=-1)
 
+
+        ##############
+        ### benoit ###
+        # get ordered cum_sum of X_i (called Ti in overleaf) and add 1 for last Ti
+        Ti = torch.index_select(concat[...,1], -1, indices)
+        Ti = torch.cat((Ti, torch.ones(L,B,C,1)), axis=-1)
+        # get order jumps (called wi in overleaf)
+        wi = torch.index_select(concat[...,0], -1, indices)
+        # get ordered coefs +1/-1
+        coef = torch.index_select(concat[...,-1], -1, indices)
+        # get square diff of icdf
+        diff = torch.cum_sum(wi*coef,axis=-1)
+        square_diff = diff*diff * (Ti[1:] - Ti[:-1])
+        # SW
+        sw = square_diff.sum(dim=-1).mean(dim=0)
+        ##############
+
         # Ordered cumsum of weights
         diff0 = torch.index_select(concat[...,1], -1, indices)
 
