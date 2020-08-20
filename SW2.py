@@ -96,7 +96,7 @@ def projection(X,L):
         diff0 = torch.index_select(concat[...,1], -1, indices)
 
         # Ordered times
-        diff1 = torch.index_select(concat[...,1], -1, indices)
+        diff1 = torch.index_select(concat[...,0], -1, indices)
 
         # We take the time lapses to reintegrate with coeff +1/-1
         z= torch.cat((torch.zeros(L,B,C,1), diff1[...,:-1]), dim=-1)
