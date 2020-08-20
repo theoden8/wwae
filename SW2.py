@@ -66,9 +66,9 @@ def sw (X, Y, L):
 
 
     # At last dim, we add a new col. of +1/-1 for substraction
-    X_icdf = inverse_cdf(projection(X))  # (L,B,C,N**2,2)
+    X_icdf = inverse_cdf(projection(X, L))  # (L,B,C,N**2,2)
     X_icdf = torch.cat((X_icdf, torch.ones(L,B,C,N**2,1)), dim=-1)  # (L,B,C,N**2,3)
-    Y_icdf = inverse_cdf(projection(Y))  # (L,B,C,N**2,2)
+    Y_icdf = inverse_cdf(projection(Y, L))  # (L,B,C,N**2,2)
     Y_icdf = torch.cat((Y_icdf, -torch.ones(L,B,C,N**2,1)), dim=-1) # (L,B,C,N**2,3)
 
     # We concatenate and take sorting indices
