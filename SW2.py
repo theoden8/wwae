@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import math
+import matplotlib.pyplot as plt
 
 def projection(X,L):
     '''This function takes as imput a batch of images, i.e. a tensor of size
@@ -55,6 +56,7 @@ def inverse_cdf(X_proj):
 
     # Last dim: ordered pix. positions and respective cumsum of weights
     X_p_sorted = torch.stack((y, x), dim=-1)
+    #plt.plot(X_p_sorted[0,0,0,:,1]); plt.show()
 
     return X_p_sorted
 
@@ -98,16 +100,18 @@ def sw (X, Y, L):
 
     square_diff = (Ti[...,1:] - Ti[...,:-1])  *diff*diff
     # SW
-    sw = square_diff.sum(dim=-1).mean(dim=0)
+    sw = square_diff.mean(dim=-1).mean(dim=0)
     ##############
 
     # Ordered cumsum of weights
     diff_w = torch.index_select(concat[...,1].view(-1), -1, indices)  # (L,B,C,2N^2)
     diff_w = diff_w.view(L,B,C,-1)
 
+
     # Ordered times
     diff_p = torch.index_select(concat[...,0].view(-1), -1, indices)  # (L,B,C,2N^2)
     diff_p = diff_p.view(L,B,C,-1)
+    #plt.plot(diff_p[0,0,0,:]); plt.show()
 
     # We take the time lapses (posistions) to reintegrate with coeff +1/-1
     z= torch.cat((torch.zeros(L,B,C,1), diff_p[...,:-1]), dim=-1)  # (L,B,C,2N^2)
@@ -119,10 +123,13 @@ def sw (X, Y, L):
     #cum_sum_mat = cum_sum_mat.unsqueeze(0).unsqueeze(0).unsqueeze(0)
     #diff1 = torch.matmul(cum_sum_mat, diff_p_.unsqueeze(-2)).view(L,B,C,N**2)
 
-    diff_p = torch.cumsum(diff_p_, dim=-1)  # (L,B,C,2N^2)
+    diff_p = torch.cumsum(diff_p_, dim=-1)/N/N  # (L,B,C,2N^2)
+    plt.plot(diff_p[0,0,0,:]); plt.show()
 
 
-    diff = (diff_w*diff_p*diff_p).sum(dim=-1).mean(dim=0)  # (B,C)
+    diff = (diff_w*diff_p*diff_p)  # (L,B,C,2N^2)
+    #plt.plot(diff[0,0,0,:]); plt.show()
+    diff = diff.sum(dim=-1).mean(dim=0)  # (B,C)
 
     return diff, sw
 
@@ -139,6 +146,6 @@ X[:,:,0,0] = 1
 Y = torch.zeros(1,1,128,128)
 Y[:,:,0,1] = 1
 
-diff, sw = sw(X,Y,4)
+diff, sw = sw(X,Y,1)
 
 print(diff, sw)
