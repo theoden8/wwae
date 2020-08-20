@@ -111,4 +111,4 @@ def projection(X,L):
 
         diff = (diff0*diff1*diff1).sum(dim=-1).mean(dim=0)  # (B,C)
 
-        return diff
+        return diff, sw
