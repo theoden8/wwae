@@ -3,6 +3,7 @@
 * SW implementation
   * Check benoit/antoine versions match
   * Check if either version is actually correct
+    * Possible test: images with one pixel with value 1, and 0 elsewere
   * Convert into tf code and merge with code base
 * Implement ResNet
   * check state-of-the-art or benchmark networks

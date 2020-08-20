@@ -67,47 +67,48 @@ def projection(X,L):
 
         # At last dim, we add a new col. of +1/-1 for substraction
         X_icdf = inverse_cdf(projection(X))  # (L,B,C,N**2,2)
-        X_icdf = torch.cat((X_icdf, torch.ones(L,B,C,N**2,1)), dim=-1)
+        X_icdf = torch.cat((X_icdf, torch.ones(L,B,C,N**2,1)), dim=-1)  # (L,B,C,N**2,3)
         Y_icdf = inverse_cdf(projection(Y))  # (L,B,C,N**2,2)
-        Y_icdf = torch.cat((Y_icdf, -torch.ones(L,B,C,N**2,1)), dim=-1)
+        Y_icdf = torch.cat((Y_icdf, -torch.ones(L,B,C,N**2,1)), dim=-1) # (L,B,C,N**2,3)
 
         # We concatenate and take sorting indices
-        concat = torch.cat((X_icdf, Y_icdf), dim=-2)
-        indices = torch.argsort(concat[...,1], dim=-1)
+        concat = torch.cat((X_icdf, Y_icdf), dim=-2)  # (L,B,C,2N^2,3)
+        indices = torch.argsort(concat[...,1], dim=-1)  # (L,B,C,2N^2)
 
 
         ##############
         ### benoit ###
         # get ordered cum_sum of X_i (called Ti in overleaf) and add 1 for last Ti
         Ti = torch.index_select(concat[...,1], -1, indices)
-        Ti = torch.cat((Ti, torch.ones(L,B,C,1)), axis=-1)
+        Ti = torch.cat((Ti, torch.ones(L,B,C,1)), dim=-1)
         # get order jumps (called wi in overleaf)
         wi = torch.index_select(concat[...,0], -1, indices)
         # get ordered coefs +1/-1
         coef = torch.index_select(concat[...,-1], -1, indices)
         # get square diff of icdf
-        diff = torch.cum_sum(wi*coef,axis=-1)
+        diff = torch.cumsum(wi*coef,dim=-1)
         square_diff = diff*diff * (Ti[1:] - Ti[:-1])
         # SW
         sw = square_diff.sum(dim=-1).mean(dim=0)
         ##############
 
         # Ordered cumsum of weights
-        diff0 = torch.index_select(concat[...,1], -1, indices)
+        diff_w = torch.index_select(concat[...,1], -1, indices)  # (L,B,C,2N^2)
 
         # Ordered times
-        diff1 = torch.index_select(concat[...,0], -1, indices)
+        diff_p = torch.index_select(concat[...,0], -1, indices)  # (L,B,C,2N^2)
 
-        # We take the time lapses to reintegrate with coeff +1/-1
-        z= torch.cat((torch.zeros(L,B,C,1), diff1[...,:-1]), dim=-1)
-        diff1_ = (diff1 - z)*torch.index_select(concat[...,2], -1, indices)
+        # We take the time lapses (posistions) to reintegrate with coeff +1/-1
+        z= torch.cat((torch.zeros(L,B,C,1), diff_p[...,:-1]), dim=-1)  # (L,B,C,2N^2)
+        diff_p_ = (diff_p - z)*torch.index_select(concat[...,2], -1, indices)  # (L,B,C,2N^2)
 
-        cum_sum_mat = torch.flip(torch.triu(torch.ones(N2,N2)), (0,1))  # (N^2,N2)
-        cum_sum_mat = cum_sum_mat.unsqueeze(0).unsqueeze(0).unsqueeze(0)
+        #cum_sum_mat = torch.flip(torch.triu(torch.ones(N2,N2)), (0,1))  # (N^2,N2)
+        #cum_sum_mat = cum_sum_mat.unsqueeze(0).unsqueeze(0).unsqueeze(0)
+        #diff1 = torch.matmul(cum_sum_mat, diff_p_.unsqueeze(-2)).view(L,B,C,N**2)
 
-        diff1 = torch.matmul(cum_sum_mat, diff1_.unsqueeze(-2)).view(L,B,C,N**2)
+        diff_p = torch.cumsum(diff_p_, dim=-1)  # (L,B,C,2N^2)
 
 
-        diff = (diff0*diff1*diff1).sum(dim=-1).mean(dim=0)
+        diff = (diff0*diff1*diff1).sum(dim=-1).mean(dim=0)  # (B,C)
 
         return diff
