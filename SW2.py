@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import math
 
 def projection(X,L):
     '''This function takes as imput a batch of images, i.e. a tensor of size
@@ -11,7 +12,7 @@ def projection(X,L):
 
     a = torch.arange(N).repeat(N)  # (N**2)
     b = torch.arange(N).repeat_interleave(N)  # (N**2)
-    coord = torch.stack((a, b), dim=0)  # (2,N**2)
+    coord = torch.stack((a, b), dim=0).type(torch.float)  # (2,N**2)
 
     thetas = torch.arange(L)/L*2*np.pi  #  (L), may change to random directions, or learn them
     proj = torch.stack((torch.cos(thetas), torch.sin(thetas)), dim=1)  # (L,2)
@@ -34,24 +35,26 @@ def inverse_cdf(X_proj):
     '''
 
     (L,B,C,N2) = X_proj[...,0].size()
+    N = int(math.sqrt(N2))
 
-    # We build a triangular matrix to transform the weights to the
-    # cumulative sum of weights
-    cum_sum_mat = torch.flip(torch.triu(torch.ones(N2,N2)), (0,1))  # (N^2,N2)
-    cum_sum_mat = cum_sum_mat.unsqueeze(0).unsqueeze(0).unsqueeze(0)
 
     # We take the indices of ordered pixels positions
-    X_p_sorted_indices = torch.argsort(X_proj[...,1])  # (L,B,C,N**2)
+    X_p_sorted_indices = torch.argsort(X_proj[...,1])  # (L,B,C,N^2)
+    X_p_sorted_indices = X_p_sorted_indices.view(-1)  # (L*B*C*N^2)
+    flat_order = torch.arange(L*B*C).repeat_interleave(N*N)*N*N
+    X_p_sorted_indices = X_p_sorted_indices+flat_order
 
     # We sort the weights and take the cum. sum
-    x_ = torch.index_select(X_proj[...,0], -1, X_p_sorted_indices)
-    x = torch.matmul(cum_sum_mat, x_.unsqueeze(-2)).view(L,B,C,N2)
+    x_ = torch.index_select(X_proj[...,0].view(-1), -1, X_p_sorted_indices)
+    #x = torch.matmul(cum_sum_mat, x_.unsqueeze(-2)).view(L,B,C,N2)
+    x = torch.cumsum(x_.view(L,B,C,N**2), dim=-1)
 
     # We sort the pixel positions
-    y = torch.index_select(X_proj[...,1], -1, X_p_sorted_indices)
+    y = torch.index_select(X_proj[...,1].view(-1), -1, X_p_sorted_indices)
+    y = y.view(L,B,C,N**2)
 
     # Last dim: ordered pix. positions and respective cumsum of weights
-    X_p_sorted = torch.cat((y, x), dim=-1)
+    X_p_sorted = torch.stack((y, x), dim=-1)
 
     return X_p_sorted
 
@@ -73,34 +76,44 @@ def sw (X, Y, L):
 
     # We concatenate and take sorting indices
     concat = torch.cat((X_icdf, Y_icdf), dim=-2)  # (L,B,C,2N^2,3)
-    indices = torch.argsort(concat[...,1], dim=-1)  # (L,B,C,2N^2)
+    indices = torch.argsort(concat[...,1], dim=-1).view(-1)  # (L*B*C*2N^2)
+    flat_order = torch.arange(L*B*C).repeat_interleave(2*N*N)*2*N*N
+    indices = indices+flat_order
 
 
     ##############
     ### benoit ###
     # get ordered cum_sum of X_i (called Ti in overleaf) and add 1 for last Ti
-    Ti = torch.index_select(concat[...,1], -1, indices)
+    Ti = torch.index_select(concat[...,1].view(-1), -1, indices)
+    Ti = Ti.view(L,B,C,-1)
     Ti = torch.cat((Ti, torch.ones(L,B,C,1)), dim=-1)
     # get order jumps (called wi in overleaf)
-    wi = torch.index_select(concat[...,0], -1, indices)
+    wi = torch.index_select(concat[...,0].view(-1), -1, indices)
+    wi = wi.view(L,B,C,-1)
     # get ordered coefs +1/-1
-    coef = torch.index_select(concat[...,-1], -1, indices)
+    coef = torch.index_select(concat[...,-1].view(-1), -1, indices)
+    coef = coef.view(L,B,C,-1)
     # get square diff of icdf
     diff = torch.cumsum(wi*coef,dim=-1)
-    square_diff = diff*diff * (Ti[1:] - Ti[:-1])
+
+    square_diff = (Ti[...,1:] - Ti[...,:-1])  *diff*diff
     # SW
     sw = square_diff.sum(dim=-1).mean(dim=0)
     ##############
 
     # Ordered cumsum of weights
-    diff_w = torch.index_select(concat[...,1], -1, indices)  # (L,B,C,2N^2)
+    diff_w = torch.index_select(concat[...,1].view(-1), -1, indices)  # (L,B,C,2N^2)
+    diff_w = diff_w.view(L,B,C,-1)
 
     # Ordered times
-    diff_p = torch.index_select(concat[...,0], -1, indices)  # (L,B,C,2N^2)
+    diff_p = torch.index_select(concat[...,0].view(-1), -1, indices)  # (L,B,C,2N^2)
+    diff_p = diff_p.view(L,B,C,-1)
 
     # We take the time lapses (posistions) to reintegrate with coeff +1/-1
     z= torch.cat((torch.zeros(L,B,C,1), diff_p[...,:-1]), dim=-1)  # (L,B,C,2N^2)
-    diff_p_ = (diff_p - z)*torch.index_select(concat[...,2], -1, indices)  # (L,B,C,2N^2)
+    plus_minus = torch.index_select(concat[...,2].view(-1), -1, indices)
+    plus_minus = plus_minus.view(L,B,C,-1)
+    diff_p_ = (diff_p - z)*plus_minus  # (L,B,C,2N^2)
 
     #cum_sum_mat = torch.flip(torch.triu(torch.ones(N2,N2)), (0,1))  # (N^2,N2)
     #cum_sum_mat = cum_sum_mat.unsqueeze(0).unsqueeze(0).unsqueeze(0)
@@ -109,7 +122,7 @@ def sw (X, Y, L):
     diff_p = torch.cumsum(diff_p_, dim=-1)  # (L,B,C,2N^2)
 
 
-    diff = (diff0*diff1*diff1).sum(dim=-1).mean(dim=0)  # (B,C)
+    diff = (diff_w*diff_p*diff_p).sum(dim=-1).mean(dim=0)  # (B,C)
 
     return diff, sw
 
