@@ -1,6 +1,7 @@
 from math import pi
 import tensorflow as tf
 import numpy as np
+import math as m
 
 from utils import get_batch_size
 from ops._ops import logsumexp
@@ -8,6 +9,7 @@ from ops._ops import logsumexp
 
 import pdb
 
+######### latent losses #########
 def kl_penalty(pz_mean, pz_sigma, encoded_mean, encoded_sigma):
     """
     Compute KL divergence between prior and variational distribution
@@ -28,7 +30,6 @@ def cross_entropy_loss(opts, inputs, dec_mean, dec_Sigma):
     else:
         assert False, 'Cross entropy not implemented for {} decoder' % opts['decoder']
     return tf.reduce_mean(cross_entropy)
-
 
 def mmd_penalty(opts, sample_qz, sample_pz):
     """
@@ -86,19 +87,6 @@ def mmd_penalty(opts, sample_qz, sample_pz):
 
     return stat
 
-
-def square_dist_v0(sample_x, sample_y):
-    """
-    Wrapper to compute square distance
-    """
-    norms_x = tf.reduce_sum(tf.square(sample_x), axis=-1, keepdims=True)
-    norms_y = tf.reduce_sum(tf.square(sample_y), axis=-1, keepdims=True)
-
-    squared_dist = norms_x + tf.transpose(norms_y) \
-                    - 2. * tf.matmul(sample_x,sample_y,transpose_b=True)
-    return tf.nn.relu(squared_dist)
-
-
 def square_dist(sample_x, sample_y):
     """
     Wrapper 2 to compute square distance
@@ -108,16 +96,8 @@ def square_dist(sample_x, sample_y):
     squared_dist = tf.reduce_sum(tf.square(x - y),axis=-1)
     return squared_dist
 
-def square_dist_emd(x1, x2):
-    """
-    Wrapper 2 to compute square distance on pixel idx
-    x1,2:[batch,w,h,c]: input images
-    squared_dist[batch,w,h,w,h,c]: squared_dist[:,i,j,k,l,:] = x1[:,i,j,:]-x2[:,k,l,:]^2
-    """
-    squared_dist = tf.expand_dims(x1,axis=2)-tf.expand_dims(x2,axis=1)
-    return tf.square(squared_dist)
 
-
+######### rec losses #########
 def ground_cost(opts, x1, x2):
     """
     Compute the WAE's ground cost
@@ -142,54 +122,26 @@ def ground_cost(opts, x1, x2):
         assert False, 'Unknown cost function %s' % opts['cost']
     return cost
 
-
 def l2_cost(x1, x2):
     # c(x,y) = ||x - y||_2
     cost = tf.reduce_sum(tf.square(x1 - x2), axis=[-3,-2,-1])
     cost = tf.sqrt(1e-10 + cost)
     return tf.reduce_mean(cost)
 
-
 def l2sq_cost(x1,x2):
     # c(x,y) = sum_i(||x - y||_2^2[:,i])
     cost = tf.reduce_sum(tf.square(x1 - x2), axis=[-3,-2,-1])
     return tf.reduce_mean(cost)
-
 
 def l2sq_norm_cost(x1, x2):
     # c(x,y) = mean_i(||x - y||_2^2[:,i])
     cost = tf.reduce_mean(tf.square(x1 - x2), axis=[-3,-2,-1])
     return tf.reduce_mean(cost)
 
-
 def l1_cost(x1, x2):
     # c(x,y) = ||x - y||_1
     cost = tf.reduce_sum(tf.abs(x1 - x2), axis=[-3,-2,-1])
     return tf.reduce_mean(cost)
-
-
-def emd_v0(opts, x1, x2):
-    """
-    Compute entropy-regularization of the Wasserstein distance
-    with shinkhorn algorithm
-    """
-    L = opts['sinkhorn_iterations']
-    eps = opts['sinkhorn_reg']
-    C = square_dist_v2(x1, x2)
-    # Kernel
-    log_K = - C / eps
-    # Initialization
-    sinkhorn_it = []
-    log_v = - tf.math.reduce_logsumexp(log_K, axis=1, keepdims=True)
-    # Sinkhorn iterations
-    for l in range(L-1):
-        log_u = - tf.math.reduce_logsumexp(log_K + log_v, axis=0, keepdims=True)
-        sinkhorn_it.append(tf.reduce_sum(tf.exp(log_u+log_K+log_v) * C))
-        log_v = - tf.math.reduce_logsumexp(log_K + log_u, axis=1, keepdims=True)
-    log_u = - tf.math.reduce_logsumexp(log_K + log_v, axis=0, keepdims=True)
-    sinkhorn = tf.reduce_sum(tf.exp(log_u+log_K+log_v) * C)
-    sinkhorn_it.append(sinkhorn)
-    return sinkhorn, sinkhorn_it
 
 def emd(opts, x1, x2):
     """
@@ -227,3 +179,63 @@ def emd(opts, x1, x2):
     sinkhorn = tf.reduce_mean(tf.reduce_sum(tf.exp(M(u,v)) * C, axis=[-3,-2,-1]))
     sinkhorn_it.append(sinkhorn)
     return sinkhorn, sinkhorn_it
+
+def SW(opts, x1, x2):
+    """
+    Compute the sliced-wasserstein distance of x1 and x2
+    in the pixel space
+    x1,2: [batch_size, height, width, channels]
+    """
+    # Get inverse cdf
+    icdf_x1 = inverse_cdf(opts, x1)
+    icdf_x2 = inverse_cdf(opts, x2)
+
+    # TODO
+
+    return sw
+
+def square_dist_emd(x1, x2):
+    """
+    Wrapper 2 to compute square distance on pixel idx
+    x1,2:[batch,w,h,c]: input images
+    squared_dist[batch,w,h,w,h,c]: squared_dist[:,i,j,k,l,:] = x1[:,i,j,:]-x2[:,k,l,:]^2
+    """
+    squared_dist = tf.expand_dims(x1,axis=2)-tf.expand_dims(x2,axis=1)
+    return tf.square(squared_dist)
+
+def inverse_cdf(opts, x):
+    """
+    Wraper to compute the inverse cdf distribution on pixel space
+    return the ordered jumps positions and jumps values
+    """
+    h, w, c = x.get_shape().as_list()[1:]
+    L = opts['sw_proj_num']
+    # get pixel grid projection
+    proj = projection(x, L) # (L, h*w)
+    # get proj. sorts indices and sort proj and intensity
+    sorted_indices = tf.argsort(proj,axis=-1) # (L, h*w)
+    sorted_proj = tf.gather_nd(proj,sorted_indices) # to check
+    x_flat = tf.reshape(x, [-1,1,h*w,c]) # (batch,1,h*w,c)
+    x_sorted = tf.gather_nd(x, )
+
+
+    #todo
+
+    return Ti, wi
+
+def projection(x, L):
+    """
+    Wraper to project images pixels gird into the L diferent directions
+    return projections coordinates
+    """
+    # get coor grid
+    h, w, c = x.get_shape().as_list()[1:]
+    X,Y = tf.meshgrid(tf.range(h), tf.range(w))
+    coord = tf.reshape(tf.stack([X,Y],axis=-1),[-1,2]) # ((h*w)**2,2)
+    # get directions to project
+    thetas = tf.arange(L) / L *2*m.pi # add other proj methods
+    proj_mat = tf.stack([tf.math.cos(thetas),tf.math.sin(thetas)], axis=-1)
+    # project grid into proj dir
+    proj = tf.linalg.matmul(proj_mat, coord, transpose_b=True) # (L, (h*w)**2)
+
+    return proj
