@@ -21,18 +21,18 @@ def projection(X,L):
     coord_proj = torch.matmul(proj, coord)  # (L,N**2)
     coord_proj = coord_proj.unsqueeze(1).unsqueeze(1).repeat(1,B,C,1)  # (L,B,C,N**2)
 
-    X_flat = X.reshape(X.size(0), X.size(1), N**2)  # (L,B,C,N**2)
+    X_flat = X.reshape(X.size(0), X.size(1), N**2)  # (B,C,N**2)
     X_flat = X_flat.unsqueeze(0).repeat(L,1,1,1)
 
-    X_proj = torch.stack((X_flat, coord_proj), dim=-1)  # (L,B,C,N**2,2)
+    X_proj = torch.stack((coord_proj, X_flat), dim=-1)  # (L,B,C,N**2,2)
 
     return X_proj
 
 
 def inverse_cdf(X_proj):
     ''' Takes as input a tensor of size (L,B,C,N**2,2) corresponding to
-    sliced images. In X_proj, the last two dims correspond to the weights of
-    the Diracs and the respective positions.
+    sliced images. In X_proj, the last two dims correspond to the positions of
+    the Diracs and the respective weights.
     '''
 
     (L,B,C,N2) = X_proj[...,0].size()
@@ -40,23 +40,23 @@ def inverse_cdf(X_proj):
 
 
     # We take the indices of ordered pixels positions
-    X_p_sorted_indices = torch.argsort(X_proj[...,1])  # (L,B,C,N^2)
-    X_p_sorted_indices = X_p_sorted_indices.view(-1)  # (L*B*C*N^2)
+    indices = torch.argsort(X_proj[...,0])  # (L,B,C,N^2)
+    indices = indices.view(-1)  # (L*B*C*N^2)
     flat_order = torch.arange(L*B*C).repeat_interleave(N*N)*N*N
-    X_p_sorted_indices = X_p_sorted_indices+flat_order
+    indices = indices+flat_order
 
     # We sort the weights and take the cum. sum
-    x_ = torch.index_select(X_proj[...,0].view(-1), -1, X_p_sorted_indices)
+    x_ = torch.index_select(X_proj[...,1].view(-1), -1, indices)
     #x = torch.matmul(cum_sum_mat, x_.unsqueeze(-2)).view(L,B,C,N2)
     x = torch.cumsum(x_.view(L,B,C,N**2), dim=-1)
 
     # We sort the pixel positions
-    y = torch.index_select(X_proj[...,1].view(-1), -1, X_p_sorted_indices)
+    y = torch.index_select(X_proj[...,0].view(-1), -1, indices)
     y = y.view(L,B,C,N**2)
 
-    # Last dim: ordered pix. positions and respective cumsum of weights
-    X_p_sorted = torch.stack((y, x), dim=-1)
-    #plt.plot(X_p_sorted[0,0,0,:,1]); plt.show()
+    # Last dim: cumsum of weights and resp. pixel positions
+    X_p_sorted = torch.stack((x, y), dim=-1)
+    plt.plot(X_p_sorted[0,0,0,:,1]); plt.show()
 
     return X_p_sorted
 
