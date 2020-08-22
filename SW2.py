@@ -15,16 +15,19 @@ def projection(X,L):
     b = torch.arange(N).repeat_interleave(N)  # (N**2)
     coord = torch.stack((a, b), dim=0).type(torch.float)  # (2,N**2)
 
-    thetas = torch.arange(L)/L*2*np.pi  #  (L), may change to random directions, or learn them
+    thetas = torch.arange(L).type(torch.float)/L*2*np.pi  #  (L), may change to random directions, or learn them
     proj = torch.stack((torch.cos(thetas), torch.sin(thetas)), dim=1)  # (L,2)
+    print(proj)
 
     coord_proj = torch.matmul(proj, coord)  # (L,N**2)
+    plt.plot(coord_proj[1,:]); plt.show()
     coord_proj = coord_proj.unsqueeze(1).unsqueeze(1).repeat(1,B,C,1)  # (L,B,C,N**2)
 
     X_flat = X.reshape(X.size(0), X.size(1), N**2)  # (B,C,N**2)
     X_flat = X_flat.unsqueeze(0).repeat(L,1,1,1)
 
     X_proj = torch.stack((coord_proj, X_flat), dim=-1)  # (L,B,C,N**2,2)
+    plt.plot(X_proj[1,0,0,:,0]); plt.show()
 
     return X_proj
 
@@ -60,7 +63,7 @@ def inverse_cdf(X_proj):
 
     # Last dim: cumsum weights and resp. pixel jumps
     X_p_sorted = torch.stack((x, y), dim=-1)
-    plt.plot(X_p_sorted[0,0,0,:,1]); plt.show()
+    plt.plot(X_p_sorted[1,0,0,:,1]); plt.show()
 
     return X_p_sorted
 
@@ -107,9 +110,10 @@ def sw (X, Y, L):
     sw = square_diff.mean(dim=-1).mean(dim=0)
     ##############
 
-    # Ordered times
+    # Ordered time jumps
     diff_p = torch.index_select(concat[...,1].view(-1), -1, indices)  # (L,B,C,2N^2)
     diff_p = diff_p.view(L,B,C,-1)
+    plt.plot(diff_p[0,0,0,:]); plt.show()
 
 
     # Ordered cumsum weights and convert to weights
@@ -117,13 +121,14 @@ def sw (X, Y, L):
     diff_w = diff_w.view(L,B,C,-1)
     w_ = torch.cat((torch.zeros(L,B,C,1),diff_w[...,:-1]), dim=-1)
     diff_w = diff_w - w_
+    #plt.plot(diff_w[0,0,0,:]); plt.show()
 
     #plt.plot(diff_p[0,0,0,:]); plt.show()
 
-    # We take the time lapses (posistions) to reintegrate with coeff +1/-1
+
     plus_minus = torch.index_select(concat[...,2].view(-1), -1, indices)
     plus_minus = plus_minus.view(L,B,C,-1)
-    
+
 
     diff_p = torch.cumsum(diff_p*plus_minus, dim=-1)  # (L,B,C,2N^2)
     plt.plot(diff_p[0,0,0,:]); plt.show()
@@ -131,7 +136,7 @@ def sw (X, Y, L):
 
     diff = (diff_w*diff_p*diff_p)  # (L,B,C,2N^2)
     #plt.plot(diff[0,0,0,:]); plt.show()
-    diff = diff.sum(dim=-1).mean(dim=0)  # (B,C)
+    diff = diff.sum(dim=-1)  # (L,B,C)
 
     return diff, sw
 
@@ -146,8 +151,8 @@ X = torch.zeros(1,1,128,128)
 X[:,:,0,0] = 1
 
 Y = torch.zeros(1,1,128,128)
-Y[:,:,0,1] = 1
+Y[:,:,0,2] = 1
 
-diff, sw = sw(X,Y,1)
+diff, sw = sw(X,Y,8)
 
 print(diff, sw)
