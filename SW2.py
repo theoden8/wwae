@@ -46,19 +46,19 @@ def inverse_cdf(X_proj):
     indices = indices+flat_order
 
     # We sort the weights and take the cum. sum
-    x = torch.index_select(X_proj[...,1].view(-1), -1, indices)
-    #x = torch.matmul(cum_sum_mat, x_.unsqueeze(-2)).view(L,B,C,N2)
-    #x = torch.cumsum(x_.view(L,B,C,N**2), dim=-1)
+    x_ = torch.index_select(X_proj[...,1].view(-1), -1, indices)
+    #x = x.view(L,B,C,N**2)
+    x = torch.cumsum(x_.view(L,B,C,N**2), dim=-1)
 
     # We sort the pixel positions
     y = torch.index_select(X_proj[...,0].view(-1), -1, indices)
     y = y.view(L,B,C,N**2)
 
     # We convert pix positions into pix jumps
-    y_ = torch.cat((torch.zeros(L,B,C,1),y[:,:,:,:-1]), dim=-1)
+    y_ = torch.cat((torch.zeros(L,B,C,1),y[...,:-1]), dim=-1)
     y = y - y_
 
-    # Last dim: weights and resp. pixel jumps
+    # Last dim: cumsum weights and resp. pixel jumps
     X_p_sorted = torch.stack((x, y), dim=-1)
     plt.plot(X_p_sorted[0,0,0,:,1]); plt.show()
 
@@ -112,20 +112,18 @@ def sw (X, Y, L):
     diff_p = diff_p.view(L,B,C,-1)
 
 
-    # Ordered cumsum weights
+    # Ordered cumsum weights and convert to weights
     diff_w = torch.index_select(concat[...,0].view(-1), -1, indices)  # (L,B,C,2N^2)
     diff_w = diff_w.view(L,B,C,-1)
+    w_ = torch.cat((torch.zeros(L,B,C,1),diff_w[...,:-1]), dim=-1)
+    diff_w = diff_w - w_
+
     #plt.plot(diff_p[0,0,0,:]); plt.show()
 
     # We take the time lapses (posistions) to reintegrate with coeff +1/-1
-    #z= torch.cat((torch.zeros(L,B,C,1), diff_p[...,:-1]), dim=-1)  # (L,B,C,2N^2)
     plus_minus = torch.index_select(concat[...,2].view(-1), -1, indices)
     plus_minus = plus_minus.view(L,B,C,-1)
-    #diff_p_ = (diff_p - z)*plus_minus  # (L,B,C,2N^2)
-
-    #cum_sum_mat = torch.flip(torch.triu(torch.ones(N2,N2)), (0,1))  # (N^2,N2)
-    #cum_sum_mat = cum_sum_mat.unsqueeze(0).unsqueeze(0).unsqueeze(0)
-    #diff1 = torch.matmul(cum_sum_mat, diff_p_.unsqueeze(-2)).view(L,B,C,N**2)
+    
 
     diff_p = torch.cumsum(diff_p*plus_minus, dim=-1)  # (L,B,C,2N^2)
     plt.plot(diff_p[0,0,0,:]); plt.show()
