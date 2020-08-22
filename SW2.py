@@ -56,7 +56,7 @@ def inverse_cdf(X_proj):
 
     # Last dim: cumsum of weights and resp. pixel positions
     X_p_sorted = torch.stack((x, y), dim=-1)
-    plt.plot(X_p_sorted[0,0,0,:,1]); plt.show()
+    #plt.plot(X_p_sorted[0,0,0,:,1]); plt.show()
 
     return X_p_sorted
 
@@ -78,7 +78,7 @@ def sw (X, Y, L):
 
     # We concatenate and take sorting indices
     concat = torch.cat((X_icdf, Y_icdf), dim=-2)  # (L,B,C,2N^2,3)
-    indices = torch.argsort(concat[...,1], dim=-1).view(-1)  # (L*B*C*2N^2)
+    indices = torch.argsort(concat[...,0], dim=-1).view(-1)  # (L*B*C*2N^2)
     flat_order = torch.arange(L*B*C).repeat_interleave(2*N*N)*2*N*N
     indices = indices+flat_order
 
@@ -103,14 +103,14 @@ def sw (X, Y, L):
     sw = square_diff.mean(dim=-1).mean(dim=0)
     ##############
 
-    # Ordered cumsum of weights
-    diff_w = torch.index_select(concat[...,1].view(-1), -1, indices)  # (L,B,C,2N^2)
-    diff_w = diff_w.view(L,B,C,-1)
-
-
     # Ordered times
-    diff_p = torch.index_select(concat[...,0].view(-1), -1, indices)  # (L,B,C,2N^2)
+    diff_p = torch.index_select(concat[...,1].view(-1), -1, indices)  # (L,B,C,2N^2)
     diff_p = diff_p.view(L,B,C,-1)
+
+
+    # Ordered cumsum weights
+    diff_w = torch.index_select(concat[...,0].view(-1), -1, indices)  # (L,B,C,2N^2)
+    diff_w = diff_w.view(L,B,C,-1)
     #plt.plot(diff_p[0,0,0,:]); plt.show()
 
     # We take the time lapses (posistions) to reintegrate with coeff +1/-1
