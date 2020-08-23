@@ -69,6 +69,46 @@ def inverse_cdf(X_proj):
     return X_p_sorted
 
 
+
+
+def sw2(X, Y, L):
+    ''' This function takes as input two batches of images, and returns
+    the batch sliced wasserstein distance between them. We concatenate
+    the icdf of X and Y, take the indexes of the sorted cumsum concatenation
+    and ...
+    '''
+    (B,C,N) = X[...,0].size()
+
+
+    # At last dim, we add a new col. of +1/-1 for substraction
+    xicdf = inverse_cdf(projection(X, L))
+    yicdf = inverse_cdf(projection(Y, L))
+
+    wx = xicdf[...,0]
+    wx_ = torch.cat((torch.zeros(L,B,C,1), wx[...,:-1]), dim=-1)
+    wx = wx - wx_
+
+    wy = yicdf[...,0]
+    wy_ = torch.cat((torch.zeros(L,B,C,1), wy[...,:-1]), dim=-1)
+    wy = wy - wy_
+
+    intx = wx*xicdf[...,1]
+    inty = wy*yicdf[...,1]
+
+    diff = (inty-intx)**2
+
+    sw = diff.sum(dim=-1)
+
+    return sw
+
+
+
+
+
+
+
+
+
 def sw (X, Y, L):
     ''' This function takes as input two batches of images, and returns
     the batch sliced wasserstein distance between them. We concatenate
@@ -148,6 +188,9 @@ def sw (X, Y, L):
 
 
 
+
+
+
 #### testing sw ####
 # B=1, C=1, L=4
 # SW between X and Y should return 1
@@ -157,8 +200,9 @@ X[:,:,0,0] = 1
 Y = torch.zeros(1,1,32,32)
 Y[:,:,0,1] = 1
 
-diff, sw = sw(X,Y,4)
+#diff, sw = sw(X,Y,4)
+sw = sw(X,Y,4)
 
-print(diff, sw)
+print(sw)
 
 ''' There is still a pb'''
