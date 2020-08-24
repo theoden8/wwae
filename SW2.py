@@ -15,19 +15,16 @@ def projection(X,L):
     b = torch.arange(N).repeat_interleave(N)  # (N**2)
     coord = torch.stack((a, b), dim=0).type(torch.float)  # (2,N**2)
 
-    thetas = torch.arange(L).type(torch.float)/L*2*np.pi  #  (L), may change to random directions, or learn them
+    thetas = torch.arange(L).type(torch.float)/L*np.pi*2  #  (L), may change to random directions, or learn them
     proj = torch.stack((torch.cos(thetas), torch.sin(thetas)), dim=1)  # (L,2)
-    print(proj)
 
     coord_proj = torch.matmul(proj, coord)  # (L,N**2)
-    #plt.plot(coord_proj[1,:]); plt.show()
     coord_proj = coord_proj.unsqueeze(1).unsqueeze(1).repeat(1,B,C,1)  # (L,B,C,N**2)
 
     X_flat = X.reshape(X.size(0), X.size(1), N**2)  # (B,C,N**2)
     X_flat = X_flat.unsqueeze(0).repeat(L,1,1,1)
 
     X_proj = torch.stack((coord_proj, X_flat), dim=-1)  # (L,B,C,N**2,2)
-    #plt.plot(X_proj[1,0,0,:,0]); plt.show()
 
     return X_proj
 
@@ -50,7 +47,6 @@ def inverse_cdf(X_proj):
 
     # We sort the weights and take the cum. sum
     x_ = torch.index_select(X_proj[...,1].view(-1), -1, indices)
-    #x = x.view(L,B,C,N**2)
     x = torch.cumsum(x_.view(L,B,C,N**2), dim=-1)
 
     # We sort the pixel positions
@@ -58,54 +54,16 @@ def inverse_cdf(X_proj):
     y = y.view(L,B,C,N**2)
 
     # We convert pix positions into pix jumps
-    y_ = torch.cat((torch.zeros(L,B,C,1),y[...,:-1]), dim=-1)
-    y = y - y_
+    #y_ = torch.cat((torch.zeros(L,B,C,1),y[...,:-1]), dim=-1)
+    #y = y - y_
+    #y[...,0] = 0
 
-    # Last dim: cumsum weights and resp. pixel jumps
+
+    # Last dim: cumsum weights and resp. pixel pos
     X_p_sorted = torch.stack((x, y), dim=-1)
-    #print(X_p_sorted)
-    #plt.plot(X_p_sorted[1,0,0,:,1]); plt.show()
+
 
     return X_p_sorted
-
-
-
-
-def sw2(X, Y, L):
-    ''' This function takes as input two batches of images, and returns
-    the batch sliced wasserstein distance between them. We concatenate
-    the icdf of X and Y, take the indexes of the sorted cumsum concatenation
-    and ...
-    '''
-    (B,C,N) = X[...,0].size()
-
-
-    # At last dim, we add a new col. of +1/-1 for substraction
-    xicdf = inverse_cdf(projection(X, L))
-    yicdf = inverse_cdf(projection(Y, L))
-
-    wx = xicdf[...,0]
-    wx_ = torch.cat((torch.zeros(L,B,C,1), wx[...,:-1]), dim=-1)
-    wx = wx - wx_
-
-    wy = yicdf[...,0]
-    wy_ = torch.cat((torch.zeros(L,B,C,1), wy[...,:-1]), dim=-1)
-    wy = wy - wy_
-
-    intx = wx*xicdf[...,1]
-    inty = wy*yicdf[...,1]
-
-    diff = (inty-intx)**2
-
-    sw = diff.sum(dim=-1)
-
-    return sw
-
-
-
-
-
-
 
 
 
@@ -117,13 +75,12 @@ def sw (X, Y, L):
     '''
     (B,C,N) = X[...,0].size()
 
-
     # At last dim, we add a new col. of +1/-1 for substraction
     X_icdf = inverse_cdf(projection(X, L))  # (L,B,C,N**2,2)
-    plt.plot(X_icdf[3,0,0,:,0])
+    #plt.plot(X_icdf[3,0,0,:,0]); plt.plot(X_icdf[3,0,0,:,1].cumsum(-1)); plt.figure()
     X_icdf = torch.cat((X_icdf, torch.ones(L,B,C,N**2,1)), dim=-1)  # (L,B,C,N**2,3)
     Y_icdf = inverse_cdf(projection(Y, L))  # (L,B,C,N**2,2)
-    plt.plot(X_icdf[3,0,0,:,0]); plt.show()
+    #plt.plot(Y_icdf[3,0,0,:,0]); plt.plot(Y_icdf[3,0,0,:,1].cumsum(-1)); plt.show()
     Y_icdf = torch.cat((Y_icdf, -torch.ones(L,B,C,N**2,1)), dim=-1) # (L,B,C,N**2,3)
 
     # We concatenate and take sorting indices
@@ -153,33 +110,27 @@ def sw (X, Y, L):
     sw = square_diff.mean(dim=-1).mean(dim=0)
     ##############
 
+
+
     # Ordered time jumps
     diff_p = torch.index_select(concat[...,1].view(-1), -1, indices)  # (L,B,C,2N^2)
     diff_p = diff_p.view(L,B,C,-1)
-    #plt.plot(diff_p[1,0,0,:]); plt.show()
-
+    plt.plot(diff_p[60,0,0,:]); plt.show()
+    p_ = torch.cat((torch.zeros(L,B,C,1),diff_p[...,:-1]), dim=-1)
+    diff_p = diff_p - p_
 
     # Ordered cumsum weights and convert to weights
     diff_w = torch.index_select(concat[...,0].view(-1), -1, indices)  # (L,B,C,2N^2)
     diff_w = diff_w.view(L,B,C,-1)
     w_ = torch.cat((torch.zeros(L,B,C,1),diff_w[...,:-1]), dim=-1)
     diff_w = diff_w - w_
-    plt.plot(diff_w[1,0,0,:]); plt.show()
-
-    #plt.plot(diff_p[0,0,0,:]); plt.show()
-
 
     plus_minus = torch.index_select(concat[...,2].view(-1), -1, indices)
     plus_minus = plus_minus.view(L,B,C,-1)
 
-
-    diff_p = torch.cumsum(diff_p*plus_minus, dim=-1)  # (L,B,C,2N^2)
-    plt.plot(diff_p[1,0,0,:]); plt.show()
-
+    #diff_p = torch.cumsum(diff_p, dim=-1)  # (L,B,C,2N^2)
 
     diff = (diff_w*diff_p*diff_p)  # (L,B,C,2N^2)
-    #plt.plot(diff[1,0,0,:]); plt.show()
-    #plt.plot(diff[3,0,0,:]); plt.show()
     diff = diff.sum(dim=-1)  # (L,B,C)
 
     return diff, sw
@@ -195,14 +146,15 @@ def sw (X, Y, L):
 # B=1, C=1, L=4
 # SW between X and Y should return 1
 X = torch.zeros(1,1,32,32)
-X[:,:,0,0] = 1
+X[:,:,0,0] = 1.
 
 Y = torch.zeros(1,1,32,32)
-Y[:,:,0,1] = 1
+Y[:,:,0,1] = 1.;
 
-#diff, sw = sw(X,Y,4)
-sw = sw(X,Y,4)
+diff, sw = sw(X,Y,100)
+#sw = sw2(X,Y,4)
 
-print(sw)
+print(diff, sw)
+plt.plot(diff[:,0,0]); plt.show()
 
 ''' There is still a pb'''
