@@ -119,9 +119,8 @@ def sw (X, Y, L):
     # Ordered time jumps
     diff_p = torch.index_select(concat[...,1].view(-1), -1, indices)  # (L,B,C,2N^2)
     diff_p = diff_p.view(L,B,C,-1)
-    plt.plot(diff_p[60,0,0,:]); plt.show()
-    p_ = torch.cat((torch.zeros(L,B,C,1),diff_p[...,:-1]), dim=-1)
-    diff_p = diff_p - p_
+    #p_ = torch.cat((torch.zeros(L,B,C,1),diff_p[...,:-1]), dim=-1)
+    #diff_p = diff_p - p_
 
     # Ordered cumsum weights and convert to weights
     diff_w = torch.index_select(concat[...,0].view(-1), -1, indices)  # (L,B,C,2N^2)
