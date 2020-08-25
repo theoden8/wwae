@@ -180,20 +180,6 @@ def emd(opts, x1, x2):
     sinkhorn_it.append(sinkhorn)
     return sinkhorn, sinkhorn_it
 
-def SW(opts, x1, x2):
-    """
-    Compute the sliced-wasserstein distance of x1 and x2
-    in the pixel space
-    x1,2: [batch_size, height, width, channels]
-    """
-    # Get inverse cdf
-    icdf_x1 = inverse_cdf(opts, x1)
-    icdf_x2 = inverse_cdf(opts, x2)
-
-    # TODO
-
-    return sw
-
 def square_dist_emd(x1, x2):
     """
     Wrapper 2 to compute square distance on pixel idx
@@ -202,6 +188,21 @@ def square_dist_emd(x1, x2):
     """
     squared_dist = tf.expand_dims(x1,axis=2)-tf.expand_dims(x2,axis=1)
     return tf.square(squared_dist)
+
+def SW(opts, x1, x2):
+    """
+    Compute the sliced-wasserstein distance of x1 and x2
+    in the pixel space
+    x1,2: [batch_size, height, width, channels]
+    """
+    # Get inverse cdf. T are time jumps while w are value of jumps
+    T1, w1 = inverse_cdf(opts, x1)
+    T2, w2 = inverse_cdf(opts, x2)
+    assert w1==w2, 'Error in SW projection'
+
+    # TODO
+
+    return sw
 
 def inverse_cdf(opts, x):
     """
