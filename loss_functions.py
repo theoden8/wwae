@@ -199,6 +199,14 @@ def SW(opts, x1, x2):
     T1, w1 = inverse_cdf(opts, x1)
     T2, w2 = inverse_cdf(opts, x2)
     assert w1==w2, 'Error in SW projection'
+    # concat and sort time jumps
+    T = tf.concat([T1,T2], axis=-2) #(b,L,2*h*w,c)
+    idx = tf.argsort(T,axis=-2) #(b,L,2*h*w,c)
+    T = tf.sort(T,axis=-2) #(b,L,2*h*w,c)
+    # concat, flip sign, and sort jump
+    w = tf.concat([w1,-w2], axis=-2) #(L,2*h*w)
+    idx_w =
+    w = tf.gather_nd
 
     # TODO
 
