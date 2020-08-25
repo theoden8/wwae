@@ -207,21 +207,29 @@ def inverse_cdf(opts, x):
     """
     Wraper to compute the inverse cdf distribution on pixel space
     return the ordered jumps positions and jumps values
+
+    cumsum(batch, L, h*w, c): cumsum of the ordered intensities
+    sorted_proj(L, h*w): ordered proj. of pixels pos. on L different proj. dir.
     """
     h, w, c = x.get_shape().as_list()[1:]
+    batch_size = tf.cast(tf.shape(x)[0], tf.int32)
     L = opts['sw_proj_num']
     # get pixel grid projection
     proj = projection(x, L) # (L, h*w)
-    # get proj. sorts indices and sort proj and intensity
+    # sort proj.
+    sorted_proj = tf.sort(proj,axis=-1) # (L, h*w)
+    # get proj. argsort
     sorted_indices = tf.argsort(proj,axis=-1) # (L, h*w)
-    sorted_proj = tf.gather_nd(proj,sorted_indices) # to check
+    # create sorted mask
+    range = tf.repeat(tf.expand_dims(tf.range(L),axis=-1), N, axis=-1) #(L,N)
+    indices = tf.stack([range,sorted_indices], axis=-1) #(L,N,2)
+    batch_indices = tf.repeat(tf.expand_dims(indices,axis=0),batch_size,axis=0)
+    # sort im. intensities
     x_flat = tf.reshape(x, [-1,1,h*w,c]) # (batch,1,h*w,c)
-    x_sorted = tf.gather_nd(x, )
+    x_sorted = tf.gather_nd(tf.repeat(x_flat,L,axis=1), batch_indices, batch_dims=1) #(batch,L,h*w,c)
+    cumsum = tf.math.cumsum(x_sorted,axis=2)
 
-
-    #todo
-
-    return Ti, wi
+    return cumsum, sorted_proj
 
 def projection(x, L):
     """
