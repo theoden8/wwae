@@ -12,6 +12,7 @@
   * quick exp. with small num of hyperparameters
   * compare with VAE and WAE using MSE, FID score
 * Planification for final exp.
+  * follow https://arxiv.org/pdf/1903.12436.pdf
   * Auto-encoder ablation (not latent reg)
     * compare reconstruction score (MSE, any other?) for (beta-)VAE/WAE L2/ WAE SW
   * Projection ablation
