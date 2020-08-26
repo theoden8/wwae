@@ -129,7 +129,92 @@ def sw (X, Y, L):
 
 
 
+def sw2(opts, x1, x2):
+    """
+    Compute the sliced-wasserstein distance of x1 and x2
+    in the pixel space
+    x1,2: [batch_size, height, width, channels]
+    """
+    h, w, c = x.get_shape().as_list()[1:]
+    N = opts['sw_samples_num']
+    # get distributions approx.
+    pc1 = distrib_approx(x1, N)
+    pc2 = distrib_approx(x2, N)
+    # sort the point clouds
+    pc1_sorted = tf.sort(pc1, axis=-1)  # (batch,L,c,N)
+    pc2_sorted = tf.sort(pc2, axis=-1)  # (batch,L,c,N)
 
+    sq_diff = ((pc1_sorted-pc2_sorted)**2).mean(axis=-1).mean(axis=1)
+
+    return sq_diff
+
+
+
+def distrib_approx(x, N):
+    """
+    Wraper to approximate the distribution by a sum od Diracs
+    """
+    h, w, c = x.get_shape().as_list()[1:]
+    batch_size = tf.cast(tf.shape(x)[0], tf.int32)
+    L = opts['sw_proj_num']
+    # projected image
+    sorted_proj, x_sorted = distrib_proj(x)  # (L, h*w), (batch,L,h*w,c)
+    # expand sorted_proj for batch and channels
+    sorted_proj = sorted_proj.reshape(1,L,1,-1)
+    sorted_proj = sorted_proj.repeat(batch_size, axis=0).repeat(c, axis=2) #(batch,L,c,h*w)
+    # create the distribution
+    x_distrib_val = tf.permute(x_sorted,[0,1,3,2])  #(batch,L,c,h*w)
+    dist = Catergorical(probs=x_distrib_val)
+    # sample from the distribution N times
+    samples = dist.sample(N) # (batch,L,c,N)
+    #from the samples, get the pixel values
+    point_cloud = tf.gather_nd(sorted_proj, samples, batch_dims=-1)  #(batch,L,c,N)
+
+    return point_cloud
+
+
+def distrib_proj(x):
+    """
+    Gets the projected distribution
+    """
+    h, w, c = x.get_shape().as_list()[1:]
+    batch_size = tf.cast(tf.shape(x)[0], tf.int32)
+    L = opts['sw_proj_num']
+    # get pixel grid projection
+    proj = projection(x, L) # (L, h*w)
+    # sort proj.
+    sorted_proj = tf.sort(proj,axis=-1) # (L, h*w)
+    # get proj. argsort
+    sorted_indices = tf.argsort(proj,axis=-1) # (L, h*w)
+    # create sorted mask
+    range = tf.repeat(tf.expand_dims(tf.range(L),axis=-1), N, axis=-1) #(L,N)
+    indices = tf.stack([range,sorted_indices], axis=-1) #(L,N,2)
+    batch_indices = tf.repeat(tf.expand_dims(indices,axis=0),batch_size,axis=0)
+    # sort im. intensities
+    x_flat = tf.reshape(x, [-1,1,h*w,c]) # (batch,1,h*w,c)
+    x_sorted = tf.gather_nd(tf.repeat(x_flat,L,axis=1), batch_indices, batch_dims=1) #(batch,L,h*w,c)
+
+    return sorted_proj, x_sorted
+
+
+
+
+def projection(x, L):
+    """
+    Wraper to project images pixels gird into the L diferent directions
+    return projections coordinates
+    """
+    # get coor grid
+    h, w, c = x.get_shape().as_list()[1:]
+    X,Y = tf.meshgrid(tf.range(h), tf.range(w))
+    coord = tf.reshape(tf.stack([X,Y],axis=-1),[-1,2]) # ((h*w)**2,2)
+    # get directions to project
+    thetas = tf.arange(L) / L *2*m.pi # add other proj methods
+    proj_mat = tf.stack([tf.math.cos(thetas),tf.math.sin(thetas)], axis=-1)
+    # project grid into proj dir
+    proj = tf.linalg.matmul(proj_mat, coord, transpose_b=True) # (L, (h*w)**2)
+
+    return proj
 
 
 
@@ -137,13 +222,13 @@ def sw (X, Y, L):
 #### testing sw ####
 # B=1, C=1, L=4
 # SW between X and Y should return 1
-X = torch.zeros(1,1,32,32)
+X = tf.zeros(1,1,32,32)
 X[:,:,0,0] = 1.
 
-Y = torch.zeros(1,1,32,32)
+Y = torch.tf(1,1,32,32)
 Y[:,:,0,1] = 1.;
 
-diff, sw = sw(X,Y,100)
+diff, sw = sw2(X,Y,100)
 #sw = sw2(X,Y,4)
 
 #print(diff, sw)
