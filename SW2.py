@@ -2,6 +2,10 @@ import numpy as np
 import torch
 import math
 import matplotlib.pyplot as plt
+import tensorflow as tf
+import tensorflow_probability as tfp
+#import tfp.distributions.Categorical as Categorical
+
 
 def projection(X,L):
     '''This function takes as imput a batch of images, i.e. a tensor of size
@@ -222,11 +226,11 @@ def projection(x, L):
 #### testing sw ####
 # B=1, C=1, L=4
 # SW between X and Y should return 1
-X = tf.zeros(1,1,32,32)
-X[:,:,0,0] = 1.
+X = tf.zeros([1,32,32,1])
+X[:,0,0,:].assign(1)
 
-Y = torch.tf(1,1,32,32)
-Y[:,:,0,1] = 1.;
+Y = tf.zeros([1,32,32,1])
+Y[:,1,0,:].assign(1);
 
 diff, sw = sw2(X,Y,100)
 #sw = sw2(X,Y,4)
