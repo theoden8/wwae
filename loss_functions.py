@@ -195,6 +195,7 @@ def SW(opts, x1, x2):
     in the pixel space
     x1,2: [batch_size, height, width, channels]
     """
+    h, w, c = x.get_shape().as_list()[1:]
     # Get inverse cdf. T are time jumps while w are value of jumps
     T1, w1 = inverse_cdf(opts, x1)
     T2, w2 = inverse_cdf(opts, x2)
@@ -205,6 +206,9 @@ def SW(opts, x1, x2):
     T = tf.sort(T,axis=-2) #(b,L,2*h*w,c)
     # concat, flip sign, and sort jump
     w = tf.concat([w1,-w2], axis=-2) #(L,2*h*w)
+    w = tf.reshape
+    w = tf.repeat(tf.expand_dims(w,axis=[0,-1]),c,axis=-1) #(L,2*h*w,c)
+    w =
     idx_w =
     w = tf.gather_nd
 
