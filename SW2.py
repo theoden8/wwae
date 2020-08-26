@@ -49,23 +49,12 @@ def inverse_cdf(X_proj):
     x_ = torch.index_select(X_proj[...,1].view(-1), -1, indices)
     x = torch.cumsum(x_.view(L,B,C,N**2), dim=-1)
 
-    # We sort the pixel positions and convert to time lapses
+    # We sort the pixel positions
     y = torch.index_select(X_proj[...,0].view(-1), -1, indices)
     y = y.view(L,B,C,N**2)
-    y_ = torch.cat((torch.zeros(L,B,C,1),y[...,:-1]), dim=-1)
-    y = y - y_
 
-    '''
-    (x,y) is the cdf of X_proj. To find the icdf we need to find the pixels
-    of jumps in weights
-    '''
-    x_ = torch.cat((torch.zeros(L,B,C,1),x[...,:-1]), dim=-1)
-    x_d = x - x_
-    x_jumps = torch.gt(x_d,0).type(torch.float)
 
-    y_jumps = y*x_jumps
-
-    X_p_sorted = torch.stack((x, y_jumps), dim=-1)
+    X_p_sorted = torch.stack((x, y), dim=-1)
 
     return X_p_sorted
 
@@ -81,10 +70,8 @@ def sw (X, Y, L):
 
     # At last dim, we add a new col. of +1/-1 for substraction
     X_icdf = inverse_cdf(projection(X, L))  # (L,B,C,N**2,2)
-    #plt.plot(X_icdf[3,0,0,:,0]); plt.plot(X_icdf[3,0,0,:,1].cumsum(-1)); plt.figure()
     X_icdf = torch.cat((X_icdf, torch.ones(L,B,C,N**2,1)), dim=-1)  # (L,B,C,N**2,3)
-    Y_icdf = inverse_cdf(projection(Y, L))  # (L,B,C,N**2,2)
-    #plt.plot(Y_icdf[3,0,0,:,0]); plt.plot(Y_icdf[3,0,0,:,1].cumsum(-1)); plt.show()
+    Y_icdf = inverse_cdf(projection(Y, L)) # (L,B,C,N**2,2)
     Y_icdf = torch.cat((Y_icdf, -torch.ones(L,B,C,N**2,1)), dim=-1) # (L,B,C,N**2,3)
 
     # We concatenate and take sorting indices
@@ -116,7 +103,7 @@ def sw (X, Y, L):
 
 
 
-    # Ordered time jumps
+    # Ordered pixels
     diff_p = torch.index_select(concat[...,1].view(-1), -1, indices)  # (L,B,C,2N^2)
     diff_p = diff_p.view(L,B,C,-1)
     #p_ = torch.cat((torch.zeros(L,B,C,1),diff_p[...,:-1]), dim=-1)
@@ -131,7 +118,9 @@ def sw (X, Y, L):
     plus_minus = torch.index_select(concat[...,2].view(-1), -1, indices)
     plus_minus = plus_minus.view(L,B,C,-1)
 
-    diff_p = torch.cumsum(diff_p*plus_minus, dim=-1)  # (L,B,C,2N^2)
+    #diff_p = torch.cumsum(diff_p*plus_minus, dim=-1)  # (L,B,C,2N^2)
+    #diff_p = diff_p*plus_minus
+    plt.plot((diff_w*diff_p*diff_p)[0,0,0,:]); plt.show()
 
     diff = (diff_w*diff_p*diff_p)  # (L,B,C,2N^2)
     diff = diff.sum(dim=-1)  # (L,B,C)
@@ -157,7 +146,7 @@ Y[:,:,0,1] = 1.;
 diff, sw = sw(X,Y,100)
 #sw = sw2(X,Y,4)
 
-print(diff, sw)
+#print(diff, sw)
 plt.plot(diff[:,0,0]); plt.show()
 
 ''' There is still a pb'''
