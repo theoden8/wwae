@@ -261,8 +261,8 @@ def sw2(opts, x1, x2):
     pc1_sorted = tf.sort(pc1, axis=-1)  # (batch,L,c,N)
     pc2_sorted = tf.sort(pc2, axis=-1)  # (batch,L,c,N)
 
-    sq_diff = tf.math.reduce_mean((pc1_sorted-pc2_sorted)**2, axis=-1)
-    #plt.plot(sq_diff[0,:,0]); plt.show()
+    sq_diff = tf.math.reduce_mean((pc1_sorted-pc2_sorted)**2, axis=-1)  # (batch,L,c)
+    sq_diff = tf.math.reduce_mean(sq_diff, axis=1)  # (batch,c)
 
     return sq_diff
 
