@@ -30,8 +30,8 @@ import utils
 import pdb
 
 datashapes = {}
-datashapes['celebA'] = [64, 64, 3]
-datashapes['mnist'] = [28, 28, 1]
+datashapes['celeba'] = [64, 64, 3]
+datashapes['mnist'] = [32, 32, 1]
 datashapes['svhn'] = [32, 32, 3]
 datashapes['cifar10'] = [32, 32, 3]
 
@@ -68,7 +68,7 @@ def maybe_download(opts):
         tar.extractall(path=data_path)
         tar.close()
         data_path = os.path.join(data_path,'cifar-10-batches-py')
-    elif opts['dataset']=='celebA':
+    elif opts['dataset']=='celeba':
         filename = 'img_align_celeba'
         file_path = os.path.join(data_path, filename)
         if not tf.gfile.Exists(file_path):
@@ -76,7 +76,7 @@ def maybe_download(opts):
             file_path = os.path.join(data_path, filename)
             if not tf.gfile.Exists(file_path):
                 assert False, '{} dataset does not exist'.format(opts['dataset'])
-                download_file_from_google_drive(file_path,filename,opts['celebA_data_source_url'])
+                download_file_from_google_drive(file_path,filename,opts['celeba_data_source_url'])
             # Unzipping
             print('Unzipping celebA...')
             with zipfile.ZipFile(file_path) as zf:
@@ -122,38 +122,9 @@ def load_cifar_batch(fpath, label_key='labels'):
         d = d_decoded
     f.close()
     data = d['data']
-    labels = d[label_key]
 
     data = data.reshape(data.shape[0], 3, 32, 32)
-    return data, labels
-
-def transform_mnist(pic, mode='n'):
-    """Take an MNIST picture normalized into [0, 1] and transform
-        it according to the mode:
-        n   -   noise
-        i   -   colour invert
-        s*  -   shift
-    """
-    pic = np.copy(pic)
-    if mode == 'n':
-        noise = np.random.randn(28, 28, 1)
-        return np.clip(pic + 0.25 * noise, 0, 1)
-    elif mode == 'i':
-        return 1. - pic
-    pixels = 3 + np.random.randint(5)
-    if mode == 'sl':
-        pic[:, :-pixels] = pic[:, pixels:] + 0.0
-        pic[:, -pixels:] = 0.
-    elif mode == 'sr':
-        pic[:, pixels:] = pic[:, :-pixels] + 0.0
-        pic[:, :pixels] = 0.
-    elif mode == 'sd':
-        pic[pixels:, :] = pic[:-pixels, :] + 0.0
-        pic[:pixels, :] = 0.
-    elif mode == 'su':
-        pic[:-pixels, :] = pic[pixels:, :] + 0.0
-        pic[-pixels:, :] = 0.
-    return pic
+    return data
 
 
 class Data(object):
@@ -186,7 +157,7 @@ class Data(object):
             self.paths = paths[:]
             self.dict_loaded = {} if dict_loaded is None else dict_loaded
             self.loaded = [] if loaded is None else loaded
-            self.crop_style = opts['celebA_crop']
+            self.crop_style = opts['celeba_crop']
             self.dataset_name = opts['dataset']
             self.shape = (len(self.paths), None, None, None)
 
@@ -236,7 +207,7 @@ class Data(object):
                     idx = self.dict_loaded[key]
                     res.append(self.loaded[idx])
                 else:
-                    if self.dataset_name == 'celebA':
+                    if self.dataset_name == 'celeba':
                         point = self._read_celeba_image(self.data_dir, self.paths[key])
                     else:
                         raise Exception('Disc read for this dataset not implemented yet...')
@@ -284,7 +255,6 @@ class DataHandler(object):
     corresponds to (2,1,1). The shape is contained in self.data_shape
     """
 
-
     def __init__(self, opts):
         self.data_shape = None
         self.num_points = None
@@ -298,7 +268,7 @@ class DataHandler(object):
         """Load a dataset and fill all the necessary variables.
 
         """
-        if opts['dataset'] == 'celebA':
+        if opts['dataset'] == 'celeba':
             self._load_celebA(opts)
         elif opts['dataset'] == 'mnist':
             self._load_mnist(opts)
@@ -316,8 +286,141 @@ class DataHandler(object):
                 self.test_data.X = (self.test_data.X - 0.5) * 2.
             # Else we will normalyze while reading from disk
 
+    def _load_mnist(self, opts, zalando=False, modified=False):
+        """Load data from MNIST or ZALANDO files.
+
+        """
+        if zalando:
+            logging.error('Loading Fashion MNIST')
+        elif modified:
+            logging.error('Loading modified MNIST')
+        else:
+            logging.error('Loading MNIST')
+
+        data_dir = _data_dir(opts)
+        with gzip.open(os.path.join(data_dir, 'train-images-idx3-ubyte.gz')) as fd:
+            fd.read(16)
+            loaded = np.frombuffer(fd.read(60000*28*28*1), dtype=np.uint8)
+            tr_X = loaded.reshape((60000, 28, 28, 1)).astype(np.float32)
+
+        with gzip.open(os.path.join(data_dir, 't10k-images-idx3-ubyte.gz')) as fd:
+            fd.read(16)
+            loaded = np.frombuffer(fd.read(10000*28*28*1), dtype=np.uint8)
+            te_X = loaded.reshape((10000, 28, 28, 1)).astype(np.float32)
+
+        X = np.concatenate((tr_X, te_X), axis=0)
+        X = X / 255.
+        X = np.pad(X,((0,0),(2,2),(2,2),(0,0))) # padding img to shape (32,32,1)
+
+        # Creating shuffling mask
+        seed = 123
+        shuffling_mask = np.arange(X.shape[0])
+        np.random.seed(seed)
+        np.random.shuffle(shuffling_mask)
+        np.random.seed()
+        np.random.shuffle(shuffling_mask[opts['plot_num_pics']:])
+        self.data_order_idx = np.argsort(shuffling_mask)
+        # training set
+        self.data = Data(opts, X[shuffling_mask[:-10000]])
+        # testing set
+        # test_size = 10000 - opts['plot_num_pics']
+        self.test_data = Data(opts, X[shuffling_mask[-10000:-opts['plot_num_pics']]])
+        # vizu set
+        self.vizu_data = Data(opts, X[shuffling_mask[-opts['plot_num_pics']:]])
+        # plot set
+        idx = np.arange(20)
+        self.plot_data = Data(opts, X[idx])
+        # data informations
+        self.data_shape = datashapes[opts['dataset']]
+        self.num_points = len(self.data)
+
+        logging.error('Loading Done.')
+
+    def _load_svhn(self, opts):
+        """Load data from SVHN files.
+
+        """
+        logging.error('Loading svhn dataset')
+
+        # Helpers to process raw data
+        def convert_imgs_to_array(img_array):
+            rows = datashapes['svhn'][0]
+            cols = datashapes['svhn'][1]
+            chans = datashapes['svhn'][2]
+            num_imgs = img_array.shape[3]
+            # Note: not the most efficent way but can monitor what is happening
+            new_array = np.empty(shape=(num_imgs, rows, cols, chans), dtype=np.float32)
+            for x in range(0, num_imgs):
+                # TODO reuse normalize_img here
+                chans = img_array[:, :, :, x]
+                # # normalize pixels to 0 and 1. 0 is pure white, 1 is pure channel color
+                # norm_vec = (255-chans)*1.0/255.0
+                new_array[x] = chans
+            return new_array
+
+        data_dir = _data_dir(opts)
+        # Training data
+        file_path = os.path.join(data_dir,'train_32x32.mat')
+        file = open(file_path, 'rb')
+        data = loadmat(file)
+        imgs = data['X']
+        tr_X = convert_imgs_to_array(imgs)
+        file.close()
+        if opts['use_extra']:
+            file_path = os.path.join(data_dir,'extra_32x32.mat')
+            file = open(file_path, 'rb')
+            data = loadmat(file)
+            imgs = data['X']
+            extra_X = convert_imgs_to_array(imgs)
+            file.close()
+            # concatenate training and extra
+            tr_X = np.concatenate((tr_X,extra_X), axis=0)
+        tr_X = tr_X
+        # Testing data
+        file_path = os.path.join(data_dir,'test_32x32.mat')
+        file = open(file_path, 'rb')
+        data = loadmat(file)
+        imgs = data['X']
+        te_X = convert_imgs_to_array(imgs)
+        file.close()
+        te_X = te_X
+        # concat tr and te
+        X = np.vstack([tr_X, te_X])
+        X = X/255.
+
+        # Creating shuffling mask
+        seed = 123
+        shuffling_mask = np.arange(X.shape[0])
+        np.random.seed(seed)
+        np.random.shuffle(shuffling_mask)
+        np.random.seed()
+        np.random.shuffle(shuffling_mask[opts['plot_num_pics']:])
+        self.data_order_idx = np.argsort(shuffling_mask)
+        # training set
+        self.data = Data(opts, X[shuffling_mask[:-10000]])
+        # testing set
+        # test_size = 10000 - opts['plot_num_pics']
+        self.test_data = Data(opts, X[shuffling_mask[-10000:-opts['plot_num_pics']]])
+        # vizu set
+        self.vizu_data = Data(opts, X[shuffling_mask[-opts['plot_num_pics']:]])
+        # plot set
+        idx = np.arange(20)
+        self.plot_data = Data(opts, X[idx])
+        # data informations
+        self.data_shape = datashapes[opts['dataset']]
+        self.num_points = len(self.data)
+
+        logging.error('Loading Done.')
+        self.data_shape = (32,32,3)
+
+        self.data = Data(opts, tr_X)
+        self.test_data = Data(opts, te_X)
+        self.num_points = len(self.data)
+
+        logging.error('Loading Done: Train size: %d, Test size: %d' % (self.num_points,len(self.test_data)))
+
     def _load_celebA(self, opts):
-        """Load CelebA
+        """Load celeba
         """
         logging.error('Loading CelebA dataset')
 
@@ -338,7 +441,6 @@ class DataHandler(object):
         # vizu set
         self.vizu_data = Data(opts, None, paths[shuffling_mask[-opts['plot_num_pics']:]])
         # plot set
-        # idx = [5,6,14,17,39,50,60,70,80,90]
         idx = np.arange(5,5+50)
         plot_data = Data(opts, None, paths[idx])
         self.plot_data = plot_data[np.arange(50)]
@@ -348,150 +450,6 @@ class DataHandler(object):
 
         logging.error('Loading Done.')
 
-    def _load_mnist(self, opts, zalando=False, modified=False):
-        """Load data from MNIST or ZALANDO files.
-
-        """
-        if zalando:
-            logging.error('Loading Fashion MNIST')
-        elif modified:
-            logging.error('Loading modified MNIST')
-        else:
-            logging.error('Loading MNIST')
-        data_dir = _data_dir(opts)
-        with gzip.open(os.path.join(data_dir, 'train-images-idx3-ubyte.gz')) as fd:
-            fd.read(16)
-            loaded = np.frombuffer(fd.read(60000*28*28*1), dtype=np.uint8)
-            tr_X = loaded.reshape((60000, 28, 28, 1)).astype(np.float32)
-
-        with gzip.open(os.path.join(data_dir, 'train-labels-idx1-ubyte.gz')) as fd:
-            fd.read(8)
-            loaded = np.frombuffer(fd.read(60000), dtype=np.uint8)
-            tr_Y = loaded.reshape((60000)).astype(np.int)
-
-        with gzip.open(os.path.join(data_dir, 't10k-images-idx3-ubyte.gz')) as fd:
-            fd.read(16)
-            loaded = np.frombuffer(fd.read(10000*28*28*1), dtype=np.uint8)
-            te_X = loaded.reshape((10000, 28, 28, 1)).astype(np.float32)
-
-        with gzip.open(os.path.join(data_dir, 't10k-labels-idx1-ubyte.gz')) as fd:
-            fd.read(8)
-            loaded = np.frombuffer(fd.read(10000), dtype=np.uint8)
-            te_Y = loaded.reshape((10000)).astype(np.int)
-
-        tr_Y = np.asarray(tr_Y)
-        te_Y = np.asarray(te_Y)
-
-        X = np.concatenate((tr_X, te_X), axis=0)
-        Y = np.concatenate((tr_Y, te_Y), axis=0)
-        X = X / 255.
-
-        # Creating shuffling mask
-        seed = 123
-        shuffling_mask = np.arange(len(Y))
-        np.random.seed(seed)
-        np.random.shuffle(shuffling_mask)
-        np.random.seed()
-        np.random.shuffle(shuffling_mask[opts['plot_num_pics']:])
-        self.data_order_idx = np.argsort(shuffling_mask)
-        # training set
-        self.data = Data(opts, X[shuffling_mask[:-10000]])
-        self.labels = Data(opts, Y[shuffling_mask[:-10000]])
-        # testing set
-        # test_size = 10000 - opts['plot_num_pics']
-        self.test_data = Data(opts, X[shuffling_mask[-10000:-opts['plot_num_pics']]])
-        self.test_labels = Data(opts, Y[shuffling_mask[-10000:-opts['plot_num_pics']]])
-        # vizu set
-        self.vizu_data = Data(opts, X[shuffling_mask[-opts['plot_num_pics']:]])
-        self.vizu_labels = Data(opts, Y[shuffling_mask[-opts['plot_num_pics']:]])
-        # plot set
-        idx = np.arange(20)
-        self.plot_data = Data(opts, X[idx])
-        # data informations
-        self.data_shape = datashapes[opts['dataset']]
-        self.num_points = len(self.data)
-
-        logging.error('Loading Done.')
-
-    def _load_svhn(self, opts):
-        """Load data from SVHN files.
-
-        """
-        NUM_LABELS = 10
-
-        # Helpers to process raw data
-        def convert_imgs_to_array(img_array):
-            rows = datashapes['svhn'][0]
-            cols = datashapes['svhn'][1]
-            chans = datashapes['svhn'][2]
-            num_imgs = img_array.shape[3]
-            # Note: not the most efficent way but can monitor what is happening
-            new_array = np.empty(shape=(num_imgs, rows, cols, chans), dtype=np.float32)
-            for x in range(0, num_imgs):
-                # TODO reuse normalize_img here
-                chans = img_array[:, :, :, x]
-                # # normalize pixels to 0 and 1. 0 is pure white, 1 is pure channel color
-                # norm_vec = (255-chans)*1.0/255.0
-                new_array[x] = chans
-            return new_array
-
-        # Extracting data
-        data_dir = _data_dir(opts)
-
-        # Training data
-        file_path = os.path.join(data_dir,'train_32x32.mat')
-        file = open(file_path, 'rb')
-        data = loadmat(file)
-        imgs = data['X']
-        labels = data['y'].flatten()
-        labels[labels == 10] = 0  # Fix for weird labeling in dataset
-        tr_Y = labels
-        tr_X = convert_imgs_to_array(imgs)
-        tr_X = tr_X / 255.
-        file.close()
-        if opts['use_extra']:
-            file_path = os.path.join(data_dir,'extra_32x32.mat')
-            file = open(file_path, 'rb')
-            data = loadmat(file)
-            imgs = data['X']
-            labels = data['y'].flatten()
-            labels[labels == 10] = 0  # Fix for weird labeling in dataset
-            extra_Y = labels
-            extra_X = convert_imgs_to_array(imgs)
-            extra_X = extra_X / 255.
-            file.close()
-            # concatenate training and extra
-            tr_X = np.concatenate((tr_X,extra_X), axis=0)
-            tr_Y = np.concatenate((tr_Y,extra_Y), axis=0)
-        seed = 123
-        np.random.seed(seed)
-        np.random.shuffle(tr_X)
-        np.random.seed(seed)
-        np.random.shuffle(tr_Y)
-        np.random.seed()
-
-        # Testing data
-        file_path = os.path.join(data_dir,'test_32x32.mat')
-        file = open(file_path, 'rb')
-        data = loadmat(file)
-        imgs = data['X']
-        labels = data['y'].flatten()
-        labels[labels == 10] = 0  # Fix for weird labeling in dataset
-        te_Y = labels
-        te_X = convert_imgs_to_array(imgs)
-        te_X = te_X / 255.
-        file.close()
-
-        self.data_shape = (32,32,3)
-
-        self.data = Data(opts, tr_X)
-        self.labels = tr_Y
-        self.test_data = Data(opts, te_X)
-        self.test_labels = te_Y
-        self.num_points = len(self.data)
-
-        logging.error('Loading Done: Train size: %d, Test size: %d' % (self.num_points,len(self.test_data)))
-
     def _load_cifar(self, opts):
         """Load CIFAR10
 
@@ -500,30 +458,24 @@ class DataHandler(object):
 
         num_train_samples = 50000
         data_dir = _data_dir(opts)
+        # Training data
         x_train = np.zeros((num_train_samples, 3, 32, 32), dtype='uint8')
-        y_train = np.zeros((num_train_samples,), dtype='uint8')
-
         for i in range(1, 6):
             fpath = os.path.join(data_dir, 'data_batch_' + str(i))
-            data, labels = load_cifar_batch(fpath)
+            data = load_cifar_batch(fpath)
             x_train[(i - 1) * 10000: i * 10000, :, :, :] = data
-            y_train[(i - 1) * 10000: i * 10000] = labels
-
-        fpath = os.path.join(data_dir, 'test_batch')
-        x_test, y_test = load_cifar_batch(fpath)
-
-        y_train = np.reshape(y_train, (len(y_train), 1))
-        y_test = np.reshape(y_test, (len(y_test), 1))
         x_train = x_train.transpose(0, 2, 3, 1)
+        # Testing data
+        fpath = os.path.join(data_dir, 'test_batch')
+        x_test = load_cifar_batch(fpath)
         x_test = x_test.transpose(0, 2, 3, 1)
-
+        # concat tr and te
         X = np.vstack([x_train, x_test])
         X = X/255.
-        Y = np.vstack([y_train, y_test])
 
         # Creating shuffling mask
         seed = 123
-        shuffling_mask = np.arange(len(Y))
+        shuffling_mask = np.arange(X.shape[0])
         np.random.seed(seed)
         np.random.shuffle(shuffling_mask)
         np.random.seed()
@@ -531,14 +483,11 @@ class DataHandler(object):
         self.data_order_idx = np.argsort(shuffling_mask)
         # training set
         self.data = Data(opts, X[shuffling_mask[:-10000]])
-        self.labels = Data(opts, Y[shuffling_mask[:-10000]])
         # testing set
         # test_size = 10000 - opts['plot_num_pics']
         self.test_data = Data(opts, X[shuffling_mask[-10000:-opts['plot_num_pics']]])
-        self.test_labels = Data(opts, Y[shuffling_mask[-10000:-opts['plot_num_pics']]])
         # vizu set
         self.vizu_data = Data(opts, X[shuffling_mask[-opts['plot_num_pics']:]])
-        self.vizu_labels = Data(opts, Y[shuffling_mask[-opts['plot_num_pics']:]])
         # plot set
         idx = np.arange(20)
         self.plot_data = Data(opts, X[idx])

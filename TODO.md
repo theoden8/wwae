@@ -1,5 +1,6 @@
 # TODO list
 
+* clean code
 * SW implementation
   * Check benoit/antoine versions match
   * Check if either version is actually correct
