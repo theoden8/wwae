@@ -1,6 +1,6 @@
 from keras.losses import mae, mse, binary_crossentropy
 import numpy as np
-
+from sw import sw2
 
 def get_recon_loss_func(loss_func_name, weights=None):
     """Returns reconstruction loss given its name. Seperate names with + to combine different losses"""
@@ -24,6 +24,8 @@ def get_recon_loss_func(loss_func_name, weights=None):
                 tot_recon_loss += weights[idx] * mse(y_true, y_pred)
             elif loss_name.upper() == 'BINARY_CROSSENTROPY' or loss_name.upper() == 'BINARY_CROSS_ENTROPY':
                 tot_recon_loss += weights[idx] * binary_crossentropy(y_true, y_pred)
+            elif loss_name.upper() == 'sw2':
+                tot_recon_loss += weights[idx] * sw2(y_true, y_pred)
             else:
                 raise NotImplementedError(str(loss_name) + " has no implementation")
         return tot_recon_loss
