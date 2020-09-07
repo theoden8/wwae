@@ -10,7 +10,7 @@
 * First experiments
   * celebA
   * quick exp. with small num of hyperparameters
-  * compare with VAE and WAE l2sq using MSE, FID score
+  * compare with VAEs and WAE l2sq using MSE, FID score
 * Experiments
   * follow https://arxiv.org/pdf/1903.12436.pdf
   * Auto-encoder ablation (not latent reg)
