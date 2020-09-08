@@ -99,4 +99,3 @@ def projection(x,L):
     proj = tf.linalg.matmul(proj_mat, coord, transpose_b=True) # (L, (h*w))
 
     return proj
-
