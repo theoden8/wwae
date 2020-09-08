@@ -39,10 +39,10 @@ def distrib_approx(x, L, N):
     sorted_proj = tf.tile(sorted_proj, [B,1,c,1]) #(batch,L,c,h*w)
     # create the distribution
     mass = tf.reduce_sum(x_sorted, axis=-1, keepdims=True)
-    dist = tfp.distributions.Categorical(probs=x_sorted/mass, validate_args=True)
+    dist = tfp.distributions.Categorical(probs=x_sorted/mass)
     # sample from the distribution N times
-    samples = dist.sample(N) # (batch,L,c,N)
-    #samples = tf.transpose(samples, [1,2,3,0])
+    samples = dist.sample(N) # (N,batch,L,c)
+    samples = tf.transpose(samples, [1,2,3,0])
 
     i_b = tf.tile(tf.reshape(tf.range(B), [B,1,1,1]), [1,L,c,N])
     i_L = tf.tile(tf.reshape(tf.range(L), [1,L,1,1]), [B,1,c,N])
