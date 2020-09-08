@@ -1,9 +1,12 @@
 # TODO list
 
 * Implementation (benoit)
-  * clean code
+  * merge sw
   * Implement NN from RAE
-  * data MNIST (32,32,1), SVHN, CelebA, cifar10    
+  * FID score
+  * pad mnist 32x32
+  * Implement Gaussian decoder and Gaussian VAE rec. loss
+  * Interpolations
 * Writing
   * Sec.1: intro blabla
   * Sec.2: generative models
