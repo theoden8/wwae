@@ -20,8 +20,8 @@ parser.add_argument("--mode", default='train',
                     help='mode to run [train/vizu/fid/test]')
 parser.add_argument("--dataset", default='mnist',
                     help='dataset')
-parser.add_argument("--data_dir", type=str, default='../data',
-                    help='directory in which data is stored')
+# parser.add_argument("--data_dir", type=str, default='data',
+#                     help='directory in which data is stored')
 parser.add_argument("--out_dir", type=str, default='code_outputs',
                     help='root_directory in which outputs are saved')
 parser.add_argument("--res_dir", type=str, default='res',
@@ -30,14 +30,14 @@ parser.add_argument("--num_it", type=int, default=300000,
                     help='iteration number')
 parser.add_argument("--net_archi", default='conv',
                     help='networks architecture [mlp/conv]')
-parser.add_argument("--lambda", type=int, default=10.,
+parser.add_argument("--beta", type=int, default=10.,
                     help='Latent reg weight setup')
 parser.add_argument("--sigma_pen", action='store_true', default=False,
                     help='penalization of Sigma_q')
 parser.add_argument("--sigma_pen_val", type=float, default=0.01,
                     help='value of penalization of Sigma_q')
-parser.add_argument("--cost", default='xentropy',
-                    help='ground cost [l2, l2sq, l2sq_norm, l1, xentropy]')
+parser.add_argument("--cost", default='l2sq',
+                    help='ground cost [l1, l2, l2sq, l2sq_norm, sw2]')
 parser.add_argument('--fid', action='store_true', default=False,
                     help='compute FID score')
 parser.add_argument('--save_model', action='store_false', default=True,
@@ -51,11 +51,11 @@ FLAGS = parser.parse_args()
 
 
 # --- Network architectures
-mlp_config = { 'e_arch': 'mlp' , 'e_nlayers': 2, 'e_nfilters': [1200, 1200], 'e_nonlinearity': 'relu',
-        'd_arch': 'mlp' , 'd_nlayers': 3, 'd_nfilters': [1200, 1200, 1200], 'd_nonlinearity': 'tanh'}
+mlp_config = { 'e_arch': 'mlp' , 'e_nlayers': 2, 'e_nfilters': [256, 256], 'e_nonlinearity': 'relu',
+        'd_arch': 'mlp' , 'd_nlayers': 3, 'd_nfilters': [256, 256, 256], 'd_nonlinearity': 'tanh'}
 
-conv_config = { 'e_arch': 'conv_locatello' , 'e_nlayers': 4, 'e_nfilters': [32,32,64,64], 'e_nonlinearity': 'relu',
-        'd_arch': 'conv_locatello' , 'd_nlayers': 4, 'd_nfilters': [32,32,32,64], 'd_nonlinearity': 'relu',
+conv_config = { 'e_arch': 'dcgan' , 'e_nlayers': 4, 'e_nfilters': [32,32,64,64], 'e_nonlinearity': 'relu',
+        'd_arch': 'dcgan' , 'd_nlayers': 4, 'd_nfilters': [32,32,32,64], 'd_nonlinearity': 'relu',
         'filter_size': [4,4,4,4]}
 
 net_configs = {'mlp': mlp_config, 'conv': conv_config}
@@ -65,13 +65,13 @@ def main():
 
     # Select dataset to use
     if FLAGS.dataset == 'mnist':
-        opts = configs.config_dsprites
+        opts = configs.config_mnist
         opts['zdim'] = 16
     elif FLAGS.dataset == 'svhn':
         opts = configs.config_svhn
         opts['zdim'] = 16
     elif FLAGS.dataset == 'celebA':
-        opts = configs.config_celebA
+        opts = configs.config_celeba
         opts['zdim'] = 64
     elif FLAGS.dataset == 'cifar10':
         opts = configs.config_cifar10
@@ -80,7 +80,7 @@ def main():
         assert False, 'Unknown dataset'
 
     # Set method param
-    opts['data_dir'] = FLAGS.data_dir
+    # opts['data_dir'] = FLAGS.data_dir
     opts['fid'] = FLAGS.fid
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
     opts['network'] = net_configs[FLAGS.net_archi]
@@ -91,7 +91,7 @@ def main():
     opts['model'] = FLAGS.model
     if opts['model'][-3:]=='VAE':
         opts['input_normalize_sym'] = False
-    opts['obj_fn_coeffs'] = FLAGS.lambda
+    opts['beta'] = FLAGS.beta
 
     # Create directories
     opts['out_dir'] = FLAGS.out_dir
@@ -101,18 +101,11 @@ def main():
     if not tf.io.gfile.isdir(out_subdir):
         utils.create_dir(out_subdir)
     opts['exp_dir'] = FLAGS.res_dir
-    if opts['model'] == 'disWAE' or opts['model'] == 'TCWAE_MWS' or opts['model'] == 'TCWAE_GAN':
-        exp_dir = os.path.join(out_subdir,
-                               '{}_{}_{}_{:%Y_%m_%d_%H_%M}'.format(
-                                    opts['exp_dir'],
-                                    opts['obj_fn_coeffs'][0],
-                                    opts['obj_fn_coeffs'][1],datetime.now()), )
-    else :
-        exp_dir = os.path.join(out_subdir,
-                               '{}_{}_{:%Y_%m_%d_%H_%M}'.format(
-                                    opts['exp_dir'],
-                                    opts['obj_fn_coeffs'],
-                                    datetime.now()), )
+    exp_dir = os.path.join(out_subdir,
+                           '{}_{}_{:%Y_%m_%d_%H_%M}'.format(
+                                opts['exp_dir'],
+                                opts['beta'],
+                                datetime.now()), )
     opts['exp_dir'] = exp_dir
     if not tf.io.gfile.isdir(exp_dir):
         utils.create_dir(exp_dir)
@@ -126,20 +119,23 @@ def main():
     data = DataHandler(opts)
     assert data.train_size >= opts['batch_size'], 'Training set too small'
 
-    # Experiemnts set up
-    opts['epoch_num'] = int(FLAGS.num_it / int(data.train_size/opts['batch_size']))
-    opts['print_every'] = int(opts['epoch_num'] / 2.) * int(data.train_size/opts['batch_size'])-1
+    opts['it_num'] = FLAGS.num_it
+    opts['print_every'] = 200 #int(opts['it_num'] / 5.)
     opts['evaluate_every'] = int(opts['print_every'] / 2.) + 1
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
     opts['save_train_data'] = FLAGS.save_data
     opts['vizu_encSigma'] = False
 
-
     #Reset tf graph
     tf.reset_default_graph()
 
-    run = Run(opts, FLAGS.weights_file)
+    # Loading the dataset
+    data = DataHandler(opts)
+    assert data.train_size >= opts['batch_size'], 'Training set too small'
+
+    # inti method
+    run = Run(opts, data, FLAGS.weights_file)
 
     # Training/testing/vizu
     if FLAGS.mode=="train":
@@ -148,9 +144,8 @@ def main():
             text.write('Parameters:\n')
             for key in opts:
                 text.write('%s : %s\n' % (key, opts[key]))
-        run.train(data)
+        run.train()
     else:
         assert False, 'Unknown mode %s' % FLAGS.mode
-
 
 main()

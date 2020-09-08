@@ -16,8 +16,8 @@ import logging
 import pdb
 
 def encoder(opts, input, output_dim, scope=None,
-                                        reuse=False,
-                                        is_training=False):
+                                    reuse=False,
+                                    is_training=False):
     with tf.variable_scope(scope, reuse=reuse):
         if opts['network']['e_arch'] == 'mlp':
             # Encoder uses only fully connected layers with ReLUs
@@ -56,8 +56,8 @@ def encoder(opts, input, output_dim, scope=None,
 
 
 def decoder(opts, input, output_dim, scope=None,
-                                        reuse=False,
-                                        is_training=False):
+                                    reuse=False,
+                                    is_training=False):
     with tf.variable_scope(scope, reuse=reuse):
         if opts['network']['d_arch'] == 'mlp':
             # Encoder uses only fully connected layers with ReLUs
@@ -92,7 +92,7 @@ def decoder(opts, input, output_dim, scope=None,
 
     x = tf.reshape(x, [-1] + datashapes[opts['dataset']])
 
-    return x, mean, Sigma
+    return x, mean
 
 
 def mlp_encoder(opts, input, output_dim, reuse=False,
@@ -113,19 +113,28 @@ def mlp_encoder(opts, input, output_dim, reuse=False,
 
 
 def dcgan_encoder(opts, input, output_dim, reuse=False,
-                                        is_training=False):
+                                            is_training=False):
     """
-    DCGAN style network with stride 2 at each hidden convolution layers.
-    Final dense layer with output of size output_dim.
+    Archi used by Locatello & al.
     """
     layer_x = input
+    # Conv block
     for i in range(opts['network']['e_nlayers']):
         layer_x = ops.conv2d.Conv2d(opts, layer_x,layer_x.get_shape().as_list()[-1],opts['network']['e_nfilters'][i],
                 opts['network']['filter_size'][i],stride=2,scope='hid{}/conv'.format(i+1),init=opts['conv_init'])
         if opts['normalization']=='batchnorm':
             layer_x = ops.batchnorm.Batchnorm_layers(
                 opts, layer_x, 'hid%d/bn' % i, is_training, reuse)
-        layer_x = ops._ops.non_linear(layer_x,opts['network']['e_nonlinearity'])
+        layer_x = ops._ops.non_linear(layer_x,'relu')
+    # 256 FC layer
+    layer_x = tf.reshape(layer_x,[-1,np.prod(layer_x.get_shape().as_list()[1:])])
+    layer_x = ops.linear.Linear(opts,layer_x,np.prod(layer_x.get_shape().as_list()[1:]),
+                256, scope='hid_fc')
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(
+            opts, layer_x, 'hid_bn' , is_training, reuse)
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+    # Final FC
     outputs = ops.linear.Linear(opts,layer_x,np.prod(layer_x.get_shape().as_list()[1:]),
                 output_dim, scope='hid_final')
 
@@ -153,26 +162,26 @@ def mlp_decoder(opts, input, output_dim, reuse=False,
 def  dcgan_decoder(opts, input, output_dim, reuse,
                                             is_training):
     """
-    DCGAN style network with stride 2 at each hidden deconvolution layers.
-    First dense layer reshape to [out_h/2**num_layers,out_w/2**num_layers,num_units].
-    Then num_layers deconvolutions with stride 2 and num_units filters.
-    Last deconvolution output a 3-d latent code [out_h,out_w,2].
+    Archi used by Locatello & al.
     """
 
     # batch_size
     batch_size = tf.shape(input)[0]
     # Linear layers
-    height = ceil(output_dim[0] / 2**opts['network']['d_nlayers'])
-    width = ceil(output_dim[1] / 2**opts['network']['d_nlayers'])
-    h0 = input
-    h0 = ops.linear.Linear(opts,h0,np.prod(h0.get_shape().as_list()[1:]),
-                opts['network']['d_nfilters'][-1]*height*width, scope='hid0/lin')
+    h0 = ops.linear.Linear(opts,input,np.prod(input.get_shape().as_list()[1:]),
+                256, scope='hid0/lin0')
     if opts['normalization']=='batchnorm':
         h0 = ops.batchnorm.Batchnorm_layers(
-            opts, h0, 'hid0/bn', is_training, reuse)
+            opts, h0, 'hid0/bn0', is_training, reuse)
     h0 = ops._ops.non_linear(h0,'relu')
-    h0 = tf.reshape(h0, [-1, height, width, opts['network']['d_nfilters'][-1]])
-    layer_x = h0
+    h1 = ops.linear.Linear(opts,h0,np.prod(h0.get_shape().as_list()[1:]),
+                4*4*64, scope='hid0/lin1')
+    if opts['normalization']=='batchnorm':
+        h1 = ops.batchnorm.Batchnorm_layers(
+            opts, h1, 'hid0/bn1', is_training, reuse)
+    h1 = ops._ops.non_linear(h1,'relu')
+    h1 = tf.reshape(h1, [-1, 4, 4, 64])
+    layer_x = h1
     # Conv block
     for i in range(opts['network']['d_nlayers'] - 1):
         _out_shape = [batch_size, 2*layer_x.get_shape().as_list()[1],

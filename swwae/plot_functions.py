@@ -20,7 +20,8 @@ def save_train(opts, data_train, data_test,
                      samples,
                      loss, loss_test,
                      loss_rec, loss_rec_test,
-                     loss_match, loss_match_test,
+                     mse, mse_test,
+                     loss_reg, loss_reg_test,
                      exp_dir,
                      filename):
 
@@ -33,7 +34,7 @@ def save_train(opts, data_train, data_test,
         img3    -   samples
         img4    -   loss curves
         img5    -   split loss curves
-        img6    -   dis. metrics curves
+        img6    -   mse
 
     """
     num_pics = opts['plot_num_pics']
@@ -164,14 +165,14 @@ def save_train(opts, data_train, data_test,
     y = loss_rec_test
     y = np.log(y[::x_step])
     losses_test.append(list(y))
-    y = loss_match_test
+    y = loss_reg_test
     y = np.log(y[::x_step])
     losses_test.append(list(y))
     # Train
     y = loss_rec
     y = np.log(y[::x_step])
     losses.append(list(y))
-    y = loss_match
+    y = loss_reg
     y = np.log(np.abs(y[::x_step]))
     losses.append(list(y))
     for i in range(len(labels)):
@@ -181,6 +182,23 @@ def save_train(opts, data_train, data_test,
     plt.grid(axis='y')
     plt.legend(loc='upper right')
     plt.text(0.47, 1., 'Log split Loss curves', ha="center", va="bottom",
+                                size=20, transform=ax.transAxes)
+    ### The mse curves
+    base = plt.cm.get_cmap('tab10')
+    color_list = base(np.linspace(0, 1, 6))
+    ax = plt.subplot(gs[1, 2])
+    # Test
+    y = mse_test
+    y = np.log(y[::x_step])
+    plt.plot(x, y, linewidth=4, color=color_list[0], label='MSE test')
+    # Train
+    y = mse
+    y = np.log(y[::x_step])
+    plt.plot(x, y, linewidth=4, color=color_list[0], linestyle='--', label='MSE')
+
+    plt.grid(axis='y')
+    plt.legend(loc='upper right')
+    plt.text(0.47, 1., 'MSE curves', ha="center", va="bottom",
                                 size=20, transform=ax.transAxes)
 
     ### Saving plots
@@ -212,6 +230,7 @@ def plot_encSigma(opts, enc_Sigmas, exp_dir, filename):
     utils.create_dir(save_path)
     fig.savefig(utils.o_gfile((save_path, filename), 'wb'),cformat='png')
     plt.close()
+
 
 def plot_sinkhorn(opts, sinkhorn_it, exp_dir, filename):
     fig = plt.figure()

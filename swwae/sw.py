@@ -1,4 +1,6 @@
 import tensorflow as tf
+import tensorflow_probability as tfp
+from math import pi
 
 def sw2(opts, x1, x2):
     """
@@ -6,31 +8,32 @@ def sw2(opts, x1, x2):
     in the pixel space
     x1,2: [batch_size, height, width, channels]
     """
-    h, w, c = x.get_shape().as_list()[1:]
     N = opts['sw_samples_num']
     # get distributions approx.
-    pc1 = distrib_approx(x1, N)
-    pc2 = distrib_approx(x2, N)
+    pc1 = distrib_approx(x1, opts['sw_proj_num'], opts['sw_samples_num'])
+    pc2 = distrib_approx(x2, opts['sw_proj_num'], opts['sw_samples_num'])
     # sort the point clouds
     pc1_sorted = tf.sort(pc1, axis=-1)  # (batch,L,c,N)
     pc2_sorted = tf.sort(pc2, axis=-1)  # (batch,L,c,N)
 
     sq_diff = tf.math.reduce_mean((pc1_sorted-pc2_sorted)**2, axis=-1)  # (batch,L,c)
     sq_diff = tf.math.reduce_mean(sq_diff, axis=1)  # (batch,c)
+    # we take the mean over the chanels for the moment
+    sq_diff = tf.math.reduce_mean(sq_diff, axis=1)  # (batch,)
 
     return sq_diff
 
-
-
-def distrib_approx(x, N):
+def distrib_approx(x, L, N):
     """
-    Wraper to approximate the distribution by a sum od Diracs
+    Wraper to approximate the distribution by a sum of Diracs
+    x: inputs [batch_size, height, width, channels]
+    L: num of projections
+    N: num of samples
     """
     h, w, c = x.get_shape().as_list()[1:]
     B = tf.cast(tf.shape(x)[0], tf.int32)
-    L = opts['sw_proj_num']
     # projected image
-    sorted_proj, x_sorted = distrib_proj(x)  # (L, h*w), (batch,L,c,h*w)
+    sorted_proj, x_sorted = distrib_proj(x, L)  # (L, h*w), (batch,L,c,h*w)
     # expand sorted_proj for batch and channels
     sorted_proj = tf.reshape(sorted_proj,[1,L,1,-1])
     sorted_proj = tf.tile(sorted_proj, [B,1,c,1]) #(batch,L,c,h*w)
@@ -51,13 +54,12 @@ def distrib_approx(x, N):
     return point_cloud
 
 
-def distrib_proj(x):
+def distrib_proj(x, L):
     """
     Gets the projected distribution
     """
     h, w, c = x.get_shape().as_list()[1:]
     B = tf.cast(tf.shape(x)[0], tf.int32)
-    L = opts['sw_proj_num']
     # get pixel grid projection
     proj = projection(x,L) # (L, h*w)
     # sort proj.
@@ -91,7 +93,7 @@ def projection(x,L):
     X,Y = tf.meshgrid(tf.range(h), tf.range(w))
     coord = tf.cast(tf.reshape(tf.stack([X,Y],axis=-1),[-1,2]),tf.float32) # ((h*w),2)
     # get directions to project
-    thetas = tf.range(L, dtype=tf.float32) / L *2*np.pi # add other proj methods
+    thetas = tf.range(L, dtype=tf.float32) / L *2*pi # add other proj methods
     proj_mat = tf.stack([tf.math.cos(thetas),tf.math.sin(thetas)], axis=-1)
     # project grid into proj dir
     proj = tf.linalg.matmul(proj_mat, coord, transpose_b=True) # (L, (h*w))

@@ -13,17 +13,20 @@ config['evaluate_every'] = int(config['print_every'] / 2)
 config['vizu_embedded'] = False
 config['embedding'] = 'umap' #vizualisation method of the embeddings: pca, umap
 config['vizu_encSigma'] = False
-config['vizu_interpolation'] = True
+config['vizu_interpolation'] = False
 config['fid'] = False
 config['out_dir'] = 'code_outputs'
 config['plot_num_pics'] = 100
 config['plot_num_cols'] = 10
+config['evaluate_num_pics'] = 5
 # Experiment set up
 config['train_dataset_size'] = -1
 config['batch_size'] = 100
 config['epoch_num'] = 101
 config['model'] = 'WAE' #WAE, BetaVAE
 config['use_trained'] = False #train from pre-trained model
+# Data set up
+config['celebA_crop'] = 'closecrop' # closecrop, resizecrop
 # Opt set up
 config['optimizer'] = 'adam' # adam, sgd
 config['adam_beta1'] = 0.9
@@ -38,6 +41,8 @@ config['cost'] = 'l2sq' #l2, l2sq, l2sq_norm, l1, xentropy
 config['mmd_kernel'] = 'IMQ' # RBF, IMQ
 config['pen_enc_sigma'] = False
 config['lambda_pen_enc_sigma'] = 0.001
+config['sw_proj_num'] = 6
+config['sw_samples_num'] = 10
 # Model set up
 config['pz_scale'] = 1.
 config['prior'] = 'gaussian' # dirichlet, gaussian
@@ -51,17 +56,6 @@ config['init_std'] = 0.099999
 config['init_bias'] = 0.0
 config['mlp_init'] = 'glorot_uniform' #normal, he, glorot, glorot_he, glorot_uniform, ('uniform', range)
 config['conv_init'] = 'glorot_uniform' #he, glorot, normilized_glorot, truncated_norm
-
-
-### celebA config
-config_celeba = config.copy()
-# Data set up
-config_celeba['dataset'] = 'celeba'
-config_celeba['celeba_data_source_url'] = 'https://docs.google.com/uc?export=download'
-config_celeba['celeba_crop'] = 'closecrop' # closecrop, resizecrop
-config_celeba['input_normalize_sym'] = True
-# Model set up
-config_celeba['zdim'] = 64
 
 
 ### MNIST config
@@ -80,6 +74,7 @@ config_svhn = config.copy()
 config_svhn['dataset'] = 'svhn'
 config_svhn['SVHN_data_source_url'] = 'http://ufldl.stanford.edu/housenumbers/'
 config_svhn['input_normalize_sym'] = False
+config_svhn['use_extra'] = False
 # Model set up
 config_svhn['zdim'] = 16
 
@@ -89,7 +84,18 @@ config_cifar10 = config.copy()
 # Data set up
 config_cifar10['dataset'] = 'cifar10'
 config_cifar10['data_dir'] = 'cifar10'
-config_cifar10['input_normalize_sym'] = False
+config_cifar10['input_normalize_sym'] = True
 config_cifar10['cifar10_data_source_url'] = 'https://www.cs.toronto.edu/~kriz/'
 # Model set up
-config_cifar10['zdim'] = 64
+config_cifar10['zdim'] = 128
+
+
+### celebA config
+config_celeba = config.copy()
+# Data set up
+config_celeba['dataset'] = 'celebA'
+config_celeba['celeba_data_source_url'] = 'https://docs.google.com/uc?export=download'
+config_celeba['celeba_crop'] = 'closecrop' # closecrop, resizecrop
+config_celeba['input_normalize_sym'] = True
+# Model set up
+config_celeba['zdim'] = 64
