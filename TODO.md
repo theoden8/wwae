@@ -2,9 +2,7 @@
 
 * Implementation (benoit)
   * merge sw
-  * Implement NN from RAE
   * FID score
-  * pad mnist 32x32
   * Implement Gaussian decoder and Gaussian VAE rec. loss
   * Interpolations
 * Writing

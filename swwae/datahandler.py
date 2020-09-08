@@ -35,7 +35,7 @@ import pdb
 data_dir = '../../data'
 
 datashapes = {}
-datashapes['mnist'] = [28, 28, 1]
+datashapes['mnist'] = [32, 32, 1]
 datashapes['svhn'] = [32, 32, 3]
 datashapes['cifar10'] = [32, 32, 3]
 datashapes['celebA'] = [64, 64, 3]
@@ -158,6 +158,14 @@ class DataHandler(object):
         # Create tf.dataset
         dataset_train = tf.data.Dataset.from_tensor_slices(data_train)
         dataset_test = tf.data.Dataset.from_tensor_slices(data_test)
+        # pad data to 32x32
+        def pad_mnist(x):
+            paddings = [[2,2], [2,2], [0,0]]
+            return tf.pad(x, paddings, mode='CONSTANT', constant_values=0.)
+        dataset_train = dataset_train.map(pad_mnist,
+                                num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        dataset_test = dataset_test.map(pad_mnist,
+                                num_parallel_calls=tf.data.experimental.AUTOTUNE)
         # normalize data if needed
         if opts['input_normalize_sym']:
             dataset_train = dataset_train.map(lambda x: (x - 0.5) * 2.,
@@ -467,7 +475,13 @@ class DataHandler(object):
     def _sample_observations(self, keys):
         if len(self.all_data.shape)>1:
             # all_data is an np.ndarray already loaded into the memory
-            return self.all_data[keys]
+            if self.dataset=='mnist':
+                obs = self.all_data[keys]
+                paddings = ((0,0),(2,2), (2,2), (0,0))
+                obs = np.pad(obs, paddings, mode='constant', constant_values=0.)
+            else:
+                obs = self.all_data[keys]
+            return obs
         else:
             # all_data is a 1d array of paths
             obs = []

@@ -50,17 +50,6 @@ parser.add_argument("--weights_file")
 FLAGS = parser.parse_args()
 
 
-# --- Network architectures
-mlp_config = { 'e_arch': 'mlp' , 'e_nlayers': 2, 'e_nfilters': [256, 256], 'e_nonlinearity': 'relu',
-        'd_arch': 'mlp' , 'd_nlayers': 3, 'd_nfilters': [256, 256, 256], 'd_nonlinearity': 'tanh'}
-
-conv_config = { 'e_arch': 'dcgan' , 'e_nlayers': 4, 'e_nfilters': [32,32,64,64], 'e_nonlinearity': 'relu',
-        'd_arch': 'dcgan' , 'd_nlayers': 4, 'd_nfilters': [32,32,32,64], 'd_nonlinearity': 'relu',
-        'filter_size': [4,4,4,4]}
-
-net_configs = {'mlp': mlp_config, 'conv': conv_config}
-
-
 def main():
 
     # Select dataset to use
@@ -83,7 +72,7 @@ def main():
     # opts['data_dir'] = FLAGS.data_dir
     opts['fid'] = FLAGS.fid
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
-    opts['network'] = net_configs[FLAGS.net_archi]
+    opts['net_archi'] = FLAGS.net_archi
     opts['pen_enc_sigma'] = FLAGS.sigma_pen
     opts['lambda_pen_enc_sigma'] = FLAGS.sigma_pen_val
 
