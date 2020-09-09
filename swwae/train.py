@@ -16,15 +16,6 @@ from plot_functions import plot_embedded, plot_encSigma, plot_interpolation
 import models
 from datahandler import datashapes
 
-# Path to inception model and stats for training set
-sys.path.append('../../TTUR')
-sys.path.append('../../inception')
-import fid
-inception_path = '../../inception'
-inception_model = os.path.join(inception_path, 'classify_image_graph_def.pb')
-layername = 'FID_Inception_Net/pool_3:0'
-
-
 import pdb
 
 class Run(object):
@@ -341,7 +332,11 @@ class Run(object):
                                             exp_dir, 'inter_it%07d.png' % (it))
 
                 # Auto-encoding training images
-                inputs_tr =  self.sess.run(self.data.next_element, feed_dict={self.data.handle: self.train_handle})
+                inputs_tr = []
+                n_next_element = ceil(npics / self.opts['batch_size'])
+                for _ in range(n_next_element):
+                    inputs_tr.append(self.sess.run(self.data.next_element, feed_dict={self.data.handle: self.train_handle}))
+                inputs_tr = np.concatenate(inputs_tr,axis=0)[:npics]
                 reconstructions_train = self.sess.run(self.decoded,
                                             feed_dict={self.inputs_img: inputs_tr,
                                                        self.is_training: False})
