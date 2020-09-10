@@ -1,3 +1,4 @@
+
 """
 Auto-Encoder models
 """
@@ -71,7 +72,7 @@ class Run(object):
             self.objective+= pen_enc_sigma
 
         # --- Get batchnorm ops for training only
-        self.extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        self.extra_update_ops = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)
 
         # --- encode & decode pass for vizu
         self.encoded, self.encoded_mean, _, self.decoded, _ =\
@@ -95,10 +96,10 @@ class Run(object):
         self.add_optimizers()
 
         # --- Init iteratorssess, saver and load trained weights if needed, else init variables
-        self.sess = tf.Session()
+        self.sess = tf.compat.v1.Session()
         self.train_handle, self.test_handle = self.data.init_iterator(self.sess)
-        self.saver = tf.train.Saver(max_to_keep=10)
-        self.initializer = tf.global_variables_initializer()
+        self.saver = tf.compat.v1.train.Saver(max_to_keep=10)
+        self.initializer = tf.compat.v1.global_variables_initializer()
         if opts['use_trained']:
             if not tf.gfile.Exists(WEIGHTS_FILE+".meta"):
                 raise Exception("weights file doesn't exist")
@@ -109,15 +110,15 @@ class Run(object):
 
 
     def add_ph(self):
-        self.lr_decay = tf.placeholder(tf.float32, name='rate_decay_ph')
-        self.is_training = tf.placeholder(tf.bool, name='is_training_ph')
-        self.pz_samples = tf.placeholder(tf.float32,
+        self.lr_decay = tf.compat.v1.placeholder(tf.float32, name='rate_decay_ph')
+        self.is_training = tf.compat.v1.placeholder(tf.bool, name='is_training_ph')
+        self.pz_samples = tf.compat.v1.placeholder(tf.float32,
                                          [None] + [self.opts['zdim'],],
                                          name='noise_ph')
-        self.inputs_img = tf.placeholder(tf.float32,
+        self.inputs_img = tf.compat.v1.placeholder(tf.float32,
                                          [None] + self.data.data_shape,
                                          name='point_ph')
-        self.beta = tf.placeholder(tf.float32, name='beta_ph')
+        self.beta = tf.compat.v1.placeholder(tf.float32, name='beta_ph')
 
     def compute_blurriness(self):
         images = self.inputs_img
@@ -164,7 +165,7 @@ class Run(object):
         if opts['optimizer'] == 'sgd':
             return tf.train.GradientDescentOptimizer(lr)
         elif opts['optimizer'] == 'adam':
-            return tf.train.AdamOptimizer(lr, beta1=opts['adam_beta1'], beta2=opts['adam_beta2'])
+            return tf.compat.v1.train.AdamOptimizer(lr, beta1=opts['adam_beta1'], beta2=opts['adam_beta2'])
         else:
             assert False, 'Unknown optimizer.'
 
@@ -172,9 +173,9 @@ class Run(object):
         opts = self.opts
         lr = opts['lr']
         opt = self.optimizer(lr, self.lr_decay)
-        encoder_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+        encoder_vars = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
                                                 scope='encoder')
-        decoder_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+        decoder_vars = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
                                                 scope='decoder')
         with tf.control_dependencies(self.extra_update_ops):
             self.opt = opt.minimize(loss=self.objective, var_list=encoder_vars + decoder_vars)

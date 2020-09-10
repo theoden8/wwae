@@ -170,7 +170,7 @@ class WAE(Model):
         enc_z, _, enc_Sigma, recon_x, dec_mean = self.forward_pass(inputs=inputs,
                                                 is_training=is_training)
         rec = self.reconstruction_loss(inputs, recon_x, dec_mean)
-        noise = tf.random_normal(shape=tf.shape(enc_z))
+        noise = tf.compat.v1.random_normal(shape=tf.shape(enc_z))
         pz_sample = tf.add(self.pz_mean, (noise * self.pz_sigma))
         reg = beta*self.mmd_penalty(enc_z, pz_sample)
 

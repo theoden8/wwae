@@ -9,7 +9,8 @@ import utils
 import itertools
 
 import tensorflow as tf
-
+tf.compat.v1.disable_eager_execution()
+print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 import pdb
 
 parser = argparse.ArgumentParser()
@@ -117,7 +118,7 @@ def main():
     opts['vizu_encSigma'] = False
 
     #Reset tf graph
-    tf.reset_default_graph()
+    tf.compat.v1.reset_default_graph()
 
     # Loading the dataset
     data = DataHandler(opts)

@@ -41,7 +41,7 @@ config['cost'] = 'l2sq' #l2, l2sq, l2sq_norm, l1, xentropy
 config['mmd_kernel'] = 'IMQ' # RBF, IMQ
 config['pen_enc_sigma'] = False
 config['lambda_pen_enc_sigma'] = 0.001
-config['sw_proj_num'] = 6
+config['sw_proj_num'] = 15
 config['sw_samples_num'] = 10
 # Model set up
 config['pz_scale'] = 1.

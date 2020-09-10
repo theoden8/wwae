@@ -15,7 +15,7 @@ def Batchnorm_layers(opts, input, scope=None, is_training=False, reuse=None, sca
     """Batch normalization based on tf.layers.batch_normalization.
 
     """
-    return tf.layers.batch_normalization(
+    return tf.compat.v1.layers.batch_normalization(
         input, center=center, scale=scale,
         epsilon=opts['batch_norm_eps'], momentum=opts['batch_norm_momentum'],
         training=is_training, reuse=reuse,

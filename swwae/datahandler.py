@@ -32,7 +32,7 @@ import utils
 import pdb
 
 # Path to data
-data_dir = '../../data'
+data_dir = '../data'
 
 datashapes = {}
 datashapes['mnist'] = [32, 32, 1]
@@ -187,13 +187,13 @@ class DataHandler(object):
         self.dataset_train = dataset_train.prefetch(buffer_size=4*opts['batch_size'])
         self.dataset_test = dataset_test.prefetch(buffer_size=4*opts['batch_size'])
         # Iterator for each split
-        self.iterator_train = dataset_train.make_initializable_iterator()
-        self.iterator_test = dataset_test.make_initializable_iterator()
+        self.iterator_train = tf.compat.v1.data.make_initializable_iterator(dataset_train)
+        self.iterator_test = tf.compat.v1.data.make_initializable_iterator(dataset_test)
 
         # Global iterator
-        self.handle = tf.placeholder(tf.string, shape=[])
-        self.next_element = tf.data.Iterator.from_string_handle(
-            self.handle, dataset_train.output_types, dataset_train.output_shapes).get_next()
+        self.handle = tf.compat.v1.placeholder(tf.string, shape=[])
+        self.next_element = tf.compat.v1.data.Iterator.from_string_handle(
+            self.handle, tf.compat.v1.data.get_output_types(dataset_train), tf.compat.v1.data.get_output_shapes(dataset_train)).get_next()
 
     def _load_svhn(self, opts):
         """Load data from SVHN files.
