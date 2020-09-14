@@ -21,7 +21,7 @@ config['plot_num_cols'] = 10
 config['evaluate_num_pics'] = 5
 # Experiment set up
 config['train_dataset_size'] = -1
-config['batch_size'] = 100
+config['batch_size'] = 64
 config['epoch_num'] = 101
 config['model'] = 'WAE' #WAE, BetaVAE
 config['use_trained'] = False #train from pre-trained model
@@ -32,6 +32,7 @@ config['optimizer'] = 'adam' # adam, sgd
 config['adam_beta1'] = 0.9
 config['adam_beta2'] = 0.999
 config['lr'] = 0.001
+config['lr_decay'] = False
 config['lr_adv'] = 1e-08
 config['normalization'] = 'batchnorm' #batchnorm, layernorm, none
 config['batch_norm_eps'] = 1e-05

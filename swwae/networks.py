@@ -17,7 +17,7 @@ import pdb
 def encoder(opts, input, output_dim, scope=None,
                                     reuse=False,
                                     is_training=False):
-    with tf.variable_scope(scope, reuse=reuse):
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
         if opts['net_archi'] == 'mlp':
             encoder = net_archi['mlp']['encoder']
         elif opts['net_archi'] == 'conv':
@@ -31,8 +31,8 @@ def encoder(opts, input, output_dim, scope=None,
     mean, logSigma = tf.split(outputs,2,axis=-1)
     logSigma = tf.clip_by_value(logSigma, -20, 500)
     Sigma = tf.nn.softplus(logSigma)
-    mean = tf.layers.flatten(mean)
-    Sigma = tf.layers.flatten(Sigma)
+    mean = tf.compat.v1.layers.flatten(mean)
+    Sigma = tf.compat.v1.layers.flatten(Sigma)
 
     if opts['encoder'] == 'det':
         z = mean
@@ -48,7 +48,7 @@ def encoder(opts, input, output_dim, scope=None,
 def decoder(opts, input, output_dim, scope=None,
                                     reuse=False,
                                     is_training=False):
-    with tf.variable_scope(scope, reuse=reuse):
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
         if opts['net_archi'] == 'mlp':
             decoder = net_archi['mlp']['decoder']
         elif opts['net_archi'] == 'conv':
@@ -63,8 +63,8 @@ def decoder(opts, input, output_dim, scope=None,
     logSigma = tf.clip_by_value(logSigma, -20, 500)
     Sigma = tf.nn.softplus(logSigma)
 
-    mean = tf.layers.flatten(mean)
-    Sigma = tf.layers.flatten(Sigma)
+    mean = tf.compat.v1.layers.flatten(mean)
+    Sigma = tf.compat.v1.layers.flatten(Sigma)
 
     if opts['input_normalize_sym']:
         x = tf.nn.tanh(mean)
