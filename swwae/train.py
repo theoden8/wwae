@@ -356,23 +356,25 @@ class Run(object):
                           'res_it%07d.png' % (it))                              # filename
 
             # - Update learning rate if necessary and it
-            if False:
+            if self.opts['lr_decay']:
+                batches_num = self.data.train_size//self.opts['batch_size']
+                """
                 if (it+1) % decay_steps == 0:
                     decay = decay_rate ** (int(it / decay_steps))
                     logging.error('Reduction in lr: %f\n' % decay)
-                    """
+                """
                     # If no significant progress was made in last 20 epochs
                     # then decrease the learning rate.
-                    if np.mean(Loss_rec[-20:]) < np.mean(Loss_rec[-20 * batches_num:])-1.*np.var(Loss_rec[-20 * batches_num:]):
-                        wait = 0
-                    else:
-                        wait += 1
-                    if wait > 20 * batches_num:
-                        decay = max(decay  / 1.33, 1e-6)
-                        logging.error('Reduction in lr: %f\n' % decay)
-                        print('')
-                        wait = 0
-                    """
+                if np.mean(Loss_rec[-20:]) < np.mean(Loss_rec[-20 * batches_num:])-1.*np.var(Loss_rec[-20 * batches_num:]):
+                    wait = 0
+                else:
+                    wait += 1
+                if wait > 20 * batches_num:
+                    decay = max(decay  / 1.33, 1e-6)
+                    logging.error('Reduction in lr: %f\n' % decay)
+                    print('')
+                    wait = 0
+
 
             # - Update regularizer if necessary
             if self.opts['lambda_schedule'] == 'adaptive':

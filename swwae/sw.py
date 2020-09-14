@@ -65,6 +65,9 @@ def sw2(opts, x1, x2):
     """
     actually sw1 to test
     """
+
+    h, w, c = x1.get_shape().as_list()[1:]
+
     sorted_proj_1, x_sorted_1 = distrib_proj(x1, opts['sw_proj_num'])
     sorted_proj_2, x_sorted_2 = distrib_proj(x2, opts['sw_proj_num'])
 
@@ -85,11 +88,17 @@ def sw2(opts, x1, x2):
 
     diff = tf.math.abs(xd_1 - xd_2)*steps
 
-    sw = tf.math.reduce_sum(diff, axis=-1)
+    sw = tf.math.reduce_sum(diff, axis=-1)**2
     sw = tf.math.reduce_mean(sw, axis=-1)
     sw = tf.math.reduce_mean(sw, axis=-1)
 
-    return sw
+
+#    diff_m = (mass1/(256.*h*w) - mass2/(256.*h*w))**2
+#    diff_m = tf.math.reduce_mean(diff_m, axis=-1)
+#    diff_m = tf.math.reduce_mean(diff_m, axis=-1)
+#    diff_m = tf.math.reduce_mean(diff_m, axis=-1)
+
+    return sw #+ diff_m
 
 
 '''def sample_and_proj(x,L,N):

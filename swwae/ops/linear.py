@@ -59,7 +59,7 @@ def Linear(opts, input, input_dim, output_dim, scope=None, init=None, reuse=None
         elif init == 'glorot_uniform':
             matrix = tf.compat.v1.get_variable(
                 "W", [input_dim, output_dim], tf.float32,
-                tf.glorot_uniform_initializer())
+                tf.compat.v1.glorot_uniform_initializer())
         elif init[0] == 'uniform':
             matrix = tf.compat.v1.get_variable(
                 "W", [input_dim, output_dim], tf.float32,
