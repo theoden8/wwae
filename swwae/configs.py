@@ -85,7 +85,7 @@ config_cifar10 = config.copy()
 # Data set up
 config_cifar10['dataset'] = 'cifar10'
 config_cifar10['data_dir'] = 'cifar10'
-config_cifar10['input_normalize_sym'] = True
+config_cifar10['input_normalize_sym'] = False
 config_cifar10['cifar10_data_source_url'] = 'https://www.cs.toronto.edu/~kriz/'
 # Model set up
 config_cifar10['zdim'] = 128
@@ -97,6 +97,6 @@ config_celeba = config.copy()
 config_celeba['dataset'] = 'celebA'
 config_celeba['celeba_data_source_url'] = 'https://docs.google.com/uc?export=download'
 config_celeba['celeba_crop'] = 'closecrop' # closecrop, resizecrop
-config_celeba['input_normalize_sym'] = True
+config_celeba['input_normalize_sym'] = False
 # Model set up
 config_celeba['zdim'] = 64
