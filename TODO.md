@@ -1,10 +1,12 @@
 # TODO list
 
-* Implementation (benoit)
-  * merge sw
+* Implementation
+  * merge sw (to clean)
+  * add random uniform projection
   * FID score
   * Implement Gaussian decoder and Gaussian VAE rec. loss
   * Interpolations
+
 * Writing
   * Sec.1: intro blabla
   * Sec.2: generative models
