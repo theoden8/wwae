@@ -3,8 +3,6 @@
 * Implementation
   * merge sw (to clean)
   * add random uniform projection
-  * decaying lr
-  * FID score
   * Implement Gaussian decoder and Gaussian VAE rec. loss
   * Interpolations
 
