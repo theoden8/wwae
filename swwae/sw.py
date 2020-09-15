@@ -88,17 +88,17 @@ def sw2(opts, x1, x2):
 
     diff = tf.math.abs(xd_1 - xd_2)*steps
 
-    sw = tf.math.reduce_sum(diff, axis=-1)**2
+    sw = tf.math.reduce_sum(diff, axis=-1)
     sw = tf.math.reduce_mean(sw, axis=-1)
     sw = tf.math.reduce_mean(sw, axis=-1)
 
 
-#    diff_m = (mass1/(256.*h*w) - mass2/(256.*h*w))**2
-#    diff_m = tf.math.reduce_mean(diff_m, axis=-1)
-#    diff_m = tf.math.reduce_mean(diff_m, axis=-1)
-#    diff_m = tf.math.reduce_mean(diff_m, axis=-1)
+    diff_m = (mass1/(256.) - mass2/(256.))**2
+    diff_m = tf.math.reduce_mean(diff_m, axis=-1)
+    diff_m = tf.math.reduce_mean(diff_m, axis=-1)
+    diff_m = tf.math.reduce_mean(diff_m, axis=-1)
 
-    return sw #+ diff_m
+    return sw + diff_m
 
 
 '''def sample_and_proj(x,L,N):

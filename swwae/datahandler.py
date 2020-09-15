@@ -342,8 +342,8 @@ class DataHandler(object):
         # datashape
         self.data_shape = datashapes[self.dataset]
         # Create tf.dataset
-        dataset_train = tf.data.Dataset.from_tensor_slices(data_train)
-        dataset_test = tf.data.Dataset.from_tensor_slices(data_test)
+        dataset_train = tf.compat.v1.data.Dataset.from_tensor_slices(data_train)
+        dataset_test = tf.compat.v1.data.Dataset.from_tensor_slices(data_test)
         # normalize data if needed
         if opts['input_normalize_sym']:
             dataset_train = dataset_train.map(lambda x: (x - 0.5) * 2.,
@@ -369,8 +369,8 @@ class DataHandler(object):
         self.iterator_test = dataset_test.make_initializable_iterator()
 
         # Global iterator
-        self.handle = tf.placeholder(tf.string, shape=[])
-        self.next_element = tf.data.Iterator.from_string_handle(
+        self.handle = tf.compat.v1.placeholder(tf.string, shape=[])
+        self.next_element = tf.compat.v1.data.Iterator.from_string_handle(
             self.handle, dataset_train.output_types, dataset_train.output_shapes).get_next()
 
     def _load_celebA(self, opts):
