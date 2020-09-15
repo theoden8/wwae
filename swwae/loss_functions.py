@@ -22,15 +22,13 @@ def kl_penalty(pz_mean, pz_sigma, encoded_mean, encoded_sigma):
     return tf.reduce_mean(kl)
 
 def cross_entropy_loss(opts, inputs, dec_mean, dec_Sigma):
-    if opts['decoder']=='bernoulli':
-        cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(labels=inputs, logits=dec_mean)
-        cross_entropy = tf.reduce_sum(cross_entropy,axis=-1)
-    elif opts['decoder']=='gaussian':
+    if opts['decoder']=='gaussian':
         cross_entropy = tf.log(2*pi) + tf.log(dec_Sigma) + tf.square(inputs-dec_mean) / dec_Sigma
         cross_entropy = -0.5 * tf.reduce_sum(cross_entropy,axis=-1)
     else:
-        assert False, 'Cross entropy not implemented for {} decoder' % opts['decoder']
-    return tf.reduce_mean(cross_entropy)
+        cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(labels=inputs, logits=dec_mean)
+        cross_entropy = tf.reduce_sum(cross_entropy,axis=-1)
+    return cross_entropy
 
 def mmd_penalty(opts, sample_qz, sample_pz):
     """
@@ -99,7 +97,7 @@ def square_dist(sample_x, sample_y):
 
 
 ######### rec losses #########
-def ground_cost(opts, x1, x2):
+def wae_ground_cost(opts, x1, x2):
     """
     Compute the WAE's ground cost
     x1: image data             [batch,h,w,c]

@@ -65,12 +65,17 @@ def decoder(opts, input, output_dim, scope=None,
 
     mean = tf.compat.v1.layers.flatten(mean)
     Sigma = tf.compat.v1.layers.flatten(Sigma)
-
-    if opts['input_normalize_sym']:
-        x = tf.nn.tanh(mean)
+    # sampling from gaussian if needed
+    if opts['decoder']=='gaussian':
+        x = sample_gaussian(tf.tf.concat([mean,Sigma], axis=-1), typ='tensorflow')
     else:
-        x = tf.nn.sigmoid(mean)
+        x = mean
+    # normalise to [0,1] or [-1,1]
+    if opts['input_normalize_sym']:
+        x = tf.nn.tanh(x)
+    else:
+        x = tf.nn.sigmoid(x)
 
     x = tf.reshape(x, [-1] + datashapes[opts['dataset']])
 
-    return x, mean
+    return x, mean, Sigma

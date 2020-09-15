@@ -4,7 +4,7 @@ import math
 
 from networks import encoder, decoder
 from datahandler import datashapes
-from loss_functions import ground_cost, cross_entropy_loss
+from loss_functions import wae_ground_cost, cross_entropy_loss
 import utils
 
 import pdb
@@ -30,16 +30,16 @@ class Model(object):
                                              reuse=reuse,
                                              is_training=is_training)
 
-        dec_x, dec_mean = decoder(self.opts, input=enc_z,
+        dec_x, dec_mean, dec_Sigma = decoder(self.opts, input=enc_z,
                                              output_dim=self.output_dim,
                                              scope='decoder',
                                              reuse=reuse,
                                              is_training=is_training)
-        return enc_z, enc_mean, enc_Sigma, dec_x, dec_mean
+        return enc_z, enc_mean, enc_Sigma, dec_x, dec_mean, dec_Sigma
 
     def sample_x_from_prior(self, noise):
 
-        sample_x, _ = decoder(self.opts, input=noise, output_dim=self.output_dim,
+        sample_x, _, _ = decoder(self.opts, input=noise, output_dim=self.output_dim,
                                               scope='decoder',
                                               reuse=True,
                                               is_training=False)
@@ -66,21 +66,19 @@ class BetaVAE(Model):
         kl = 0.5 * tf.reduce_sum(kl, axis=-1)
         return tf.reduce_mean(kl)
 
-    def reconstruction_loss(self, labels, logits):
+    def reconstruction_loss(self, inputs, mean, sigma):
         """
-        Compute Xentropy for bernoulli
+        Compute VAE rec. loss
         """
-        eps = 1e-8
-        labels = tf.layers.flatten(labels)
-        cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(labels=labels, logits=logits)
-        return tf.reduce_mean(tf.reduce_sum(cross_entropy,axis=-1))
+        rec_loss = cross_entropy_loss(self.opts, inputs, mean, sigma)
+        return tf.reduce_mean(rec_loss)
 
     def loss(self, inputs, beta, is_training):
 
-        _, enc_mean, enc_Sigma, _, dec_mean = self.forward_pass(inputs=inputs,
+        _, enc_mean, enc_Sigma, _, dec_mean, dec_Sigma = self.forward_pass(inputs=inputs,
                                               is_training=is_training)
 
-        rec = self.reconstruction_loss(inputs, dec_mean)
+        rec = self.reconstruction_loss(inputs, dec_mean, dec_Sigma)
         kl = self.kl_penalty(self.pz_mean, self.pz_sigma, enc_mean, enc_Sigma)
         reg = beta * kl
 
@@ -160,14 +158,14 @@ class WAE(Model):
         return stat
 
     def reconstruction_loss(self, x1, x2, logits):
-        cost = ground_cost(self.opts, x1, x2) #[batch,]
+        cost = wae_ground_cost(self.opts, x1, x2) #[batch,]
 
         return tf.reduce_mean(cost)
 
     def loss(self, inputs, beta, is_training):
 
         # --- Encoding and reconstructing
-        enc_z, _, enc_Sigma, recon_x, dec_mean = self.forward_pass(inputs=inputs,
+        enc_z, _, enc_Sigma, recon_x, dec_mean, _ = self.forward_pass(inputs=inputs,
                                                 is_training=is_training)
         rec = self.reconstruction_loss(inputs, recon_x, dec_mean)
         noise = tf.compat.v1.random_normal(shape=tf.shape(enc_z))

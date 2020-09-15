@@ -55,7 +55,7 @@ class Run(object):
         self.objective = self.loss_rec + self.loss_reg
 
         # --- encode & decode pass for testing
-        self.z_samples, self.z_mean, self.z_sigma, self.recon_x, _ =\
+        self.z_samples, self.z_mean, self.z_sigma, self.recon_x, _, _ =\
             self.model.forward_pass(inputs=self.data.next_element,
                                 is_training=self.is_training,
                                 reuse=True)
@@ -76,7 +76,7 @@ class Run(object):
         self.extra_update_ops = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)
 
         # --- encode & decode pass for vizu
-        self.encoded, self.encoded_mean, _, self.decoded, _ =\
+        self.encoded, self.encoded_mean, _, self.decoded, _, _ =\
             self.model.forward_pass(inputs=self.inputs_img,
                                 is_training=self.is_training,
                                 reuse=True)

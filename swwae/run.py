@@ -17,6 +17,8 @@ parser = argparse.ArgumentParser()
 # Args for experiment
 parser.add_argument("--model", default='WAE',
                     help='model to train [WAE/BetaVAE/...]')
+parser.add_argument("--decoder", default='det',
+                    help='decoder typ [det/gauss]')
 parser.add_argument("--mode", default='train',
                     help='mode to run [train/vizu/fid/test]')
 parser.add_argument("--dataset", default='mnist',
@@ -76,6 +78,7 @@ def main():
 
     # Model set up
     opts['model'] = FLAGS.model
+    opts['decoder'] = FLAGS.decoder
     if opts['model'][-3:]=='VAE':
         opts['input_normalize_sym'] = False
     opts['beta'] = FLAGS.beta
