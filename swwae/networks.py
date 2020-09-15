@@ -23,7 +23,7 @@ def encoder(opts, input, output_dim, scope=None,
         elif opts['net_archi'] == 'conv':
             encoder = net_archi[opts['dataset']]['encoder']
         else:
-            raise ValueError('Unknown {} dataset'.format(opts['net_archi']))
+            raise ValueError('Unknown {} net. archi.'.format(opts['net_archi']))
         outputs = encoder(opts, input, output_dim,
                                         reuse,
                                         is_training)

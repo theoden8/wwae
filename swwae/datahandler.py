@@ -32,7 +32,7 @@ import utils
 import pdb
 
 # Path to data
-data_dir = '../data'
+# data_dir = '../data'
 
 datashapes = {}
 datashapes['mnist'] = [32, 32, 1]
@@ -42,7 +42,7 @@ datashapes['celebA'] = [64, 64, 3]
 
 
 def _data_dir(opts):
-    _data_dir = os.path.join(data_dir, opts['dataset'])
+    _data_dir = os.path.join(opts['data_dir'], opts['dataset'])
     if opts['dataset']=='mnist':
         data_path = _data_dir
     elif opts['dataset']=='svhn':

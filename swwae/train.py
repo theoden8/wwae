@@ -16,12 +16,13 @@ from plot_functions import save_train, save_test_smallnorb, save_test_celeba, sa
 from plot_functions import plot_embedded, plot_encSigma, plot_interpolation
 import models
 from datahandler import datashapes
+from fid.fid import calculate_frechet_distance
 
 import pdb
 
 class Run(object):
 
-    def __init__(self, opts, data, WEIGHTS_FILE):
+    def __init__(self, opts, data):
 
         logging.error('Building the Tensorflow Graph')
         self.opts = opts
@@ -85,7 +86,6 @@ class Run(object):
 
         # --- FID score
         if opts['fid']:
-            self.blurriness = self.compute_blurriness()
             self.inception_graph = tf.Graph()
             self.inception_sess = tf.Session(graph=self.inception_graph)
             with self.inception_graph.as_default():
@@ -96,16 +96,10 @@ class Run(object):
         self.add_optimizers()
 
         # --- Init iteratorssess, saver and load trained weights if needed, else init variables
-        self.sess = tf.compat.v1.Session()
+        self.sess = tf.Session()
         self.train_handle, self.test_handle = self.data.init_iterator(self.sess)
-        self.saver = tf.compat.v1.train.Saver(max_to_keep=10)
-        self.initializer = tf.compat.v1.global_variables_initializer()
-        if opts['use_trained']:
-            if not tf.gfile.Exists(WEIGHTS_FILE+".meta"):
-                raise Exception("weights file doesn't exist")
-            self.saver.restore(self.sess, WEIGHTS_FILE)
-        else:
-            self.sess.run(self.initializer)
+        self.saver = tf.train.Saver(max_to_keep=10)
+        self.initializer = tf.global_variables_initializer()
         self.sess.graph.finalize()
 
 
@@ -135,14 +129,17 @@ class Run(object):
         return lapvar
 
     def create_inception_graph(self):
+        inception_model = 'classify_image_graph_def.pb'
+        inception_path = os.path.join('fid', inception_model)
         # Create inception graph
-        with tf.gfile.FastGFile( inception_model, 'rb') as f:
+        with tf.gfile.FastGFile(inception_path, 'rb') as f:
             graph_def = tf.GraphDef()
             graph_def.ParseFromString( f.read())
             _ = tf.import_graph_def( graph_def, name='FID_Inception_Net')
 
     def _get_inception_layer(self):
         # Get inception activation layer (and reshape for batching)
+        layername = 'FID_Inception_Net/pool_3:0'
         pool3 = self.inception_sess.graph.get_tensor_by_name(layername)
         ops_pool3 = pool3.graph.get_operations()
         for op_idx, op in enumerate(ops_pool3):
@@ -180,7 +177,7 @@ class Run(object):
         with tf.control_dependencies(self.extra_update_ops):
             self.opt = opt.minimize(loss=self.objective, var_list=encoder_vars + decoder_vars)
 
-    def train(self):
+    def train(self, MODEL_PATH=None, WEIGHTS_FILE=None):
         """
         Train top-down model with chosen method
         """
@@ -202,13 +199,26 @@ class Run(object):
         Loss, Loss_test, Loss_rec, Loss_rec_test = [], [], [], []
         Loss_reg, Loss_reg_test = [], []
         MSE, MSE_test = [], []
-        FID, FID_test = [], []
         if self.opts['vizu_encSigma']:
             enc_Sigmas = []
         # - Init decay lr and lambda
         decay = 1.
         decay_steps, decay_rate = 500000, 0.95
         wait, wait_lambda = 0, 0
+
+        # - Load trained model or init variables
+        if self.opts['use_trained']:
+            if MODEL_PATH is None or WEIGHTS_FILE is None:
+                    raise Exception("No model/weights provided")
+            else:
+                if not tf.gfile.IsDirectory(MODEL_PATH):
+                    raise Exception("model doesn't exist")
+                WEIGHTS_PATH = os.path.join(MODEL_PATH,'checkpoints', WEIGHTS_FILE)
+                if not tf.gfile.Exists(WEIGHTS_FILE+".meta"):
+                    raise Exception("weights file doesn't exist")
+                self.saver.restore(self.sess, WEIGHTS_FILE)
+        else:
+            self.sess.run(self.initializer)
 
         # - Training
         for it in range(self.opts['it_num']):
@@ -278,11 +288,6 @@ class Run(object):
                                             MSE[-1],
                                             MSE_test[-1])
                 logging.error(debug_str)
-                if self.opts['fid']:
-                    debug_str = 'FID=%.3f, FID REC=%.3f \n '  % (
-                                                FID[-1],
-                                                FID_test[-1])
-                    logging.error(debug_str)
                 if self.opts['model'] == 'BetaVAE':
                     debug_str = 'beta*KL=%10.3e, beta*TEST KL=%10.3e, \n '  % (
                                                 Loss_reg[-1],
@@ -444,11 +449,6 @@ class Run(object):
                                     MSE[-1],
                                     MSE_test[-1])
         logging.error(debug_str)
-        if self.opts['fid']:
-            debug_str = 'FID=%.3f, FID REC=%.3f \n '  % (
-                                        FID[-1],
-                                        FID_test[-1])
-            logging.error(debug_str)
         if self.opts['model'] == 'BetaVAE':
             debug_str = 'beta*KL=%10.3e, beta*TEST KL=%10.3e, \n '  % (
                                         Loss_reg[-1],
@@ -472,8 +472,7 @@ class Run(object):
                     loss=np.array(Loss[-1]), loss_test=np.array(Loss_test[-1]),
                     loss_rec=np.array(Loss_rec[-1]), loss_rec_test=np.array(Loss_rec_test[-1]),
                     mse = np.array(MSE[-1]), mse_test = np.array(MSE_test[-1]),
-                    loss_reg=np.array(Loss_reg[-1]), loss_reg_test=np.array(Loss_reg_test[-1]),
-                    fid = np.array(FID[-1]), FID_test = np.array(FID_test[-1]))
+                    loss_reg=np.array(Loss_reg[-1]), loss_reg_test=np.array(Loss_reg_test[-1]))
 
     def test(self, data, WEIGHTS_PATH, verbose):
         """
@@ -737,3 +736,109 @@ class Run(object):
                                         obs_transversal,
                                         generations,
                                         opts['exp_dir'])
+
+    def fid_score(self, MODEL_PATH, WEIGHTS_FILE, COMPUTE_DATASET_STASTICS, fid_inputs='samples'):
+        """
+        Compute FID score
+        """
+
+        opts = self.opts
+
+        # --- Load trained weights
+        if not tf.gfile.IsDirectory(MODEL_PATH):
+            raise Exception("model doesn't exist")
+        WEIGHTS_PATH = os.path.join(MODEL_PATH,'checkpoints',WEIGHTS_FILE)
+        if not tf.gfile.Exists(WEIGHTS_PATH+".meta"):
+            raise Exception("weights file doesn't exist")
+        self.saver.restore(self.sess, WEIGHTS_PATH)
+
+        if self.data.dataset == 'celebA':
+            compare_dataset_name = 'celeba_stats.npz'
+        elif self.data.dataset == 'cifar10':
+            compare_dataset_name = 'cifar10_stats.npz'
+        elif self.data.dataset == 'svhn':
+            compare_dataset_name = 'svhn_stats.npz'
+        elif self.data.dataset == 'mnist':
+            compare_dataset_name = 'mnist_stats.npz'
+        else:
+            assert False, 'FID not implemented for {} dataset.'.format(self.data.dataset)
+
+        # --- setup
+        full_size = self.data.train_size + self.data.test_size
+        test_size = 1000
+        batch_size = 100
+        batch_num = int(test_size/batch_size)
+        fid_dir = 'fid'
+        stats_path = os.path.join(fid_dir, compare_dataset_name)
+
+        # --- Compute stats on real dataset if needed
+        if COMPUTE_DATASET_STASTICS:
+            preds_list = []
+            for n in range(batch_num):
+                batch_id = np.random.randint(full_size, size=batch_size)
+                batch = self.data._sample_observations(batch_id)
+                # Convert to RGB if needed
+                if np.shape(batch)[-1] == 1:
+                    batch = np.repeat(batch, 3, axis=-1)
+                preds_incep = self.inception_sess.run(self.inception_layer,
+                              feed_dict={'FID_Inception_Net/ExpandDims:0': batch})
+                preds_incep = preds_incep.reshape((batch_size,-1))
+                preds_list.append(preds_incep)
+            preds_list = np.concatenate(preds_list, axis=0)
+            mu = np.mean(preds_list, axis=0)
+            sigma = np.cov(preds_list, rowvar=False)
+            # saving stats
+            np.savez(stats_path, m=mu, s=sigma)
+        else:
+            if not os.path.isfile(stats_path):
+                raise NotImplementedError('No statistics found for given dataset')
+            stats = np.load(stats_path)
+            mu = stats['m']
+            sigma = stats['s']
+
+        # --- Compute stats for reconstructions or samples
+        if fid_inputs == 'reconstruction':
+            preds_list = []
+            for n in range(batch_num):
+                batch_id = np.random.randint(full_size, size=batch_size)
+                batch = self.data._sample_observations(batch_id)
+                recons = self.sess.run(self.decoded, feed_dict={
+                                        self.inputs_img: batch,
+                                        self.is_training: False})
+                if np.shape(recons)[-1] == 1:
+                    recons = np.repeat(recons, 3, axis=-1)
+                preds_incep = self.inception_sess.run(self.inception_layer,
+                              feed_dict={'FID_Inception_Net/ExpandDims:0': recons})
+                preds_incep = preds_incep.reshape((batch_size,-1))
+                preds_list.append(preds_incep)
+            preds_list = np.concatenate(preds_list, axis=0)
+            mu_model = np.mean(preds_list, axis=0)
+            sigma_model = np.cov(preds_list, rowvar=False)
+        elif fid_inputs == 'samples':
+            preds_list = []
+            for n in range(batch_num):
+                batch = sample_pz(opts, self.pz_params, batch_size)
+                samples = self.sess.run(self.generated, feed_dict={
+                                        self.pz_samples: batch,
+                                        self.is_training: False})
+                if np.shape(samples)[-1] == 1:
+                    samples = np.repeat(samples, 3, axis=-1)
+                preds_incep = self.inception_sess.run(self.inception_layer,
+                              feed_dict={'FID_Inception_Net/ExpandDims:0': samples})
+                preds_incep = preds_incep.reshape((batch_size,-1))
+                preds_list.append(preds_incep)
+            preds_list = np.concatenate(preds_list, axis=0)
+            mu_model = np.mean(preds_list, axis=0)
+            sigma_model = np.cov(preds_list, rowvar=False)
+
+        # --- Compute FID between real stats and model stats
+        fid_scores = calculate_frechet_distance(mu, sigma, mu_model, sigma_model)
+
+        # --- Logging
+        debug_str = 'FID={:.3f} for {} data'.format(fid_scores, test_size)
+        logging.error(debug_str)
+        fid_res_dir = os.path.join(MODEL_PATH,'fid')
+        if not tf.io.gfile.isdir(fid_res_dir):
+            utils.create_dir(fid_res_dir)
+        filename = 'fid_' + fid_inputs
+        np.save(os.path.join(fid_res_dir,filename),fid_scores)

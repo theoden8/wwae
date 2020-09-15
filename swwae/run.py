@@ -21,8 +21,8 @@ parser.add_argument("--mode", default='train',
                     help='mode to run [train/vizu/fid/test]')
 parser.add_argument("--dataset", default='mnist',
                     help='dataset')
-# parser.add_argument("--data_dir", type=str, default='data',
-#                     help='directory in which data is stored')
+parser.add_argument("--data_dir", type=str, default='data',
+                    help='directory in which data is stored')
 parser.add_argument("--out_dir", type=str, default='code_outputs',
                     help='root_directory in which outputs are saved')
 parser.add_argument("--res_dir", type=str, default='res',
@@ -39,8 +39,6 @@ parser.add_argument("--sigma_pen_val", type=float, default=0.01,
                     help='value of penalization of Sigma_q')
 parser.add_argument("--cost", default='l2sq',
                     help='ground cost [l1, l2, l2sq, l2sq_norm, sw2]')
-parser.add_argument('--fid', action='store_true', default=False,
-                    help='compute FID score')
 parser.add_argument('--save_model', action='store_false', default=True,
                     help='save final model weights [True/False]')
 parser.add_argument("--save_data", action='store_false', default=True,
@@ -68,10 +66,9 @@ def main():
         opts['zdim'] = 128
     else:
         assert False, 'Unknown dataset'
+    opts['data_dir'] = FLAGS.data_dir
 
     # Set method param
-    # opts['data_dir'] = FLAGS.data_dir
-    opts['fid'] = FLAGS.fid
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
     opts['net_archi'] = FLAGS.net_archi
     opts['pen_enc_sigma'] = FLAGS.sigma_pen
@@ -84,7 +81,10 @@ def main():
     opts['beta'] = FLAGS.beta
 
     # Create directories
-    opts['out_dir'] = FLAGS.out_dir
+    results_dir = 'results'
+    if not tf.io.gfile.isdir(results_dir):
+        utils.create_dir(results_dir)
+    opts['out_dir'] = os.path.join(results_dir,FLAGS.out_dir)
     if not tf.io.gfile.isdir(opts['out_dir']):
         utils.create_dir(opts['out_dir'])
     out_subdir = os.path.join(opts['out_dir'], opts['model'])
@@ -110,7 +110,7 @@ def main():
     assert data.train_size >= opts['batch_size'], 'Training set too small'
 
     opts['it_num'] = FLAGS.num_it
-    opts['print_every'] = 100 #int(opts['it_num'] / 5.)
+    opts['print_every'] = int(opts['it_num'] / 5.)
     opts['evaluate_every'] = int(opts['print_every'] / 2.) + 1
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
@@ -125,7 +125,7 @@ def main():
     assert data.train_size >= opts['batch_size'], 'Training set too small'
 
     # inti method
-    run = Run(opts, data, FLAGS.weights_file)
+    run = Run(opts, data)
 
     # Training/testing/vizu
     if FLAGS.mode=="train":
