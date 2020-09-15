@@ -203,8 +203,15 @@ class Run(object):
             enc_Sigmas = []
         # - Init decay lr and lambda
         decay = 1.
-        decay_steps, decay_rate = 500000, 0.95
-        wait, wait_lambda = 0, 0
+        decay_rate = 0.95
+        # fix decay
+        fix_decay_steps = 500000
+        # adaptative decay
+        wait = 0
+        batches_num = self.data.train_size//self.opts['batch_size']
+        ada_decay_steps = batches_num
+        # lambda
+        wait_lambda = 0
 
         # - Load trained model or init variables
         if self.opts['use_trained']:
@@ -362,22 +369,20 @@ class Run(object):
 
             # - Update learning rate if necessary and it
             if self.opts['lr_decay']:
-                batches_num = self.data.train_size//self.opts['batch_size']
                 """
-                if (it+1) % decay_steps == 0:
-                    decay = decay_rate ** (int(it / decay_steps))
+                if (it+1) % fix_decay_steps == 0:
+                    decay = decay_rate ** (int(it / fix_decay_steps))
                     logging.error('Reduction in lr: %f\n' % decay)
                 """
-                    # If no significant progress was made in last 20 epochs
+                    # If no significant progress was made in the last epoch
                     # then decrease the learning rate.
-                if np.mean(Loss_rec[-20:]) < np.mean(Loss_rec[-20 * batches_num:])-1.*np.var(Loss_rec[-20 * batches_num:]):
+                if np.mean(Loss_rec[-ada_decay_steps:]) < np.mean(Loss_rec[-5*ada_decay_steps:]) - np.var(Loss_rec[-5*ada_decay_steps:]):
                     wait = 0
                 else:
                     wait += 1
-                if wait > 20 * batches_num:
-                    decay = max(decay  / 1.33, 1e-6)
+                if wait > ada_decay_steps:
+                    decay = decay_rate ** (int(it / ada_decay_steps))
                     logging.error('Reduction in lr: %f\n' % decay)
-                    print('')
                     wait = 0
 
 
