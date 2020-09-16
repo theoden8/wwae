@@ -1,10 +1,6 @@
 # TODO list
 
 * Implementation
-  * merge sw (to clean)
-  * add random uniform projection
-  * Implement Gaussian decoder and Gaussian VAE rec. loss
-  * Interpolations
 
 * Writing
   * Sec.1: intro blabla
