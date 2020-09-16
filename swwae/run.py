@@ -53,12 +53,6 @@ FLAGS = parser.parse_args()
 
 def main():
 
-    # set data_dir
-    if FLAGS.data_dir:
-        opts['data_dir'] = FLAGS.data_dir
-    else:
-        raise Exception('You must provide a data_dir') 
-
     # Select dataset to use
     if FLAGS.dataset == 'mnist':
         opts = configs.config_mnist
@@ -74,6 +68,11 @@ def main():
         opts['zdim'] = 128
     else:
         assert False, 'Unknown dataset'
+    # set data_dir
+    if FLAGS.data_dir:
+        opts['data_dir'] = FLAGS.data_dir
+    else:
+        raise Exception('You must provide a data_dir')
 
     # Set method param
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
