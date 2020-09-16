@@ -23,7 +23,7 @@ parser.add_argument("--mode", default='train',
                     help='mode to run [train/vizu/fid/test]')
 parser.add_argument("--dataset", default='mnist',
                     help='dataset')
-parser.add_argument("--data_dir", type=str, default='data',
+parser.add_argument("--data_dir", type=str,
                     help='directory in which data is stored')
 parser.add_argument("--out_dir", type=str, default='code_outputs',
                     help='root_directory in which outputs are saved')
@@ -53,6 +53,12 @@ FLAGS = parser.parse_args()
 
 def main():
 
+    # set data_dir
+    if FLAGS.data_dir:
+        opts['data_dir'] = FLAGS.data_dir
+    else:
+        raise Exception('You must provide a data_dir') 
+
     # Select dataset to use
     if FLAGS.dataset == 'mnist':
         opts = configs.config_mnist
@@ -68,7 +74,6 @@ def main():
         opts['zdim'] = 128
     else:
         assert False, 'Unknown dataset'
-    opts['data_dir'] = FLAGS.data_dir
 
     # Set method param
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
@@ -113,7 +118,7 @@ def main():
     assert data.train_size >= opts['batch_size'], 'Training set too small'
 
     opts['it_num'] = FLAGS.num_it
-    opts['print_every'] = int(opts['it_num'] / 5.)
+    opts['print_every'] = 5 #int(opts['it_num'] / 5.)
     opts['evaluate_every'] = int(opts['print_every'] / 2.) + 1
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
