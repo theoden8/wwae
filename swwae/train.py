@@ -203,9 +203,9 @@ class Run(object):
             enc_Sigmas = []
         # - Init decay lr and lambda
         decay = 1.
-        decay_rate = 0.95
+        decay_rate = 0.75
         # fix decay
-        fix_decay_steps = 500000
+        fix_decay_steps = 5 #500000
         # adaptative decay
         wait = 0
         batches_num = self.data.train_size//self.opts['batch_size']
@@ -368,21 +368,20 @@ class Run(object):
 
             # - Update learning rate if necessary and it
             if self.opts['lr_decay']:
-                """
-                if (it+1) % fix_decay_steps == 0:
+                # decaying every fix_decay_steps
+                if it % fix_decay_steps == 0:
                     decay = decay_rate ** (int(it / fix_decay_steps))
                     logging.error('Reduction in lr: %f\n' % decay)
-                """
-                    # If no significant progress was made in the last epoch
-                    # then decrease the learning rate.
-                if np.mean(Loss_rec[-ada_decay_steps:]) < np.mean(Loss_rec[-5*ada_decay_steps:]) - np.var(Loss_rec[-5*ada_decay_steps:]):
-                    wait = 0
-                else:
-                    wait += 1
-                if wait > ada_decay_steps:
-                    decay = decay_rate ** (int(it / ada_decay_steps))
-                    logging.error('Reduction in lr: %f\n' % decay)
-                    wait = 0
+                # If no significant progress was made in the last epoch
+                # then decrease the learning rate.
+                # if np.mean(Loss_rec[-ada_decay_steps:]) < np.mean(Loss_rec[-5*ada_decay_steps:]) - np.var(Loss_rec[-5*ada_decay_steps:]):
+                #     wait = 0
+                # else:
+                #     wait += 1
+                # if wait > ada_decay_steps:
+                #     decay = decay_rate ** (int(it / ada_decay_steps))
+                #     logging.error('Reduction in lr: %f\n' % decay)
+                #     wait = 0
 
 
             # - Update regularizer if necessary
