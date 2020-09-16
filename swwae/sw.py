@@ -67,9 +67,11 @@ def sw2(opts, x1, x2):
     """
 
     h, w, c = x1.get_shape().as_list()[1:]
+    L = opts['sw_proj_num']
+    law = opts['sw_proj_law']
 
-    sorted_proj_1, x_sorted_1 = distrib_proj(x1, opts['sw_proj_num'])
-    sorted_proj_2, x_sorted_2 = distrib_proj(x2, opts['sw_proj_num'])
+    sorted_proj_1, x_sorted_1 = distrib_proj(x1, L, law)
+    sorted_proj_2, x_sorted_2 = distrib_proj(x2, L, law)
 
     mass1 = tf.reduce_sum(x_sorted_1, axis=-1, keepdims=True)
     xs1 = x_sorted_1/mass1
@@ -130,14 +132,14 @@ def sw2(opts, x1, x2):
     return point_cloud
 '''
 
-def distrib_proj(x, L):
+def distrib_proj(x, L, law):
     """
     Gets the projected distribution
     """
     h, w, c = x.get_shape().as_list()[1:]
     B = tf.cast(tf.shape(x)[0], tf.int32)
     # get pixel grid projection
-    proj = projection(x,L) # (L, h*w)
+    proj = projection(x,L, law) # (L, h*w)
     # sort proj.
     sorted_proj = tf.sort(proj,axis=-1) # (L, h*w)
     # get proj. argsort
@@ -158,7 +160,7 @@ def distrib_proj(x, L):
 
     return sorted_proj, x_sorted
 
-def projection(x,L):
+def projection(x,L,law):
     """
     Wraper to project images pixels gird into the L diferent directions
     return projections coordinates
@@ -168,7 +170,11 @@ def projection(x,L):
     X,Y = tf.meshgrid(tf.range(h), tf.range(w))
     coord = tf.cast(tf.reshape(tf.stack([X,Y],axis=-1),[-1,2]),tf.float32) # ((h*w),2)
     # get directions to project
-    thetas = tf.range(L, dtype=tf.float32) / L *pi # add other proj methods
+    if law == 'det':
+        thetas = tf.range(L, dtype=tf.float32) / L *pi # add other proj methods
+    elif law == 'uniform':
+        distrib = tfp.distributions.Uniform(low=0., high=pi)
+        thetas = distrib.sample(L)
     proj_mat = tf.stack([tf.math.cos(thetas),tf.math.sin(thetas)], axis=-1)
     # project grid into proj dir
     proj = tf.linalg.matmul(proj_mat, coord, transpose_b=True) # (L, (h*w))
