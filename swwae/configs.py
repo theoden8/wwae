@@ -43,7 +43,7 @@ config['mmd_kernel'] = 'IMQ' # RBF, IMQ
 config['pen_enc_sigma'] = False
 config['lambda_pen_enc_sigma'] = 0.001
 config['sw_proj_num'] = 15
-config['sw_proj_law'] = 'det'  # det for deterministic, or 'uniform'
+config['sw_proj_type'] = 'det'  # det for deterministic, or 'uniform'
 config['sw_samples_num'] = 10
 # Model set up
 config['pz_scale'] = 1.
