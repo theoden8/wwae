@@ -96,10 +96,10 @@ class Run(object):
         self.add_optimizers()
 
         # --- Init iteratorssess, saver and load trained weights if needed, else init variables
-        self.sess = tf.Session()
+        self.sess = tf.compat.v1.Session()
         self.train_handle, self.test_handle = self.data.init_iterator(self.sess)
-        self.saver = tf.train.Saver(max_to_keep=10)
-        self.initializer = tf.global_variables_initializer()
+        self.saver = tf.compat.v1.train.Saver(max_to_keep=10)
+        self.initializer = tf.compat.v1.global_variables_initializer()
         self.sess.graph.finalize()
 
 
