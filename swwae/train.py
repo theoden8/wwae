@@ -330,7 +330,7 @@ class Run(object):
                     num_steps = 15
 
                     enc_var = np.ones(self.opts['zdim'])
-                    # crate linespace
+                    # create linespace
                     enc_interpolation = linespace(self.opts, num_steps,  # shape: [nanchors, zdim, nsteps, zdim]
                                             anchors=latents_vizu[anchors_ids],
                                             std=enc_var)
@@ -340,8 +340,7 @@ class Run(object):
                                             feed_dict={self.pz_samples: enc_interpolation,
                                                        self.is_training: False})
                     inter_anchors = np.reshape(dec_interpolation, [-1, self.opts['zdim'], num_steps]+self.data.data_shape)
-                    kl_to_prior_sorted = np.argsort(kl)[::-1]
-                    plot_interpolation(self.opts, inter_anchors[:,kl_to_prior_sorted],
+                    plot_interpolation(self.opts, inter_anchors,
                                             exp_dir, 'inter_it%07d.png' % (it))
 
                 # Auto-encoding training images
