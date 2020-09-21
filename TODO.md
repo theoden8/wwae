@@ -3,8 +3,9 @@
 * Implementation
   * batch_size = 100
   * L = 32
-  * lr = 10e-3 (no decay)
+  * lr = 1e-3 (no decay)
   * random/det uniform projection on [0,pi]
+  * compare with l2sq
   
 
 * Writing
