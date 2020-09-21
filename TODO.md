@@ -1,6 +1,11 @@
 # TODO list
 
 * Implementation
+  * batch_size = 100
+  * L = 32
+  * lr = 10e-3 (no decay)
+  * random/det uniform projection on [0,pi]
+  
 
 * Writing
   * Sec.1: intro blabla
