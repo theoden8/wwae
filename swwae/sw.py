@@ -86,6 +86,11 @@ def projection(x,L,law):
         distrib = tfp.distributions.Uniform(low=0., high=pi/L)
         shift = distrib.sample(1)
         thetas = thetas + shift
+    elif law == 'gaussian':
+        thetas = tf.range(L, dtype=tf.float32) / L *pi
+        distrib = tfp.distributions.Normal(loc=0., scale=pi/L/3)
+        noise = distrib.sample(L)
+        thetas = thetas + noise
     proj_mat = tf.stack([tf.math.cos(thetas),tf.math.sin(thetas)], axis=-1)
     # project grid into proj dir
     proj = tf.linalg.matmul(proj_mat, coord, transpose_b=True) # (L, (h*w))
