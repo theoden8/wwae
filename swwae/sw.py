@@ -58,7 +58,7 @@ def distrib_proj(x, L, law):
     i_L = tf.tile(tf.reshape(tf.range(L), [1,L,1,1]), [B,1,c,h*w])
     i_c = tf.tile(tf.reshape(tf.range(c), [1,1,c,1]), [B,L,1,h*w])
 
-    indices = tf.stack([i_b,i_L,i_c,bc_indices], axis=-1)
+    indices = tf.stack([i_b,i_L,i_c,sorted_indices], axis=-1)
 
     # sort im. intensities
     x_flat = tf.transpose(tf.tile(tf.reshape(x, [-1,1,h*w,c]),[1,L,1,1]),[0,1,3,2]) # (batch,L,c,h*w)
@@ -92,7 +92,7 @@ def projection(x,L,law):
     elif law == 'gaussian':
         thetas = tf.range(L, dtype=tf.float32) / L *pi
         thetas = tf.tile(tf.reshape(thetas, [1,L,1]), [B,1,c])
-        distrib = tfp.distributions.Normal(loc=0., scale=pi/L/3)
+        distrib = tfp.distributions.Normal(loc=0., scale=pi/L/6)
         noise = tf.reshape(distrib.sample(B*L*c), [B,L,c])
         thetas = thetas + noise
     proj_mat = tf.stack([tf.math.cos(thetas),tf.math.sin(thetas)], axis=-1)
