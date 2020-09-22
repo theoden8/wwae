@@ -77,10 +77,15 @@ def projection(x,L,law):
     coord = tf.cast(tf.reshape(tf.stack([X,Y],axis=-1),[-1,2]),tf.float32) # ((h*w),2)
     # get directions to project
     if law == 'det':
-        thetas = tf.range(L, dtype=tf.float32) / L *pi # add other proj methods
+        thetas = tf.range(L, dtype=tf.float32) / L *pi
     elif law == 'uniform':
         distrib = tfp.distributions.Uniform(low=0., high=pi)
         thetas = distrib.sample(L)
+    elif law == 'unidet':
+        thetas = tf.range(L, dtype=tf.float32) / L *pi
+        distrib = tfp.distributions.Uniform(low=0., high=pi/L)
+        shift = distrib.sample(1)
+        thetas = thetas + shift
     proj_mat = tf.stack([tf.math.cos(thetas),tf.math.sin(thetas)], axis=-1)
     # project grid into proj dir
     proj = tf.linalg.matmul(proj_mat, coord, transpose_b=True) # (L, (h*w))
