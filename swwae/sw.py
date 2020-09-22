@@ -45,14 +45,14 @@ def distrib_proj(x, L, law):
     h, w, c = x.get_shape().as_list()[1:]
     B = tf.cast(tf.shape(x)[0], tf.int32)
     # get pixel grid projection
-    proj = projection(x,L, law) # (L, h*w)
+    proj = projection(x,L, law) # (B,L,c,h*w)
     # sort proj.
-    sorted_proj = tf.sort(proj,axis=-1) # (L, h*w)
+    sorted_proj = tf.sort(proj,axis=-1) # (B,L,c, h*w)
     # get proj. argsort
-    sorted_indices = tf.argsort(proj,axis=-1, stable=True) # (L, h*w)
+    sorted_indices = tf.argsort(proj,axis=-1, stable=True) # (B,L,c,h*w)
     # create sort indices
-    b_indices = tf.tile(tf.expand_dims(sorted_indices,axis=0),[B,1,1]) # (B,L,h*w)
-    bc_indices = tf.tile(tf.expand_dims(b_indices,axis=2),[1,1,c,1]) # (B,L,c,h*w)
+#    b_indices = tf.tile(tf.expand_dims(sorted_indices,axis=0),[B,1,1]) # (B,L,h*w)
+#    bc_indices = tf.tile(tf.expand_dims(b_indices,axis=2),[1,1,c,1]) # (B,L,c,h*w)
 
     i_b = tf.tile(tf.reshape(tf.range(B), [B,1,1,1]), [1,L,c,h*w])
     i_L = tf.tile(tf.reshape(tf.range(L), [1,L,1,1]), [B,1,c,h*w])
@@ -73,26 +73,30 @@ def projection(x,L,law):
     """
     # get coor grid
     h, w, c = x.get_shape().as_list()[1:]
+    B = tf.cast(tf.shape(x)[0], tf.int32)
     X,Y = tf.meshgrid(tf.range(h), tf.range(w))
     coord = tf.cast(tf.reshape(tf.stack([X,Y],axis=-1),[-1,2]),tf.float32) # ((h*w),2)
     # get directions to project
     if law == 'det':
         thetas = tf.range(L, dtype=tf.float32) / L *pi
+        thetas = tf.tile(tf.reshape(thetas, [1,L,1]), [B,1,c])
     elif law == 'uniform':
         distrib = tfp.distributions.Uniform(low=0., high=pi)
-        thetas = distrib.sample(L)
+        thetas = tf.reshape(distrib.sample(B*L*c), [B,L,c])
     elif law == 'unidet':
         thetas = tf.range(L, dtype=tf.float32) / L *pi
+        thetas = tf.tile(tf.reshape(thetas, [1,L,1]), [B,1,c])
         distrib = tfp.distributions.Uniform(low=0., high=pi/L)
-        shift = distrib.sample(1)
+        shift = tf.tile(tf.reshape(distrib.sample(B*c), [B,1,c]), [1,L,1])
         thetas = thetas + shift
     elif law == 'gaussian':
         thetas = tf.range(L, dtype=tf.float32) / L *pi
+        thetas = tf.tile(tf.reshape(thetas, [1,L,1]), [B,1,c])
         distrib = tfp.distributions.Normal(loc=0., scale=pi/L/3)
-        noise = distrib.sample(L)
+        noise = tf.reshape(distrib.sample(B*L*c), [B,L,c])
         thetas = thetas + noise
     proj_mat = tf.stack([tf.math.cos(thetas),tf.math.sin(thetas)], axis=-1)
     # project grid into proj dir
-    proj = tf.linalg.matmul(proj_mat, coord, transpose_b=True) # (L, (h*w))
+    proj = tf.linalg.matmul(proj_mat, coord, transpose_b=True) # (B,L,c,(h*w))
 
     return proj
