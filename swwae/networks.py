@@ -54,7 +54,7 @@ def decoder(opts, input, output_dim, scope=None,
         if opts['net_archi'] == 'mlp':
             decoder = net_archi['mlp']['decoder']
         elif opts['net_archi'] == 'small_conv':
-            encoder = net_archi['small_conv']['decoder']
+            decoder = net_archi['small_conv']['decoder']
         elif opts['net_archi'] == 'conv':
             decoder = net_archi[opts['dataset']]['decoder']
         else:
