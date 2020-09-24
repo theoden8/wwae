@@ -21,7 +21,10 @@ def encoder(opts, input, output_dim, scope=None,
         if opts['net_archi'] == 'mlp':
             encoder = net_archi['mlp']['encoder']
         elif opts['net_archi'] == 'small_conv':
-            encoder = net_archi['small_conv']['encoder']
+            if opts['dataset']=='celebA':
+                encoder = net_archi['celeba_small_conv']['encoder']
+            else:
+                encoder = net_archi['small_conv']['encoder']
         elif opts['net_archi'] == 'conv':
             encoder = net_archi[opts['dataset']]['encoder']
         else:
@@ -54,7 +57,10 @@ def decoder(opts, input, output_dim, scope=None,
         if opts['net_archi'] == 'mlp':
             decoder = net_archi['mlp']['decoder']
         elif opts['net_archi'] == 'small_conv':
-            encoder = net_archi['small_conv']['decoder']
+            if opts['dataset']=='celebA':
+                decoder = net_archi['celeba_small_conv']['decoder']
+            else:
+                decoder = net_archi['small_conv']['decoder']
         elif opts['net_archi'] == 'conv':
             decoder = net_archi[opts['dataset']]['decoder']
         else:
