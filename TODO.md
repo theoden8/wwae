@@ -6,6 +6,13 @@
   * lr = 1e-3 (no decay)
   * random/det uniform projection on [0,pi]
   * compare with l2sq
+
+* Ablation, what remain to be done
+  * L=32
+    * cifar: det, gauss, unif
+    * mnist: det, gauss, unif
+    * celebA: det, gauss, unif
+  * when done try L=16
   
 
 * Writing
