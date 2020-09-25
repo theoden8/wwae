@@ -57,11 +57,11 @@ def mlp_decoder(opts, input, output_dim, reuse=False,
     return outputs
 
 
-######### mnist/svhn/cifar10 #########
-def small_conv_encoder(opts, input, output_dim, reuse=False,
+######### ablation #########
+def dcgan_encoder(opts, input, output_dim, reuse=False,
                                             is_training=False):
     """
-    Archi used for ablation studies.
+    DCGAN Archi for ablation studies.
     """
     layer_x = input
     # hidden 0
@@ -117,22 +117,22 @@ def small_conv_encoder(opts, input, output_dim, reuse=False,
 
     return outputs
 
-def  small_conv_decoder(opts, input, output_dim, reuse,
+def  dcgan_decoder(opts, input, output_dim, reuse,
                                             is_training):
     """
-    Archi used for ablation studies.
+    DCGAN Archi for ablation studies.
     """
     # batch_size
     batch_size = tf.shape(input)[0]
     layer_x = input
     # Linear layers
     layer_x = ops.linear.Linear(opts, layer_x, np.prod(input.get_shape().as_list()[1:]),
-                                8*8*256, scope='hid0/lin')
+                                2*2*256, scope='hid0/lin')
     if opts['normalization']=='batchnorm':
         layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
                                 'hid0/bn', is_training, reuse)
     layer_x = ops._ops.non_linear(layer_x,'relu')
-    layer_x = tf.reshape(layer_x, [-1, 8, 8, 256])
+    layer_x = tf.reshape(layer_x, [-1, 2, 2, 256])
     # hidden 1
     _out_shape = [batch_size, 2*layer_x.get_shape().as_list()[1],
                                 2*layer_x.get_shape().as_list()[2],
@@ -157,16 +157,28 @@ def  small_conv_decoder(opts, input, output_dim, reuse,
         layer_x = ops.batchnorm.Batchnorm_layers( opts, layer_x,
                                 'hid2/bn', is_training, reuse)
     layer_x = ops._ops.non_linear(layer_x,'relu')
+    # hidden 3
+    _out_shape = [batch_size, 2*layer_x.get_shape().as_list()[1],
+                                2*layer_x.get_shape().as_list()[2],
+                                32]
+    layer_x = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_shape=_out_shape, filter_size=4,
+                                stride=2, scope='hid3/deconv',
+                                init= opts['conv_init'])
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers( opts, layer_x,
+                                'hid3/bn', is_training, reuse)
+    layer_x = ops._ops.non_linear(layer_x,'relu')
     # output layer
     outputs = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
                                 output_shape=[batch_size,]+output_dim, filter_size=1,
-                                stride=1, scope='hid_final/deconv',
+                                stride=2, scope='hid_final/deconv',
                                 init= opts['conv_init'])
 
     return outputs
 
 
-def  celebA_small_conv_decoder(opts, input, output_dim, reuse,
+def  celebA_dcgan_decoder(opts, input, output_dim, reuse,
                                             is_training):
     """
     Archi used for ablation studies.
@@ -176,12 +188,12 @@ def  celebA_small_conv_decoder(opts, input, output_dim, reuse,
     layer_x = input
     # Linear layers
     layer_x = ops.linear.Linear(opts, layer_x, np.prod(input.get_shape().as_list()[1:]),
-                                8*8*512, scope='hid0/lin')
+                                4*4*512, scope='hid0/lin')
     if opts['normalization']=='batchnorm':
         layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
                                 'hid0/bn', is_training, reuse)
     layer_x = ops._ops.non_linear(layer_x,'relu')
-    layer_x = tf.reshape(layer_x, [-1, 8, 8, 512])
+    layer_x = tf.reshape(layer_x, [-1, 4, 4, 512])
     # hidden 0
     _out_shape = [batch_size, 2*layer_x.get_shape().as_list()[1],
                                 2*layer_x.get_shape().as_list()[2],
@@ -221,7 +233,7 @@ def  celebA_small_conv_decoder(opts, input, output_dim, reuse,
     # output layer
     outputs = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
                                 output_shape=[batch_size,]+output_dim, filter_size=1,
-                                stride=1, scope='hid_final/deconv',
+                                stride=2, scope='hid_final/deconv',
                                 init= opts['conv_init'])
 
     return outputs
@@ -436,8 +448,8 @@ def  celebA_conv_decoder(opts, input, output_dim, reuse,
     return outputs
 
 net_archi = {'mlp': {'encoder': mlp_encoder, 'decoder': mlp_decoder},
-            'small_conv':{'encoder': small_conv_encoder, 'decoder': small_conv_decoder},
-            'celeba_small_conv':{'encoder': small_conv_encoder, 'decoder': celebA_small_conv_decoder},
+            'dcgan':{'encoder': dcgan_encoder, 'decoder': dcgan_decoder},
+            'celeba_dcgan':{'encoder': dcgan_encoder, 'decoder': celebA_dcgan_decoder},
             'mnist':{'encoder': mnist_conv_encoder, 'decoder': mnist_conv_decoder},
             'svhn':{'encoder': mnist_conv_encoder, 'decoder': mnist_conv_decoder},
             'cifar10':{'encoder': mnist_conv_encoder, 'decoder': mnist_conv_decoder},

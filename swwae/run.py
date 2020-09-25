@@ -32,7 +32,7 @@ parser.add_argument("--res_dir", type=str, default='res',
 parser.add_argument("--num_it", type=int, default=300000,
                     help='iteration number')
 parser.add_argument("--net_archi", default='conv',
-                    help='networks architecture [mlp/conv/small_conv]')
+                    help='networks architecture [mlp/dcgan/conv]')
 parser.add_argument("--beta", type=float, default=10.,
                     help='Latent reg weight setup')
 parser.add_argument("--sigma_pen", action='store_true', default=False,
