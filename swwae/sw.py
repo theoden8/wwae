@@ -97,6 +97,7 @@ def projection(x,L,law):
         thetas = thetas + noise
     proj_mat = tf.stack([tf.math.cos(thetas),tf.math.sin(thetas)], axis=-1)
     # project grid into proj dir
-    proj = tf.linalg.matmul(proj_mat, coord, transpose_b=True) # (B,L,c,(h*w))
+    # proj = tf.linalg.matmul(proj_mat, coord, transpose_b=True) # (B,L,c,(h*w))
+    proj = tf.compat.v1.matmul(proj_mat, coord, transpose_b=True) # (B,L,c,(h*w))
 
     return proj
