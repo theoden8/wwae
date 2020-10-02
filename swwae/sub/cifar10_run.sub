@@ -5,14 +5,14 @@
 #$ -wd /home/bgaujac/diswae
 
 #$ -l gpu=True
-#$ -l tmem=24G
+#$ -l tmem=12G
 #$ -l h_rt=8:00:00
 
 #$ -t 1-1
 
-#$ -N celebA
+#$ -N cifar10
 
 source /share/apps/examples/source_files/python/python-3.6.4.source
 source /share/apps/examples/source_files/cuda/cuda-10.0.source
 
-python3 run.py --num_it 200000 --beta 0 --data_dir ../../data --dataset celebA --cost sw2 --save_data --save_model --out_dir celebA_abla --model WAE
+python3 run.py --num_it 200000 --beta 0 --data_dir ../../data --dataset cifar10 --cost sw2 --save_data --save_model --out_dir cifar10_abla --model WAE

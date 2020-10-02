@@ -60,12 +60,12 @@ def main():
     elif FLAGS.dataset == 'svhn':
         opts = configs.config_svhn
         opts['zdim'] = 16
-    elif FLAGS.dataset == 'celebA':
-        opts = configs.config_celeba
-        opts['zdim'] = 64
     elif FLAGS.dataset == 'cifar10':
         opts = configs.config_cifar10
         opts['zdim'] = 128
+    elif FLAGS.dataset == 'celebA':
+        opts = configs.config_celeba
+        opts['zdim'] = 64
     else:
         assert False, 'Unknown dataset'
     # set data_dir

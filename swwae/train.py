@@ -205,7 +205,7 @@ class Run(object):
         decay = 1.
         decay_rate = 0.75
         # fix decay
-        fix_decay_steps = 5 #500000
+        fix_decay_steps = 500000
         # adaptative decay
         wait = 0
         batches_num = self.data.train_size//self.opts['batch_size']
@@ -840,7 +840,7 @@ class Run(object):
         # --- Logging
         debug_str = 'FID={:.3f} for {} data'.format(fid_scores, test_size)
         logging.error(debug_str)
-        fid_res_dir = os.path.join(MODEL_PATH,'fid')
+        fid_res_dir = os.path.join(MODEL_PATH,fid_dir)
         if not tf.io.gfile.isdir(fid_res_dir):
             utils.create_dir(fid_res_dir)
         filename = 'fid_' + fid_inputs
