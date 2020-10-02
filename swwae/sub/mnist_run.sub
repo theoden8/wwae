@@ -5,14 +5,15 @@
 #$ -wd /home/bgaujac/diswae
 
 #$ -l gpu=True
-#$ -l tmem=8G
-#$ -l h_rt=8:00:00
+#$ -l tmem=25G
+#$ -l h_rt=7:00:00
 
-#$ -t 1-7
+#$ -t 1-9
 
 #$ -N mnist
 
 source /share/apps/examples/source_files/python/python-3.6.4.source
 source /share/apps/examples/source_files/cuda/cuda-10.0.source
 
-python3 run.py --num_it 200000 --beta 0 --data_dir ../../data --dataset mnist --cost sw2 --save_data --save_model --out_dir mnist_abla --model WAE
+python3 run_ablation.py --num_it 200000 --beta 0 --data_dir ../../data --dataset mnist --cost sw2 --out_dir mnist_abla --model WAE --id $SGE_TASK_ID
+# python3 run_ablation.py --num_it 200000 --beta 0 --data_dir ../../data --dataset mnist --cost sw2 --out_dir mnist_abla --model WAE --id 1
