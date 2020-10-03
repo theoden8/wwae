@@ -83,8 +83,18 @@ def main():
     opts['lambda_pen_enc_sigma'] = FLAGS.sigma_pen_val
 
     # Slicing config
-    slice_dist = ['det', 'unidet', 'gaussian']
-    L_val = [16, 32, 64]
+    if FLAGS.dataset=='mnist':
+        slice_dist = ['det', 'unidet', 'gaussian']
+        L_val = [8,64,]
+    elif FLAGS.dataset=='celebA':
+        slice_dist = ['det', 'unidet', 'gaussian']
+        L_val = [8,16,32,]
+    elif FLAGS.dataset=='cifar10':
+        slice_dist = ['det', 'unidet', 'gaussian']
+        L_val = [8,16,32,64,]
+    else:
+        raise Exception('You must provide a data_dir')
+
     exp_config = list(itertools.product(slice_dist,L_val))
     opts['sw_proj_type'] = exp_config[FLAGS.id-1][0]
     opts['sw_proj_num'] = exp_config[FLAGS.id-1][1]
