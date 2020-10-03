@@ -15,5 +15,5 @@
 source /share/apps/examples/source_files/python/python-3.6.4.source
 source /share/apps/examples/source_files/cuda/cuda-10.0.source
 
-python3 run_ablation.py --num_it 300000 --beta 0 --data_dir ../../data --dataset mnist --cost sw2 --out_dir mnist_abla --model WAE --id $SGE_TASK_ID
+python3 run_ablation.py --num_it 200000 --beta 0 --data_dir ../../data --dataset mnist --cost sw2 --out_dir mnist_abla --model WAE --id $SGE_TASK_ID
 # python3 run_ablation.py --num_it 200000 --beta 0 --data_dir ../../data --dataset mnist --cost sw2 --out_dir mnist_abla --model WAE --id 1
