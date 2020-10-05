@@ -35,6 +35,10 @@ parser.add_argument("--net_archi", default='conv',
                     help='networks architecture [mlp/dcgan/conv]')
 parser.add_argument("--beta", type=float, default=10.,
                     help='Latent reg weight setup')
+parser.add_argument("--slicing_dist", type=str, default='det',
+                    help='slicing distribution')
+parser.add_argument("--L", type=int, default=16,
+                    help='Number of slices')
 parser.add_argument("--sigma_pen", action='store_true', default=False,
                     help='penalization of Sigma_q')
 parser.add_argument("--sigma_pen_val", type=float, default=0.01,
@@ -80,6 +84,10 @@ def main():
     opts['pen_enc_sigma'] = FLAGS.sigma_pen
     opts['lambda_pen_enc_sigma'] = FLAGS.sigma_pen_val
 
+    # Slicing config
+    opts['sw_proj_type'] = FLAGS.slicing_dist
+    opts['sw_proj_num'] = FLAGS.L
+
     # Model set up
     opts['model'] = FLAGS.model
     opts['decoder'] = FLAGS.decoder
@@ -94,7 +102,7 @@ def main():
     opts['out_dir'] = os.path.join(results_dir,FLAGS.out_dir)
     if not tf.io.gfile.isdir(opts['out_dir']):
         utils.create_dir(opts['out_dir'])
-    out_subdir = os.path.join(opts['out_dir'], opts['model'])
+    out_subdir = os.path.join(opts['out_dir'], opts['model'] + '_' + opts['cost'])
     if not tf.io.gfile.isdir(out_subdir):
         utils.create_dir(out_subdir)
     opts['exp_dir'] = FLAGS.res_dir
@@ -117,8 +125,8 @@ def main():
     assert data.train_size >= opts['batch_size'], 'Training set too small'
 
     opts['it_num'] = FLAGS.num_it
-    opts['print_every'] = int(opts['it_num'] / 2.)
-    opts['evaluate_every'] = int(opts['print_every'] / 2.) + 1
+    opts['print_every'] = 5 #int(opts['it_num'] / 2.)
+    opts['evaluate_every'] = 5 #int(opts['print_every'] / 2.) + 1
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
     opts['save_train_data'] = FLAGS.save_data
