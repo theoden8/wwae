@@ -1,0 +1,107 @@
+import tensorflow as tf
+# import tensorflow_probability as tfp
+from math import pi
+
+
+def sw2(opts, x1, x2):
+    """
+    actually sw1 to test
+    """
+
+    h, w, c = x1.get_shape().as_list()[1:]
+
+    sorted_proj_1, x_sorted_1 = distrib_proj(x1, opts['sw_proj_num'], opts['sw_proj_type'])
+    sorted_proj_2, x_sorted_2 = distrib_proj(x2, opts['sw_proj_num'], opts['sw_proj_type'])
+
+
+    xd_1 = tf.cast(tf.math.cumsum(x_sorted_1, axis=-1), tf.float32)
+    xd_2 = tf.cast(tf.math.cumsum(x_sorted_2, axis=-1), tf.float32)
+
+    z = sorted_proj_1[...,:1]
+    z_d = tf.concat((z, sorted_proj_1[...,:-1]), axis=-1)
+    steps = sorted_proj_1 - z_d
+    steps = tf.expand_dims(steps, axis=0)
+    steps = tf.expand_dims(steps, axis=2)
+
+
+    diff = tf.math.abs(xd_1 - xd_2)*steps #[b,L,c,h*w]
+    sw = tf.math.reduce_sum(diff, axis=-1)
+    sw = tf.math.reduce_mean(sw, axis=[-2,-1])
+
+    return sw
+
+
+def distrib_proj(x, L, law):
+    """
+    Gets the projected distribution
+    """
+    h, w, c = x.get_shape().as_list()[1:]
+    B = tf.cast(tf.shape(x)[0], tf.int32)
+    # get pixel grid projection
+    proj = projection(x,L, law) # (B,L,c,h*w)
+    # sort proj.
+    sorted_proj = tf.sort(proj,axis=-1) # (B,L,c, h*w)
+    # get proj. argsort
+    sorted_indices = tf.argsort(proj,axis=-1, stable=True) # (B,L,c,h*w)
+    # create sort indices
+#    b_indices = tf.tile(tf.expand_dims(sorted_indices,axis=0),[B,1,1]) # (B,L,h*w)
+#    bc_indices = tf.tile(tf.expand_dims(b_indices,axis=2),[1,1,c,1]) # (B,L,c,h*w)
+
+    i_b = tf.tile(tf.reshape(tf.range(B), [B,1,1,1]), [1,L,c,h*w])
+    i_L = tf.tile(tf.reshape(tf.range(L), [1,L,1,1]), [B,1,c,h*w])
+    i_c = tf.tile(tf.reshape(tf.range(c), [1,1,c,1]), [B,L,1,h*w])
+
+    indices = tf.stack([i_b,i_L,i_c,sorted_indices], axis=-1)
+
+    # sort im. intensities
+    x_flat = tf.transpose(tf.tile(tf.reshape(x, [-1,1,h*w,c]),[1,L,1,1]),[0,1,3,2]) # (batch,L,c,h*w)
+    x_sorted = tf.gather_nd(x_flat, indices) #(batch,L,c,h*w)
+
+    return sorted_proj, x_sorted
+
+def projection(x,L,law):
+    """
+    Wraper to project images pixels gird into the L diferent directions
+    return projections coordinates
+    """
+    # get coor grid
+    h, w, c = x.get_shape().as_list()[1:]
+    B = tf.cast(tf.shape(x)[0], tf.int32)
+    X,Y = tf.meshgrid(tf.range(h), tf.range(w))
+    coord = tf.cast(tf.reshape(tf.stack([X,Y],axis=-1),[-1,2]),tf.float32) # ((h*w),2)
+    # get directions to project
+    if law == 'det':
+        thetas = tf.range(L, dtype=tf.float32) / L *pi
+        thetas = tf.tile(tf.reshape(thetas, [1,L,1]), [B,1,c])
+    elif law == 'uniform':
+        # distrib = tfp.distributions.Uniform(low=0., high=pi)
+        # thetas = tf.reshape(distrib.sample(B*L*c), [B,L,c])
+        thetas = tf.random.uniform([B,L,c], 0., pi)
+    elif law == 'unidet':
+        thetas = tf.range(L, dtype=tf.float32) / L *pi
+        thetas = tf.tile(tf.reshape(thetas, [1,L,1]), [B,1,c])
+        # distrib = tfp.distributions.Uniform(low=0., high=pi/L)
+        # shift = tf.tile(tf.reshape(distrib.sample(B*c), [B,1,c]), [1,L,1])
+        shift = tf.random.uniform([B,1,c], 0., pi/L)
+        shift = tf.tile(shift, [1,L,1])
+        thetas = thetas + shift
+    elif law == 'gaussian_small_var':
+        thetas = tf.range(L, dtype=tf.float32) / L *pi
+        thetas = tf.tile(tf.reshape(thetas, [1,L,1]), [B,1,c])
+        # distrib = tfp.distributions.Normal(loc=0., scale=pi/L/6)
+        # noise = tf.reshape(distrib.sample(B*L*c), [B,L,c])
+        noise = tf.random.normal([B,L,c], 0.0, pi/L/6)
+        thetas = thetas + noise
+    elif law == 'gaussian_large_var':
+        thetas = tf.range(L, dtype=tf.float32) / L *pi
+        thetas = tf.tile(tf.reshape(thetas, [1,L,1]), [B,1,c])
+        # distrib = tfp.distributions.Normal(loc=0., scale=pi/L/6)
+        # noise = tf.reshape(distrib.sample(B*L*c), [B,L,c])
+        noise = tf.random.normal([B,L,c], 0.0, 3*pi/L/6)
+        thetas = thetas + noise
+    proj_mat = tf.stack([tf.math.cos(thetas),tf.math.sin(thetas)], axis=-1)
+    # project grid into proj dir
+    # proj = tf.linalg.matmul(proj_mat, coord, transpose_b=True) # (B,L,c,(h*w))
+    proj = tf.compat.v1.matmul(proj_mat, coord, transpose_b=True) # (B,L,c,(h*w))
+
+    return proj
