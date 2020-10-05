@@ -6,7 +6,7 @@ import math as m
 from utils import get_batch_size
 from ops._ops import logsumexp
 from sw import sw2
-
+from sw_v2 import sw_v2
 
 import pdb
 
@@ -115,6 +115,8 @@ def wae_ground_cost(opts, x1, x2):
         cost = l1_cost(x1, x2)
     elif opts['cost'] == 'sw2':
         cost = sw2(opts, x1, x2)
+    elif opts['cost'] == 'sw_v2':
+        cost = sw_v2(opts, x1, x2)
     else:
         assert False, 'Unknown cost function %s' % opts['cost']
     return cost

@@ -3,7 +3,7 @@ import tensorflow as tf
 from math import pi
 
 
-def sw2(opts, x1, x2):
+def sw_v2(opts, x1, x2):
     """
     actually sw1 to test
     """
