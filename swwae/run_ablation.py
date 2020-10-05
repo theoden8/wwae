@@ -84,13 +84,14 @@ def main():
 
     # Slicing config
     if FLAGS.dataset=='mnist':
-        slice_dist = ['det', 'unidet', 'gaussian']
-        L_val = [8,64,]
+        # slice_dist = ['det', 'gaussian_small_var', 'gaussian_large_var', 'uniform']
+        slice_dist = ['gaussian_large_var', 'uniform']
+        L_val = [8,16,32,64]
     elif FLAGS.dataset=='celebA':
-        slice_dist = ['det', 'unidet', 'gaussian']
-        L_val = [8,16,32,]
+        slice_dist = ['gaussian_small_var', 'gaussian_large_var', 'uniform']
+        L_val = [8,16,32]
     elif FLAGS.dataset=='cifar10':
-        slice_dist = ['det', 'unidet', 'gaussian']
+        slice_dist = ['gaussian_large_var', 'uniform']
         L_val = [8,16,32,64,]
     else:
         raise Exception('You must provide a data_dir')

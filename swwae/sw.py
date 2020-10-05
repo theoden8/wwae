@@ -92,12 +92,19 @@ def projection(x,L,law):
         shift = tf.random.uniform([B,1,c], 0., pi/L)
         shift = tf.tile(shift, [1,L,1])
         thetas = thetas + shift
-    elif law == 'gaussian':
+    elif law == 'gaussian_small_var':
         thetas = tf.range(L, dtype=tf.float32) / L *pi
         thetas = tf.tile(tf.reshape(thetas, [1,L,1]), [B,1,c])
         # distrib = tfp.distributions.Normal(loc=0., scale=pi/L/6)
         # noise = tf.reshape(distrib.sample(B*L*c), [B,L,c])
         noise = tf.random.normal([B,L,c], 0.0, pi/L/6)
+        thetas = thetas + noise
+    elif law == 'gaussian_large_var':
+        thetas = tf.range(L, dtype=tf.float32) / L *pi
+        thetas = tf.tile(tf.reshape(thetas, [1,L,1]), [B,1,c])
+        # distrib = tfp.distributions.Normal(loc=0., scale=pi/L/6)
+        # noise = tf.reshape(distrib.sample(B*L*c), [B,L,c])
+        noise = tf.random.normal([B,L,c], 0.0, 3*pi/L/6)
         thetas = thetas + noise
     proj_mat = tf.stack([tf.math.cos(thetas),tf.math.sin(thetas)], axis=-1)
     # project grid into proj dir
