@@ -472,10 +472,10 @@ class Run(object):
             utils.create_dir(save_path)
             name = 'res_train_final'
             np.savez(os.path.join(save_path, name),
-                    loss=np.array(Loss[-1]), loss_test=np.array(Loss_test[-1]),
-                    loss_rec=np.array(Loss_rec[-1]), loss_rec_test=np.array(Loss_rec_test[-1]),
-                    mse = np.array(MSE[-1]), mse_test = np.array(MSE_test[-1]),
-                    loss_reg=np.array(Loss_reg[-1]), loss_reg_test=np.array(Loss_reg_test[-1]))
+                    loss=np.array(Loss), loss_test=np.array(Loss_test),
+                    loss_rec=np.array(Loss_rec), loss_rec_test=np.array(Loss_rec_test),
+                    mse = np.array(MSE), mse_test = np.array(MSE_test),
+                    loss_reg=np.array(Loss_reg), loss_reg_test=np.array(Loss_reg_test))
 
     def test(self, data, WEIGHTS_PATH, verbose):
         """
