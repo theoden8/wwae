@@ -238,7 +238,7 @@ def  celebA_dcgan_decoder(opts, input, output_dim, reuse,
 
     return outputs
 
-######### cifar10 #########
+######### mnist #########
 def mnist_conv_encoder(opts, input, output_dim, reuse=False,
                                             is_training=False):
     """
