@@ -97,8 +97,9 @@ def main():
         raise Exception('You must provide a data_dir')
 
     exp_config = list(itertools.product(slice_dist,L_val))
-    opts['sw_proj_type'] = exp_config[FLAGS.id-1][0]
-    opts['sw_proj_num'] = exp_config[FLAGS.id-1][1]
+    exp_id = (FLAGS.id-1) % len(exp_config)
+    opts['sw_proj_type'] = exp_config[exp_id][0]
+    opts['sw_proj_num'] = exp_config[exp_id][1]
     # pdb.set_trace()
 
     # Model set up
