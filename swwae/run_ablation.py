@@ -32,7 +32,7 @@ parser.add_argument("--res_dir", type=str, default='res',
 parser.add_argument("--num_it", type=int, default=300000,
                     help='iteration number')
 parser.add_argument("--net_archi", default='conv',
-                    help='networks architecture [mlp/dcgan/conv]')
+                    help='networks architecture [mlp/conv]')
 parser.add_argument("--beta", default=10.,
                     help='Latent reg weight setup')
 parser.add_argument("--id", type=int, default=0,
@@ -85,13 +85,13 @@ def main():
     # Slicing config
     if FLAGS.dataset=='mnist':
         # slice_dist = ['det', 'gaussian_small_var', 'gaussian_large_var', 'uniform']
-        slice_dist = ['gaussian_large_var', 'uniform']
+        slice_dist = ['det', 'gaussian_small_var', 'gaussian_large_var', 'uniform']
         L_val = [8,16,32,64]
     elif FLAGS.dataset=='celebA':
-        slice_dist = ['gaussian_small_var', 'gaussian_large_var', 'uniform']
+        slice_dist = ['det', 'gaussian_small_var', 'gaussian_large_var', 'uniform']
         L_val = [8,16,32]
     elif FLAGS.dataset=='cifar10':
-        slice_dist = ['gaussian_large_var', 'uniform']
+        slice_dist = ['det', 'gaussian_small_var', 'gaussian_large_var', 'uniform']
         L_val = [8,16,32,64,]
     else:
         raise Exception('You must provide a data_dir')
