@@ -35,6 +35,10 @@ parser.add_argument("--net_archi", default='conv',
                     help='networks architecture [mlp/conv]')
 parser.add_argument("--beta", default=10.,
                     help='Latent reg weight setup')
+parser.add_argument("--batch_size", type=int,
+                    help='batch size')
+parser.add_argument("--lr", type=float,
+                    help='learning rate size')
 parser.add_argument("--id", type=int, default=0,
                     help='exp. config. id')
 parser.add_argument("--sigma_pen", action='store_true', default=False,
@@ -102,6 +106,10 @@ def main():
     if opts['model'][-3:]=='VAE':
         opts['input_normalize_sym'] = False
     opts['beta'] = FLAGS.beta
+    if FLAGS.batch_size:
+        opts['batch_size'] = FLAGS.batch_size
+    if FLAGS.lr:
+        opts['lr'] = FLAGS.lr
 
     # Create directories
     results_dir = 'results'
