@@ -32,9 +32,13 @@ parser.add_argument("--res_dir", type=str, default='res',
 parser.add_argument("--num_it", type=int, default=300000,
                     help='iteration number')
 parser.add_argument("--net_archi", default='conv',
-                    help='networks architecture [mlp/dcgan/conv]')
-parser.add_argument("--beta", type=float, default=10.,
-                    help='Latent reg weight setup')
+                    help='networks architecture [mlp/conv]')
+parser.add_argument("--batch_size", type=int,
+                    help='batch size')
+parser.add_argument("--lr", type=float,
+                    help='learning rate size')
+parser.add_argument("--id", type=int, default=0,
+                    help='exp. config. id')
 parser.add_argument("--slicing_dist", type=str, default='det',
                     help='slicing distribution')
 parser.add_argument("--L", type=int, default=16,
@@ -93,7 +97,13 @@ def main():
     opts['decoder'] = FLAGS.decoder
     if opts['model'][-3:]=='VAE':
         opts['input_normalize_sym'] = False
-    opts['beta'] = FLAGS.beta
+    if FLAGS.batch_size:
+        opts['batch_size'] = FLAGS.batch_size
+    if FLAGS.lr:
+        opts['lr'] = FLAGS.lr
+    betas = [1,5,10,25,50,100]
+    opts['beta'] = betas[FLAGS.id-1]
+
 
     # Create directories
     results_dir = 'results'
