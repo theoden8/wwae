@@ -32,9 +32,13 @@ parser.add_argument("--res_dir", type=str, default='res',
 parser.add_argument("--num_it", type=int, default=300000,
                     help='iteration number')
 parser.add_argument("--net_archi", default='conv',
-                    help='networks architecture [mlp/dcgan/conv]')
+                    help='networks architecture [mlp/conv]')
 parser.add_argument("--beta", default=10.,
                     help='Latent reg weight setup')
+parser.add_argument("--batch_size", type=int,
+                    help='batch size')
+parser.add_argument("--lr", type=float,
+                    help='learning rate size')
 parser.add_argument("--id", type=int, default=0,
                     help='exp. config. id')
 parser.add_argument("--sigma_pen", action='store_true', default=False,
@@ -83,22 +87,17 @@ def main():
     opts['lambda_pen_enc_sigma'] = FLAGS.sigma_pen_val
 
     # Slicing config
-    if FLAGS.dataset=='mnist':
-        # slice_dist = ['det', 'gaussian_small_var', 'gaussian_large_var', 'uniform']
-        slice_dist = ['gaussian_large_var', 'uniform']
-        L_val = [8,16,32,64]
-    elif FLAGS.dataset=='celebA':
-        slice_dist = ['gaussian_small_var', 'gaussian_large_var', 'uniform']
+    if FLAGS.dataset=='celebA':
+        slice_dist = ['det', 'gaussian_small_var', 'gaussian_large_var', 'uniform']
         L_val = [8,16,32]
-    elif FLAGS.dataset=='cifar10':
-        slice_dist = ['gaussian_large_var', 'uniform']
-        L_val = [8,16,32,64,]
-    else:
-        raise Exception('You must provide a data_dir')
+    else :
+        slice_dist = ['det', 'gaussian_small_var', 'gaussian_large_var', 'uniform']
+        L_val = [4,8,16,32,64,]
 
     exp_config = list(itertools.product(slice_dist,L_val))
-    opts['sw_proj_type'] = exp_config[FLAGS.id-1][0]
-    opts['sw_proj_num'] = exp_config[FLAGS.id-1][1]
+    exp_id = (FLAGS.id-1) % len(exp_config)
+    opts['sw_proj_type'] = exp_config[exp_id][0]
+    opts['sw_proj_num'] = exp_config[exp_id][1]
     # pdb.set_trace()
 
     # Model set up
@@ -107,6 +106,10 @@ def main():
     if opts['model'][-3:]=='VAE':
         opts['input_normalize_sym'] = False
     opts['beta'] = FLAGS.beta
+    if FLAGS.batch_size:
+        opts['batch_size'] = FLAGS.batch_size
+    if FLAGS.lr:
+        opts['lr'] = FLAGS.lr
 
     # Create directories
     results_dir = 'results'
@@ -138,7 +141,7 @@ def main():
     assert data.train_size >= opts['batch_size'], 'Training set too small'
 
     opts['it_num'] = FLAGS.num_it
-    opts['print_every'] = int(opts['it_num'] / 4.)
+    opts['print_every'] = int(opts['it_num'] / 5.)
     opts['evaluate_every'] = int(opts['print_every'] / 2.) + 1
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model

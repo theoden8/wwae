@@ -2,17 +2,17 @@
 
 #$ -S /bin/bash
 
-#$ -wd /home/bgaujac/diswae
+#$ -wd /home/bgaujac/wwae/swwae
 
 #$ -l gpu=True
 #$ -l tmem=24G
-#$ -l h_rt=8:00:00
+#$ -l h_rt=12:00:00
 
-#$ -t 1-7
+#$ -t 1-5
 
 #$ -N svhn
 
 source /share/apps/examples/source_files/python/python-3.6.4.source
 source /share/apps/examples/source_files/cuda/cuda-10.0.source
 
-python3 run.py --num_it 600000 --beta 10 --dataset svhn --cost l2sq --save_data --save_model --out_dir svhn --model WAE
+python3 run_ablation.py --num_it 200000 --beta 0 --data_dir ../../data --dataset svhn --cost sw --out_dir svhn_abla_lr_0.01_bs_128 --model WAE --id $SGE_TASK_ID --batch_size 128 --lr 0.01

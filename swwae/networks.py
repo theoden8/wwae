@@ -20,11 +20,6 @@ def encoder(opts, input, output_dim, scope=None,
     with tf.compat.v1.variable_scope(scope, reuse=reuse):
         if opts['net_archi'] == 'mlp':
             encoder = net_archi['mlp']['encoder']
-        elif opts['net_archi'] == 'dcgan':
-            if opts['dataset']=='celebA':
-                encoder = net_archi['celeba_dcgan']['encoder']
-            else:
-                encoder = net_archi['dcgan']['encoder']
         elif opts['net_archi'] == 'conv':
             encoder = net_archi[opts['dataset']]['encoder']
         else:
@@ -56,11 +51,6 @@ def decoder(opts, input, output_dim, scope=None,
     with tf.compat.v1.variable_scope(scope, reuse=reuse):
         if opts['net_archi'] == 'mlp':
             decoder = net_archi['mlp']['decoder']
-        elif opts['net_archi'] == 'dcgan':
-            if opts['dataset']=='celebA':
-                decoder = net_archi['celeba_dcgan']['decoder']
-            else:
-                decoder = net_archi['dcgan']['decoder']
         elif opts['net_archi'] == 'conv':
             decoder = net_archi[opts['dataset']]['decoder']
         else:
