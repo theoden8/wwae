@@ -366,8 +366,6 @@ def  celebA_conv_decoder(opts, input, output_dim, reuse,
     return outputs
 
 net_archi = {'mlp': {'encoder': mlp_encoder, 'decoder': mlp_decoder},
-            'dcgan':{'encoder': dcgan_encoder, 'decoder': dcgan_decoder},
-            'celeba_dcgan':{'encoder': dcgan_encoder, 'decoder': celebA_dcgan_decoder},
             'mnist':{'encoder': mnist_conv_encoder, 'decoder': mnist_conv_decoder},
             'svhn':{'encoder': mnist_conv_encoder, 'decoder': mnist_conv_decoder},
             'cifar10':{'encoder': cifar10_conv_encoder, 'decoder': cifar10_conv_decoder},
