@@ -8,12 +8,13 @@
 #$ -l tmem=25G
 #$ -l h_rt=12:00:00
 
-#$ -t 1-64
+#$ -t 1-5
 
 #$ -N mnist
 
 source /share/apps/examples/source_files/python/python-3.6.4.source
 source /share/apps/examples/source_files/cuda/cuda-10.0.source
 
-python3 run_ablation.py --num_it 200000 --beta 0 --data_dir ../../data --dataset mnist --cost sw --out_dir mnist_abla --model WAE --id $SGE_TASK_ID
+# python3 run_ablation.py --num_it 200000 --beta 0 --data_dir ../../data --dataset mnist --cost sw --out_dir mnist_abla --model WAE --id $SGE_TASK_ID
+python3 run_ablation.py --num_it 200000 --beta 0 --data_dir ../../data --dataset svhn --cost sw --out_dir svhn_abla_lr_0.01 --model WAE --id $SGE_TASK_ID
 # python3 run_ablation.py --num_it 200000 --beta 0 --data_dir ../../data --dataset mnist --cost sw --out_dir mnist_abla --model WAE --id 1

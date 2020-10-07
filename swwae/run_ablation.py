@@ -83,18 +83,12 @@ def main():
     opts['lambda_pen_enc_sigma'] = FLAGS.sigma_pen_val
 
     # Slicing config
-    if FLAGS.dataset=='mnist':
-        # slice_dist = ['det', 'gaussian_small_var', 'gaussian_large_var', 'uniform']
-        slice_dist = ['det', 'gaussian_small_var', 'gaussian_large_var', 'uniform']
-        L_val = [8,16,32,64]
-    elif FLAGS.dataset=='celebA':
+    if FLAGS.dataset=='celebA':
         slice_dist = ['det', 'gaussian_small_var', 'gaussian_large_var', 'uniform']
         L_val = [8,16,32]
-    elif FLAGS.dataset=='cifar10':
+    else :
         slice_dist = ['det', 'gaussian_small_var', 'gaussian_large_var', 'uniform']
-        L_val = [8,16,32,64,]
-    else:
-        raise Exception('You must provide a data_dir')
+        L_val = [4,8,16,32,64,]
 
     exp_config = list(itertools.product(slice_dist,L_val))
     exp_id = (FLAGS.id-1) % len(exp_config)
@@ -139,7 +133,7 @@ def main():
     assert data.train_size >= opts['batch_size'], 'Training set too small'
 
     opts['it_num'] = FLAGS.num_it
-    opts['print_every'] = int(opts['it_num'] / 4.)
+    opts['print_every'] = int(opts['it_num'] / 5.)
     opts['evaluate_every'] = int(opts['print_every'] / 2.) + 1
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
