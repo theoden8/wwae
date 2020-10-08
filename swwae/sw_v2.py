@@ -13,9 +13,13 @@ def sw_v2(opts, x1, x2):
     sorted_proj_1, x_sorted_1 = distrib_proj(x1, opts['sw_proj_num'], opts['sw_proj_type'])
     sorted_proj_2, x_sorted_2 = distrib_proj(x2, opts['sw_proj_num'], opts['sw_proj_type'])
 
+    mass1 = tf.reduce_sum(x1, axis=[1,2]) #[b,c]
+    xs1 = x_sorted_1 / tf.reshape(mass1, [-1,1,c,1])
+    mass2 = tf.reduce_sum(x2, axis=[1,2]) #[b,c]
+    xs2 = x_sorted_2 / tf.reshape(mass2, [-1,1,c,1])
 
-    xd_1 = tf.cast(tf.math.cumsum(x_sorted_1, axis=-1), tf.float32)
-    xd_2 = tf.cast(tf.math.cumsum(x_sorted_2, axis=-1), tf.float32)
+    xd_1 = tf.reduce_mean(tf.cast(tf.math.cumsum(xs1, axis=-1), tf.float32), axis=2, keepdims=True)
+    xd_2 = tf.reduce_mean(tf.cast(tf.math.cumsum(xs2, axis=-1), tf.float32), axis=2, keepdims=True)
 
     z = sorted_proj_1[...,:1]
     z_d = tf.concat((z, sorted_proj_1[...,:-1]), axis=-1)
@@ -28,7 +32,15 @@ def sw_v2(opts, x1, x2):
     sw = tf.math.reduce_sum(diff, axis=-1)
     sw = tf.math.reduce_mean(sw, axis=[-2,-1])
 
-    return sw
+    diff_m = ((mass1 - mass2) / 255.)**2
+    diff_m = tf.math.reduce_mean(diff_m, axis=-1)
+
+    color_prop_1 = x1 / tf.reduce_sum(x1, axis=2, keepdims=True)
+    color_prop_2 = x2 / tf.reduce_sum(x2, axis=2, keepdims=True)
+    diff_cp = tf.reduce_mean((color_prop_1 - color_prop_)**2, axis=[-1,-2,-3])
+
+
+    return sw + diff_m + diff_cp
 
 
 def distrib_proj(x, L, law):
