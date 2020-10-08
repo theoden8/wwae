@@ -101,7 +101,7 @@ def main():
         opts['batch_size'] = FLAGS.batch_size
     if FLAGS.lr:
         opts['lr'] = FLAGS.lr
-    betas = [1,2,4,6]
+    betas = [8, 10, 15, 20, 50, 100]
     opts['beta'] = betas[FLAGS.id-1]
 
 
