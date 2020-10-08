@@ -37,8 +37,8 @@ parser.add_argument("--batch_size", type=int,
                     help='batch size')
 parser.add_argument("--lr", type=float,
                     help='learning rate size')
-parser.add_argument("--beta", type=float, default=0.,
-                    help='beta')
+parser.add_argument("--id", type=int, default=0,
+                    help='exp. config. id')
 parser.add_argument("--slicing_dist", type=str, default='det',
                     help='slicing distribution')
 parser.add_argument("--L", type=int, default=16,
@@ -101,7 +101,8 @@ def main():
         opts['batch_size'] = FLAGS.batch_size
     if FLAGS.lr:
         opts['lr'] = FLAGS.lr
-    opts['beta'] = FLAGS.beta
+    betas = [8, 10, 15, 20, 50, 100]
+    opts['beta'] = betas[FLAGS.id-1]
 
 
     # Create directories
