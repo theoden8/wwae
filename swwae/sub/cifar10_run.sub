@@ -8,11 +8,11 @@
 #$ -l tmem=27G
 #$ -l h_rt=27:00:00
 
-#$ -t 1-2
+#$ -t 1-8
 
 #$ -N cifar10
 
 source /share/apps/examples/source_files/python/python-3.6.4.source
 source /share/apps/examples/source_files/cuda/cuda-10.0.source
 
-python3 run_ablation.py --num_it 300000 --beta 0 --data_dir ../../data --dataset cifar10 --cost sw --out_dir cifar10_abla --model WAE --id $SGE_TASK_ID
+python3 run_array.py --num_it 300000 --data_dir ../../data --dataset cifar10 --cost sw --L 32 --out_dir cifar10 --model WAE --id $SGE_TASK_ID
