@@ -14,6 +14,7 @@ config['vizu_embedded'] = False
 config['embedding'] = 'umap' #vizualisation method of the embeddings: pca, umap
 config['vizu_encSigma'] = False
 config['vizu_interpolation'] = False
+config['vizu_rgb_transformed'] = True
 config['fid'] = False
 config['out_dir'] = 'code_outputs'
 config['plot_num_pics'] = 100
@@ -39,6 +40,9 @@ config['batch_norm_momentum'] = 0.99
 # Objective set up
 config['cost'] = 'l2sq' #l2, l2sq, l2sq_norm, l1, xentropy
 config['mmd_kernel'] = 'IMQ' # RBF, IMQ
+config['transform_rgb_img'] = 'none' #[average/wavelength/learned/none]
+config['d_updt_freq'] = 1
+config['d_updt_it'] = 5
 config['pen_enc_sigma'] = False
 config['lambda_pen_enc_sigma'] = 0.001
 config['sw_proj_num'] = 15

@@ -25,8 +25,8 @@ def encoder(opts, input, output_dim, scope=None,
         else:
             raise ValueError('Unknown {} net. archi.'.format(opts['net_archi']))
         outputs = encoder(opts, input, output_dim,
-                                        reuse,
-                                        is_training)
+                                    reuse,
+                                    is_training)
 
     mean, logSigma = tf.split(outputs,2,axis=-1)
     logSigma = tf.clip_by_value(logSigma, -20, 500)
@@ -56,8 +56,8 @@ def decoder(opts, input, output_dim, scope=None,
         else:
             raise ValueError('Unknown {} dataset'.format(opts['net_archi']))
         outputs = decoder(opts, input, output_dim,
-                                        reuse,
-                                        is_training)
+                                    reuse,
+                                    is_training)
 
     mean, logSigma = tf.split(outputs,2,axis=-1)
     logSigma = tf.clip_by_value(logSigma, -20, 500)
@@ -79,3 +79,22 @@ def decoder(opts, input, output_dim, scope=None,
     x = tf.reshape(x, [-1] + datashapes[opts['dataset']])
 
     return x, mean, Sigma
+
+def discriminator(opts, inputs, scope=None,
+                                    reuse=False,
+                                    is_training=False):
+    """
+    Discriminator network to transform RGB images
+    inputs: [batch,w,h,c]
+    outputs: [batch,w,h,1]
+    """
+    in_shape = inputs.get_shape().as_list()[1:]
+    layer_x = tf.compat.v1.layers.flatten(inputs)
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
+        outputs = ops.linear.Linear(opts, layer_x,
+                                    np.prod(in_shape),
+                                    np.prod(in_shape[:-1]),
+                                    init=opts['mlp_init'],
+                                    scope='hid_final')
+
+    return tf.reshape(tf.nn.sigmoid(outputs),[-1,in_shape[0],in_shape[1],1])

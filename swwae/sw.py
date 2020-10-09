@@ -1,15 +1,12 @@
 import tensorflow as tf
 # import tensorflow_probability as tfp
 from math import pi
-import tensorflow_io as tfio
+# import tensorflow_io as tfio
 
 def sw(opts, x1, x2):
     """
     actually sw1 to test
     """
-
-#    x1 = tf.cast(tfio.experimental.color.rgb_to_ycbcr(tf.cast(x1_, tf.uint8)), tf.float32)
-#    x2 = tf.cast(tfio.experimental.color.rgb_to_ycbcr(tf.cast(x2_, tf.uint8)), tf.float32)
 
     h, w, c = x1.get_shape().as_list()[1:]
 

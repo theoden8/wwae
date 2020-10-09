@@ -43,6 +43,8 @@ parser.add_argument("--slicing_dist", type=str, default='det',
                     help='slicing distribution')
 parser.add_argument("--L", type=int, default=16,
                     help='Number of slices')
+parser.add_argument("--id", type=int, default=0,
+                    help='exp. config. id')                    
 parser.add_argument("--sigma_pen", action='store_true', default=False,
                     help='penalization of Sigma_q')
 parser.add_argument("--sigma_pen_val", type=float, default=0.01,
@@ -85,11 +87,6 @@ def main():
         raise Exception('You must provide a data_dir')
 
     # Set method param
-    opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
-    if opts['cost']!='sw':
-        opts['transform_rgb_img'] = 'none'
-    else:
-        opts['transform_rgb_img'] = FLAGS.trans_rgb
     opts['net_archi'] = FLAGS.net_archi
     opts['pen_enc_sigma'] = FLAGS.sigma_pen
     opts['lambda_pen_enc_sigma'] = FLAGS.sigma_pen_val
@@ -97,6 +94,18 @@ def main():
     # Slicing config
     opts['sw_proj_type'] = FLAGS.slicing_dist
     opts['sw_proj_num'] = FLAGS.L
+    # Slicing config
+    opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
+    if opts['cost']!='sw':
+        opts['transform_rgb_img'] = 'none'
+    else:
+        opts['transform_rgb_img'] = FLAGS.trans_rgb
+    freq = [1,5]
+    it = [1,5,10]
+    exp_config = list(itertools.product(freq,it))
+    exp_id = (FLAGS.id-1) % len(exp_config)
+    opts['d_updt_freq'] = exp_config[exp_id][0]
+    opts['d_updt_it'] = exp_config[exp_id][1]
 
     # Model set up
     opts['model'] = FLAGS.model
@@ -140,8 +149,8 @@ def main():
     assert data.train_size >= opts['batch_size'], 'Training set too small'
 
     opts['it_num'] = FLAGS.num_it
-    opts['print_every'] = 20 #int(opts['it_num'] / 5.)
-    opts['evaluate_every'] = 20 #int(opts['print_every'] / 5.) + 1
+    opts['print_every'] = int(opts['it_num'] / 5.)
+    opts['evaluate_every'] = int(opts['print_every'] / 5.) + 1
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
     opts['save_train_data'] = FLAGS.save_data

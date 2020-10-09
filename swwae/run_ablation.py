@@ -93,7 +93,6 @@ def main():
     else :
         slice_dist = ['det', 'gaussian_small_var', 'gaussian_large_var', 'uniform']
         L_val = [4,8,16,32,64,]
-
     exp_config = list(itertools.product(slice_dist,L_val))
     exp_id = (FLAGS.id-1) % len(exp_config)
     opts['sw_proj_type'] = exp_config[exp_id][0]

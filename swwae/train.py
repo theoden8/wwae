@@ -12,8 +12,8 @@ from math import ceil
 
 import utils
 from sampling_functions import sample_pz, linespace
-from plot_functions import save_train, save_test_smallnorb, save_test_celeba, save_dimwise_traversals
-from plot_functions import plot_embedded, plot_encSigma, plot_interpolation
+from plot_functions import save_train, save_test_celeba, save_dimwise_traversals
+from plot_functions import plot_embedded, plot_encSigma, plot_interpolation, plot_transformed
 import models
 from datahandler import datashapes
 from fid.fid import calculate_frechet_distance
@@ -48,17 +48,17 @@ class Run(object):
             raise NotImplementedError()
 
         # --- Define Objective
-        self.loss_rec, self.loss_reg = self.model.loss(
-                                inputs=self.data.next_element,
-                                beta=self.beta,
-                                is_training=self.is_training)
+        self.loss_rec, self.loss_reg, _ = self.model.loss(
+                                    inputs=self.data.next_element,
+                                    beta=self.beta,
+                                    is_training=self.is_training)
         self.objective = self.loss_rec + self.loss_reg
 
         # --- encode & decode pass for testing
         self.z_samples, self.z_mean, self.z_sigma, self.recon_x, _, _ =\
             self.model.forward_pass(inputs=self.data.next_element,
-                                is_training=self.is_training,
-                                reuse=True)
+                                    is_training=self.is_training,
+                                    reuse=True)
 
         # --- MSE
         self.mse = self.model.MSE(self.data.next_element, self.recon_x)
@@ -78,11 +78,17 @@ class Run(object):
         # --- encode & decode pass for vizu
         self.encoded, self.encoded_mean, _, self.decoded, _, _ =\
             self.model.forward_pass(inputs=self.inputs_img,
-                                is_training=self.is_training,
-                                reuse=True)
+                                    is_training=self.is_training,
+                                    reuse=True)
 
         # --- Sampling
         self.generated = self.model.sample_x_from_prior(noise=self.pz_samples)
+
+        # --- Get RGB transformed
+        _, _, self.input_transformed = self.model.loss(self.inputs_img,
+                                    self.beta,
+                                    self.is_training,
+                                    reuse=True)
 
         # --- FID score
         if opts['fid']:
@@ -166,6 +172,9 @@ class Run(object):
         else:
             assert False, 'Unknown optimizer.'
 
+    def discr_optimizer(self, lr=0.0001):
+        return tf.train.AdamOptimizer(lr)
+
     def add_optimizers(self):
         opts = self.opts
         lr = opts['lr']
@@ -176,6 +185,13 @@ class Run(object):
                                                 scope='decoder')
         with tf.control_dependencies(self.extra_update_ops):
             self.opt = opt.minimize(loss=self.objective, var_list=encoder_vars + decoder_vars)
+
+        if self.opts['transform_rgb_img']=='learned':
+            discr_opt = self.discr_optimizer()
+            discr_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                                scope='discriminator')
+            self.discr_opt = discr_opt.minimize(loss=-self.loss_rec, var_list=discr_vars)
+
 
     def train(self, MODEL_PATH=None, WEIGHTS_FILE=None):
         """
@@ -236,11 +252,20 @@ class Run(object):
                                 global_step=it)
             #####  TRAINING LOOP #####
             it += 1
+            # training discriminator if needed
+            if self.opts['transform_rgb_img']=='learned':
+                if (it-1)%self.opts['d_updt_freq']==0:
+                    for _ in range(self.opts['d_updt_it']):
+                        _ = self.sess.run(self.discr_opt, feed_dict={
+                                            self.data.handle: self.train_handle,
+                                            self.is_training: True})
+
             _ = self.sess.run(self.opt, feed_dict={
                                 self.data.handle: self.train_handle,
                                 self.lr_decay: decay,
                                 self.beta: self.opts['beta'],
                                 self.is_training: True})
+
             ##### TESTING LOOP #####
             if it % self.opts['evaluate_every'] == 0:
                 logging.error('\nIteration {}/{}'.format(it, self.opts['it_num']))
@@ -271,10 +296,10 @@ class Run(object):
                                     self.beta: self.opts['beta'],
                                     self.is_training: False}
                     [l, l_rec, m, l_reg] = self.sess.run([self.objective,
-                                                self.loss_rec,
-                                                self.mse,
-                                                self.loss_reg],
-                                                feed_dict=test_feed_dict)
+                                            self.loss_rec,
+                                            self.mse,
+                                            self.loss_reg],
+                                            feed_dict=test_feed_dict)
                     loss += l / test_it_num
                     loss_rec += l_rec / test_it_num
                     mse += m / test_it_num
@@ -297,13 +322,13 @@ class Run(object):
                 logging.error(debug_str)
                 if self.opts['model'] == 'BetaVAE':
                     debug_str = 'beta*KL=%10.3e, beta*TEST KL=%10.3e, \n '  % (
-                                                Loss_reg[-1],
-                                                Loss_reg_test[-1])
+                                            Loss_reg[-1],
+                                            Loss_reg_test[-1])
                     logging.error(debug_str)
                 elif self.opts['model'] == 'WAE':
                     debug_str = 'beta*MMD=%10.3e, beta*TEST MMD=%10.3e \n ' % (
-                                                Loss_reg[-1],
-                                                Loss_reg_test[-1])
+                                            Loss_reg[-1],
+                                            Loss_reg_test[-1])
                     logging.error(debug_str)
                 else:
                     raise NotImplementedError('Model type not recognised')
@@ -342,6 +367,17 @@ class Run(object):
                     inter_anchors = np.reshape(dec_interpolation, [-1, self.opts['zdim'], num_steps]+self.data.data_shape)
                     plot_interpolation(self.opts, inter_anchors,
                                             exp_dir, 'inter_it%07d.png' % (it))
+
+                # Get RGB transformed if available
+                if self.opts['vizu_rgb_transformed']:
+                    if self.opts['transform_rgb_img']=='average' or self.opts['transform_rgb_img']=='wavelength' or self.opts['transform_rgb_img']=='learned':
+                        transformed = self.sess.run(self.input_transformed,
+                                            feed_dict={self.inputs_img: self.data.data_vizu,
+                                                        self.beta: self.opts['beta'],
+                                                        self.is_training: False})
+                        plot_transformed(self.opts, self.data.data_vizu, transformed,
+                                            exp_dir,# working directory
+                                            'tansformed_it%07d.png' % (it))
 
                 # Auto-encoding training images
                 inputs_tr = []
@@ -413,11 +449,11 @@ class Run(object):
                         self.beta: self.opts['beta'],
                         self.is_training: False}
         [loss, loss_rec, mse, loss_reg] = self.sess.run([
-                                    self.objective,
-                                    self.loss_rec,
-                                    self.mse,
-                                    self.loss_reg],
-                                    feed_dict=feed_dict)
+                                        self.objective,
+                                        self.loss_rec,
+                                        self.mse,
+                                        self.loss_reg],
+                                        feed_dict=feed_dict)
         Loss.append(loss)
         Loss_rec.append(loss_rec)
         MSE.append(mse)
@@ -447,10 +483,10 @@ class Run(object):
         debug_str = 'TRAIN LOSS=%.3f, TEST LOSS=%.3f' % (Loss[-1],Loss_test[-1])
         logging.error(debug_str)
         debug_str = 'REC=%.3f, TEST REC=%.3f, MSE=%10.3e, TEST MSE=%10.3e, \n '  % (
-                                    Loss_rec[-1],
-                                    Loss_rec_test[-1],
-                                    MSE[-1],
-                                    MSE_test[-1])
+                                        Loss_rec[-1],
+                                        Loss_rec_test[-1],
+                                        MSE[-1],
+                                        MSE_test[-1])
         logging.error(debug_str)
         if self.opts['model'] == 'BetaVAE':
             debug_str = 'beta*KL=%10.3e, beta*TEST KL=%10.3e, \n '  % (
