@@ -327,7 +327,7 @@ class Run(object):
                 logging.error(debug_str)
                 debug_str = 'TRAIN LOSS=%.3f, TEST LOSS=%.3f' % (Loss[-1],Loss_test[-1])
                 logging.error(debug_str)
-                debug_str = 'REC=%.3f, TEST REC=%.3f, MSE=%10.3e, TEST MSE=%10.3e, \n '  % (
+                debug_str = 'REC=%.3f, TEST REC=%.3f, MSE=%10.3e, TEST MSE=%10.3e'  % (
                                             Loss_rec[-1],
                                             Loss_rec_test[-1],
                                             MSE[-1],
