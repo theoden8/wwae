@@ -6,13 +6,14 @@
 
 #$ -l gpu=True
 #$ -l tmem=27G
-#$ -l h_rt=24:00:00
+#$ -l h_rt=20:00:00
 
-#$ -t 1-6
+#$ -t 1-12
 
 #$ -N cifar10_sw_abla
 
 source /share/apps/examples/source_files/python/python-3.6.4.source
 source /share/apps/examples/source_files/cuda/cuda-10.0.source
 
-python3 run_ablation_v2.py --num_it 100000 --data_dir ../../data --dataset cifar10 --cost sw --L 32 --out_dir cifar10_ablation --model WAE --id $SGE_TASK_ID
+# python3 run_ablation_v2.py --num_it 100000 --data_dir ../../data --dataset cifar10 --cost sw --L 32 --out_dir cifar10_ablation --model WAE --id $SGE_TASK_ID
+python3 run_ablation.py --num_it 150000 --data_dir ../../data --dataset cifar10 --cost sw --out_dir cifar10_ablation --model WAE --lr 0.0005 --beta 0 --slicing_dist adversarial --save_model --id $SGE_TASK_ID

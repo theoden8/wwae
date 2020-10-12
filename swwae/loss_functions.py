@@ -97,7 +97,7 @@ def square_dist(sample_x, sample_y):
 
 
 ######### rec losses #########
-def wae_ground_cost(opts, x1, x2):
+def wae_ground_cost(opts, x1, x2, reuse=False):
     """
     Compute the WAE's ground cost
     x1: image data             [batch,h,w,c]
@@ -114,7 +114,7 @@ def wae_ground_cost(opts, x1, x2):
     elif opts['cost'] == 'l1':
         cost = l1_cost(x1, x2)
     elif opts['cost'] == 'sw':
-        cost = sw(opts, x1, x2)
+        cost = sw(opts, x1, x2, reuse=reuse)
     elif opts['cost'] == 'sw_v2':
         cost = sw_v2(opts, x1, x2)
     else:

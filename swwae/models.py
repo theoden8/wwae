@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 import math
 
-from networks import encoder, decoder, discriminator
+from networks import encoder, decoder, obs_discriminator
 from datahandler import datashapes
 from loss_functions import wae_ground_cost, cross_entropy_loss
 import utils
@@ -157,8 +157,8 @@ class WAE(Model):
                 stat += res1 - res2
         return stat
 
-    def reconstruction_loss(self, x1, x2, logits):
-        cost = wae_ground_cost(self.opts, x1, x2) #[batch,]
+    def reconstruction_loss(self, x1, x2, logits, reuse=False):
+        cost = wae_ground_cost(self.opts, x1, x2, reuse=reuse) #[batch,]
 
         return tf.reduce_mean(cost)
 
@@ -175,21 +175,19 @@ class WAE(Model):
         elif self.opts['transform_rgb_img']=='wavelength':
             raise Exception('{} not implemented yet.'.format(self.opts['transform_rgb_img']))
         elif self.opts['transform_rgb_img']=='learned':
-            inputs_transformed = discriminator(self.opts, inputs,
-                                                scope='discriminator',
-                                                reuse=reuse,
-                                                is_training=is_training)
-            recon_x_transformed = discriminator(self.opts, recon_x,
-                                                scope='discriminator',
-                                                reuse=True,
-                                                is_training=is_training)
+            inputs_transformed = obs_discriminator(self.opts, inputs,
+                                                scope='obs_discriminator',
+                                                reuse=reuse)
+            recon_x_transformed = obs_discriminator(self.opts, recon_x,
+                                                scope='obs_discriminator',
+                                                reuse=True)
         elif self.opts['transform_rgb_img']=='none':
             inputs_transformed = inputs
             recon_x_transformed = recon_x
         else:
             raise Exception('{} transformation unknown.'.format(self.opts['transform_rgb_img']))
 
-        rec = self.reconstruction_loss(inputs_transformed, recon_x_transformed, dec_mean)
+        rec = self.reconstruction_loss(inputs_transformed, recon_x_transformed, dec_mean, reuse=reuse)
         noise = tf.compat.v1.random_normal(shape=tf.shape(enc_z))
         pz_sample = tf.add(self.pz_mean, (noise * self.pz_sigma))
         reg = beta*self.mmd_penalty(enc_z, pz_sample)

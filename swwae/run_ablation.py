@@ -33,12 +33,16 @@ parser.add_argument("--num_it", type=int, default=300000,
                     help='iteration number')
 parser.add_argument("--net_archi", default='conv',
                     help='networks architecture [mlp/conv]')
-parser.add_argument("--beta", default=10.,
-                    help='Latent reg weight setup')
 parser.add_argument("--batch_size", type=int,
                     help='batch size')
 parser.add_argument("--lr", type=float,
                     help='learning rate size')
+parser.add_argument("--beta", type=float, default=0.,
+                    help='beta')
+parser.add_argument("--slicing_dist", type=str, default='det',
+                    help='slicing distribution')
+parser.add_argument("--L", type=int, default=16,
+                    help='Number of slices')
 parser.add_argument("--id", type=int, default=0,
                     help='exp. config. id')
 parser.add_argument("--sigma_pen", action='store_true', default=False,
@@ -46,7 +50,9 @@ parser.add_argument("--sigma_pen", action='store_true', default=False,
 parser.add_argument("--sigma_pen_val", type=float, default=0.01,
                     help='value of penalization of Sigma_q')
 parser.add_argument("--cost", default='l2sq',
-                    help='ground cost [l1, l2, l2sq, l2sq_norm, sw2]')
+                    help='ground cost [average/wavelength/learned/none]')
+parser.add_argument("--trans_rgb", default='none',
+                    help='tranformation of RGB imgs [l1, l2, l2sq, l2sq_norm, sw2]')
 parser.add_argument('--save_model', action='store_false', default=True,
                     help='save final model weights [True/False]')
 parser.add_argument("--save_data", action='store_false', default=True,
@@ -81,34 +87,36 @@ def main():
         raise Exception('You must provide a data_dir')
 
     # Set method param
-    opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
     opts['net_archi'] = FLAGS.net_archi
     opts['pen_enc_sigma'] = FLAGS.sigma_pen
     opts['lambda_pen_enc_sigma'] = FLAGS.sigma_pen_val
 
-    # Slicing config
-    if FLAGS.dataset=='celebA':
-        slice_dist = ['det', 'gaussian_small_var', 'gaussian_large_var', 'uniform']
-        L_val = [8,16,32]
-    else :
-        slice_dist = ['det', 'gaussian_small_var', 'gaussian_large_var', 'uniform']
-        L_val = [4,8,16,32,64,]
-    exp_config = list(itertools.product(slice_dist,L_val))
+    # ground cost config
+    opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
+    if opts['cost']!='sw':
+        opts['transform_rgb_img'] = 'none'
+    else:
+        opts['transform_rgb_img'] = FLAGS.trans_rgb
+    opts['sw_proj_type'] = FLAGS.slicing_dist
+    freq = [1,5]
+    it = [1,5]
+    L = [1,2,5]
+    exp_config = list(itertools.product(freq,it,L))
     exp_id = (FLAGS.id-1) % len(exp_config)
-    opts['sw_proj_type'] = exp_config[exp_id][0]
-    opts['sw_proj_num'] = exp_config[exp_id][1]
-    # pdb.set_trace()
+    opts['d_updt_freq'] = exp_config[exp_id][0]
+    opts['d_updt_it'] = exp_config[exp_id][1]
+    opts['sw_proj_num'] = exp_config[exp_id][2]
 
     # Model set up
     opts['model'] = FLAGS.model
     opts['decoder'] = FLAGS.decoder
     if opts['model'][-3:]=='VAE':
         opts['input_normalize_sym'] = False
-    opts['beta'] = FLAGS.beta
     if FLAGS.batch_size:
         opts['batch_size'] = FLAGS.batch_size
     if FLAGS.lr:
         opts['lr'] = FLAGS.lr
+    opts['beta'] = FLAGS.beta
 
     # Create directories
     results_dir = 'results'
@@ -120,12 +128,13 @@ def main():
     out_subdir = os.path.join(opts['out_dir'], opts['model'])
     if not tf.io.gfile.isdir(out_subdir):
         utils.create_dir(out_subdir)
-    opts['exp_dir'] = opts['sw_proj_type'] + '_' + str(opts['sw_proj_num'])
-    exp_dir = os.path.join(out_subdir,
-                           '{}_{}_{:%Y_%m_%d_%H_%M}'.format(
-                                opts['exp_dir'],
-                                opts['beta'],
-                                datetime.now()), )
+    opts['exp_dir'] = opts['sw_proj_type'] + '_L' + str(opts['sw_proj_num']) + '_dfreq' + str(opts['d_updt_freq']) + '_dit' + str(opts['d_updt_it'])
+    exp_dir = os.path.join(out_subdir,opts['exp_dir'])
+    # exp_dir = os.path.join(out_subdir,
+    #                        '{}_{}_{:%Y_%m_%d_%H_%M}'.format(
+    #                             opts['exp_dir'],
+    #                             opts['beta'],
+    #                             datetime.now()), )
     opts['exp_dir'] = exp_dir
     if not tf.io.gfile.isdir(exp_dir):
         utils.create_dir(exp_dir)

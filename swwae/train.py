@@ -187,10 +187,16 @@ class Run(object):
             self.opt = opt.minimize(loss=self.objective, var_list=encoder_vars + decoder_vars)
 
         if self.opts['transform_rgb_img']=='learned':
-            discr_opt = self.discr_optimizer()
-            discr_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                                scope='discriminator')
-            self.discr_opt = discr_opt.minimize(loss=-self.loss_rec, var_list=discr_vars)
+            obs_discr_opt = self.discr_optimizer()
+            obs_discr_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                                scope='obs_discriminator')
+            self.obs_discr_opt = obs_discr_opt.minimize(loss=-self.loss_rec, var_list=obs_discr_vars)
+
+        if self.opts['cost']=='sw' and self.opts['sw_proj_type']=='adversarial':
+            theta_discr_opt = self.discr_optimizer()
+            theta_discr_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                                scope='theta_discriminator')
+            self.theta_discr_opt = theta_discr_opt.minimize(loss=-self.loss_rec, var_list=theta_discr_vars)
 
 
     def train(self, MODEL_PATH=None, WEIGHTS_FILE=None):
@@ -252,14 +258,21 @@ class Run(object):
                                 global_step=it)
             #####  TRAINING LOOP #####
             it += 1
-            # training discriminator if needed
+            # training obs_discriminator if needed
             if self.opts['transform_rgb_img']=='learned':
                 if (it-1)%self.opts['d_updt_freq']==0:
                     for _ in range(self.opts['d_updt_it']):
-                        _ = self.sess.run(self.discr_opt, feed_dict={
+                        _ = self.sess.run(self.obs_discr_opt, feed_dict={
                                             self.data.handle: self.train_handle,
                                             self.is_training: True})
-
+            # training theta_discriminator if needed
+            if self.opts['cost']=='sw' and self.opts['sw_proj_type']=='adversarial':
+                if (it-1)%self.opts['d_updt_freq']==0:
+                    for _ in range(self.opts['d_updt_it']):
+                        _ = self.sess.run(self.theta_discr_opt, feed_dict={
+                                            self.data.handle: self.train_handle,
+                                            self.is_training: True})
+            # training
             _ = self.sess.run(self.opt, feed_dict={
                                 self.data.handle: self.train_handle,
                                 self.lr_decay: decay,

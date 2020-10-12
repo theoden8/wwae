@@ -80,9 +80,36 @@ def decoder(opts, input, output_dim, scope=None,
 
     return x, mean, Sigma
 
-def discriminator(opts, inputs, scope=None,
-                                    reuse=False,
-                                    is_training=False):
+def theta_discriminator(opts, inputs, scope=None,
+                                    reuse=False):
+    """
+    Discriminator network to learn proj. dir.
+    inputs: [batch,w,h,c]
+    outputs: [batch,L,c]
+    """
+    in_shape = inputs.get_shape().as_list()[1:]
+    layer_x = tf.compat.v1.layers.flatten(inputs)
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
+        # hidden 0
+        layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                    256, init=opts['mlp_init'],
+                                    scope='hid0/lin')
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # hidden 1
+        layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                    256, init=opts['mlp_init'],
+                                    scope='hid1/lin')
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # final layer
+        outputs = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                    opts['sw_proj_num']*in_shape[-1],
+                                    init=opts['mlp_init'],
+                                    scope='hid_final')
+
+    return tf.reshape(outputs, [-1,opts['sw_proj_num'],in_shape[-1]])
+
+def obs_discriminator(opts, inputs, scope=None,
+                                    reuse=False):
     """
     Discriminator network to transform RGB images
     inputs: [batch,w,h,c]
@@ -91,6 +118,7 @@ def discriminator(opts, inputs, scope=None,
     in_shape = inputs.get_shape().as_list()[1:]
     layer_x = tf.compat.v1.layers.flatten(inputs)
     with tf.compat.v1.variable_scope(scope, reuse=reuse):
+
         outputs = ops.linear.Linear(opts, layer_x,
                                     np.prod(in_shape),
                                     np.prod(in_shape[:-1]),
