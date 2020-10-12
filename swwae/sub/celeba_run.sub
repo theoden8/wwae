@@ -6,7 +6,7 @@
 
 #$ -l gpu=True
 #$ -l tmem=26G
-#$ -l h_rt=20:00:00
+#$ -l h_rt=16:00:00
 
 #$ -t 1-12
 
@@ -15,4 +15,4 @@
 source /share/apps/examples/source_files/python/python-3.6.4.source
 source /share/apps/examples/source_files/cuda/cuda-10.0.source
 
-python3 run_ablation.py --num_it 150000 --data_dir ../../data --dataset celebA --cost sw --out_dir celebA_ablation --model WAE --lr 0.0005 --batch_size 64 --beta 0 --slicing_dist adversarial --save_model --id $SGE_TASK_ID
+python3 run_ablation.py --num_it 300000 --data_dir ../../data --dataset celebA --cost sw --out_dir celebA_ablation --model WAE --lr 0.0005 --batch_size 64 --beta 0 --slicing_dist adversarial --save_model --id $SGE_TASK_ID
