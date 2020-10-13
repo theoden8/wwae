@@ -88,8 +88,11 @@ def main():
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
     if opts['cost']!='sw':
         opts['transform_rgb_img'] = 'none'
+        opts['vizu_rgb_transformed'] = False
     else:
         opts['transform_rgb_img'] = FLAGS.trans_rgb
+        if opts['transform_rgb_img']=='none':
+            opts['vizu_rgb_transformed'] = False
     opts['net_archi'] = FLAGS.net_archi
     opts['pen_enc_sigma'] = FLAGS.sigma_pen
     opts['lambda_pen_enc_sigma'] = FLAGS.sigma_pen_val
@@ -140,8 +143,8 @@ def main():
     assert data.train_size >= opts['batch_size'], 'Training set too small'
 
     opts['it_num'] = FLAGS.num_it
-    opts['print_every'] = 20 #int(opts['it_num'] / 5.)
-    opts['evaluate_every'] = 20 #int(opts['print_every'] / 5.) + 1
+    opts['print_every'] = int(opts['it_num'] / 10.)
+    opts['evaluate_every'] = int(opts['print_every'] / 1.) + 1
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
     opts['save_train_data'] = FLAGS.save_data
