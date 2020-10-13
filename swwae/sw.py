@@ -34,7 +34,7 @@ def sw(opts, x1, x2, reuse=False):
     sw = tf.math.reduce_sum(diff, axis=-1)
     sw = tf.math.reduce_mean(sw, axis=[-2,-1])
 
-    diff_m = ((mass1 - mass2) / 255.)**2
+    diff_m = ((mass1 - mass2))**2
     diff_m = tf.math.reduce_mean(diff_m, axis=-1)
 
     return sw + diff_m
