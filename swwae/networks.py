@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+from math import pi
 
 import ops.linear
 import ops.conv2d
@@ -105,6 +106,8 @@ def theta_discriminator(opts, inputs, scope=None,
                                     opts['sw_proj_num']*in_shape[-1],
                                     init=opts['mlp_init'],
                                     scope='hid_final')
+        # piece wise linear activation
+        outputs = tf.math.maximum(pi, tf.math.minimum(0, x+pi/2))
 
     return tf.reshape(outputs, [-1,opts['sw_proj_num'],in_shape[-1]])
 

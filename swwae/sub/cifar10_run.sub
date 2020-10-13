@@ -8,7 +8,7 @@
 #$ -l tmem=27G
 #$ -l h_rt=17:00:00
 
-#$ -t 1-12
+#$ -t 1-6
 
 #$ -N cifar10_sw_abla
 

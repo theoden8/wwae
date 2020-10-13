@@ -6,9 +6,9 @@
 
 #$ -l gpu=True
 #$ -l tmem=24G
-#$ -l h_rt=6:00:00
+#$ -l h_rt=10:00:00
 
-#$ -t 1-12
+#$ -t 1-6
 
 #$ -N svhn_sw_ablation
 
