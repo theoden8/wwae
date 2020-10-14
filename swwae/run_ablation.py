@@ -128,7 +128,10 @@ def main():
     out_subdir = os.path.join(opts['out_dir'], opts['model'])
     if not tf.io.gfile.isdir(out_subdir):
         utils.create_dir(out_subdir)
-    opts['exp_dir'] = opts['sw_proj_type'] + '_L' + str(opts['sw_proj_num']) + '_dfreq' + str(opts['d_updt_freq']) + '_dit' + str(opts['d_updt_it'])
+    if opts['cost']=='sw':
+        opts['exp_dir'] = opts['sw_proj_type'] + '_L' + str(opts['sw_proj_num']) + '_dfreq' + str(opts['d_updt_freq']) + '_dit' + str(opts['d_updt_it'])
+    else:
+        opts['exp_dir'] = opts['cost']
     exp_dir = os.path.join(out_subdir,opts['exp_dir'])
     # exp_dir = os.path.join(out_subdir,
     #                        '{}_{}_{:%Y_%m_%d_%H_%M}'.format(
