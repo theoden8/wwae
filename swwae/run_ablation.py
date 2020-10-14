@@ -99,7 +99,7 @@ def main():
         opts['transform_rgb_img'] = FLAGS.trans_rgb
     opts['sw_proj_type'] = FLAGS.slicing_dist
     freq = [1,]
-    it = [10,]
+    it = [5,]
     L = [32,]
     exp_config = list(itertools.product(freq,it,L))
     exp_id = (FLAGS.id-1) % len(exp_config)
