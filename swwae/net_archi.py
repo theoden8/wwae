@@ -27,6 +27,13 @@ def mlp_encoder(opts, input, output_dim, reuse=False,
         layer_x = ops.batchnorm.Batchnorm_layers(
             opts, layer_x, 'hid1/bn', is_training, reuse)
     layer_x = ops._ops.non_linear(layer_x,'relu')
+    # hidden 2
+    layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                1024, init=opts['mlp_init'], scope='hid2/lin')
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(
+            opts, layer_x, 'hid2/bn', is_training, reuse)
+    layer_x = ops._ops.non_linear(layer_x,'relu')
     # output layer
     outputs = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
                 output_dim, init=opts['mlp_init'], scope='hid_final')
@@ -49,6 +56,13 @@ def mlp_decoder(opts, input, output_dim, reuse=False,
     if opts['normalization']=='batchnorm':
         layer_x = ops.batchnorm.Batchnorm_layers(
             opts, layer_x, 'hid1/bn', is_training, reuse)
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+    # hidden 2
+    layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                1024, init=opts['mlp_init'], scope='hid2/lin')
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(
+            opts, layer_x, 'hid2/bn', is_training, reuse)
     layer_x = ops._ops.non_linear(layer_x,'relu')
     # output layer
     outputs = ops.linear.Linear(opts, layer_x,np.prod(layer_x.get_shape().as_list()[1:]),
