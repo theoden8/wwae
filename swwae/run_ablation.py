@@ -99,8 +99,8 @@ def main():
         opts['transform_rgb_img'] = FLAGS.trans_rgb
     opts['sw_proj_type'] = FLAGS.slicing_dist
     freq = [1,]
-    it = [1,5]
-    L = [1,5,10]
+    it = [10,]
+    L = [32,]
     exp_config = list(itertools.product(freq,it,L))
     exp_id = (FLAGS.id-1) % len(exp_config)
     opts['d_updt_freq'] = exp_config[exp_id][0]
@@ -149,7 +149,7 @@ def main():
     assert data.train_size >= opts['batch_size'], 'Training set too small'
 
     opts['it_num'] = FLAGS.num_it
-    opts['print_every'] = int(opts['it_num'] / 10.)
+    opts['print_every'] = int(opts['it_num'] / 100.)
     opts['evaluate_every'] = int(opts['print_every'] / 1.) + 1
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
