@@ -81,14 +81,14 @@ def projection(opts, x, reuse=False):
     coord = tf.cast(tf.reshape(tf.stack([X,Y],axis=-1), [-1,2]), tf.float32) # ((h*w),2)
     # get directions to project
     if opts['sw_proj_type']=='det':
-        thetas = tf.range(L, dtype=tf.float32) / L *pi
+        thetas = tf.range(L, dtype=tf.float32) / (2*pi * L)
         thetas = tf.tile(tf.reshape(thetas, [1,L,1]), [B,1,c])
     elif opts['sw_proj_type']=='uniform':
         # distrib = tfp.distributions.Uniform(low=0., high=pi)
         # thetas = tf.reshape(distrib.sample(B*L*c), [B,L,c])
         thetas = tf.random.uniform([B,L,c], 0., pi)
     elif opts['sw_proj_type']=='unidet':
-        thetas = tf.range(L, dtype=tf.float32) / L *pi
+        thetas = tf.range(L, dtype=tf.float32) / (2*pi * L)
         thetas = tf.tile(tf.reshape(thetas, [1,L,1]), [B,1,c])
         # distrib = tfp.distributions.Uniform(low=0., high=pi/L)
         # shift = tf.tile(tf.reshape(distrib.sample(B*c), [B,1,c]), [1,L,1])
@@ -96,18 +96,18 @@ def projection(opts, x, reuse=False):
         shift = tf.tile(shift, [1,L,1])
         thetas = thetas + shift
     elif opts['sw_proj_type']=='gaussian_small_var':
-        thetas = tf.range(L, dtype=tf.float32) / L *pi
+        thetas = tf.range(L, dtype=tf.float32) / (2*pi * L)
         thetas = tf.tile(tf.reshape(thetas, [1,L,1]), [B,1,c])
         # distrib = tfp.distributions.Normal(loc=0., scale=pi/L/6)
         # noise = tf.reshape(distrib.sample(B*L*c), [B,L,c])
-        noise = tf.random.normal([B,L,c], 0.0, pi/L/6)
+        noise = tf.random.normal([B,L,c], 0.0, 2*pi/L/6)
         thetas = thetas + noise
     elif opts['sw_proj_type']=='gaussian_large_var':
-        thetas = tf.range(L, dtype=tf.float32) / L *pi
+        thetas = tf.range(L, dtype=tf.float32) / (2*pi * L)
         thetas = tf.tile(tf.reshape(thetas, [1,L,1]), [B,1,c])
         # distrib = tfp.distributions.Normal(loc=0., scale=pi/L/6)
         # noise = tf.reshape(distrib.sample(B*L*c), [B,L,c])
-        noise = tf.random.normal([B,L,c], 0.0, 3*pi/L/6)
+        noise = tf.random.normal([B,L,c], 0.0, 3*2*pi/L/6)
         thetas = thetas + noise
     elif opts['sw_proj_type']=='adversarial':
         thetas = theta_discriminator(opts, x, scope='theta_discriminator',

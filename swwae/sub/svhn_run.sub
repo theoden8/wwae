@@ -10,11 +10,9 @@
 
 #$ -t 1-1
 
-#$ -N svhn_det
+#$ -N det_sw_svhn
 
 source /share/apps/examples/source_files/python/python-3.6.4.source
 source /share/apps/examples/source_files/cuda/cuda-10.0.source
 
-# python3 run_ablation.py --num_it 300000 --data_dir ../../data --dataset svhn --cost sw --out_dir svhn_ablation --model WAE --lr 0.0005 --beta 0 --slicing_dist adversarial --save_model --id $SGE_TASK_ID
-# python3 run_ablation_v2.py --num_it 100000 --data_dir ../../data --dataset svhn --cost sw --L 32 --out_dir svhn_ablation --model WAE --id $SGE_TASK_ID
-python3 run.py --num_it 300000 --beta 0. --data_dir ../../data --dataset svhn --cost sw --out_dir svhn_det --model WAE --L 32 --lr 0.0005 --save_model
+python3 array_run.py --num_it 150000 --data_dir ../../data --dataset svhn --out_dir svhn_mlp --res_dir 0_2pi --net_archi mlp --model WAE --lr 0.001 --beta 0 --slicing_dist det --save_model --cost sw
