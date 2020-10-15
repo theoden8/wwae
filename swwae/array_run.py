@@ -41,7 +41,7 @@ parser.add_argument("--beta", type=float, default=0.,
                     help='beta')
 parser.add_argument("--slicing_dist", type=str, default='det',
                     help='slicing distribution')
-parser.add_argument("--L", type=int, default=16,
+parser.add_argument("--L", type=int, default=32,
                     help='Number of slices')
 parser.add_argument("--disc_freq", type=int, default=16,
                     help='discriminator update frequency for aversarial sw')
