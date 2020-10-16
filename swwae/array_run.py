@@ -43,9 +43,11 @@ parser.add_argument("--slicing_dist", type=str, default='det',
                     help='slicing distribution')
 parser.add_argument("--L", type=int, default=32,
                     help='Number of slices')
-parser.add_argument("--disc_freq", type=int, default=16,
+parser.add_argument("--gamma", type=float, default=1.,
+                    help='weight for mass reg. in sw')
+parser.add_argument("--disc_freq", type=int, default=1,
                     help='discriminator update frequency for aversarial sw')
-parser.add_argument("--disc_it", type=int, default=16,
+parser.add_argument("--disc_it", type=int, default=1,
                     help='it. num. when updating discriminator for aversarial sw')
 parser.add_argument("--id", type=int, default=0,
                     help='exp. config. id')
@@ -102,6 +104,7 @@ def main():
     else:
         opts['transform_rgb_img'] = FLAGS.trans_rgb
     opts['sw_proj_num'] = FLAGS.L
+    opts['gamma'] = FLAGS.gamma
     opts['sw_proj_type'] = FLAGS.slicing_dist
     opts['d_updt_freq'] = FLAGS.disc_freq
     opts['d_updt_it'] = FLAGS.disc_it
@@ -147,8 +150,8 @@ def main():
     assert data.train_size >= opts['batch_size'], 'Training set too small'
 
     opts['it_num'] = FLAGS.num_it
-    opts['print_every'] = int(opts['it_num'] / 100.)
-    opts['evaluate_every'] = int(opts['print_every'] / 1.) + 1
+    opts['print_every'] = int(opts['it_num'] / 10.)
+    opts['evaluate_every'] = int(opts['print_every'] / 2.) + 1
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
     opts['save_train_data'] = FLAGS.save_data
