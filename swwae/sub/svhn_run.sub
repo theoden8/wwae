@@ -15,4 +15,4 @@
 source /share/apps/examples/source_files/python/python-3.6.4.source
 source /share/apps/examples/source_files/cuda/cuda-10.0.source
 
-python3 array_run.py --num_it 150000 --data_dir ../../data --dataset svhn --out_dir svhn_autoencod --model WAE --lr 0.001 --beta 0 --slicing_dist det --save_model --cost sw
+python3 array_run.py --num_it 150000 --data_dir ../../data --dataset svhn --out_dir svhn_autoenc --model WAE --lr 0.001 --beta 0 --slicing_dist det --save_model --cost sw
