@@ -106,9 +106,11 @@ def main():
     opts['sw_proj_num'] = FLAGS.L
     opts['gamma'] = FLAGS.gamma
     opts['sw_proj_type'] = FLAGS.slicing_dist
-    opts['d_updt_freq'] = FLAGS.disc_freq
-    opts['d_updt_it'] = FLAGS.disc_it
-
+    # opts['d_updt_freq'] = FLAGS.disc_freq
+    # opts['d_updt_it'] = FLAGS.disc_it
+    freq = [10,25,50]
+    opts['d_updt_freq'] = freq[FLAGS.id-1]
+    opts['d_updt_it'] = freq[FLAGS.id-1]
     # Model set up
     opts['model'] = FLAGS.model
     opts['decoder'] = FLAGS.decoder

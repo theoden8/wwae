@@ -93,12 +93,12 @@ def theta_discriminator(opts, inputs, scope=None,
     with tf.compat.v1.variable_scope(scope, reuse=reuse):
         # hidden 0
         layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
-                                    512, init=opts['mlp_init'],
+                                    256, init=opts['mlp_init'],
                                     scope='hid0/lin')
         layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
         # hidden 1
         layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
-                                    512, init=opts['mlp_init'],
+                                    256, init=opts['mlp_init'],
                                     scope='hid1/lin')
         layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
         # final layer

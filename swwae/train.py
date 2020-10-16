@@ -172,7 +172,7 @@ class Run(object):
         else:
             assert False, 'Unknown optimizer.'
 
-    def discr_optimizer(self, lr=0.001):
+    def discr_optimizer(self, lr=0.0001):
         return tf.train.AdamOptimizer(lr)
 
     def add_optimizers(self):
