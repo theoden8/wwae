@@ -114,7 +114,7 @@ def theta_discriminator(opts, inputs, scope=None,
         # piece wise linear activation
         outputs = tf.math.maximum(pi, tf.math.minimum(0., outputs+pi/2.))
 
-    return tf.reshape(outputs, [-1,opts['sw_proj_num'],1])
+    return tf.reshape(outputs, [-1,opts['sw_proj_num']])
 
 def obs_discriminator(opts, inputs, scope=None,
                                     reuse=False):
