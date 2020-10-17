@@ -192,7 +192,7 @@ class Run(object):
                                                 scope='obs_discriminator')
             self.obs_discr_opt = obs_discr_opt.minimize(loss=-self.loss_rec, var_list=obs_discr_vars)
 
-        if self.opts['cost']=='sw' and self.opts['sw_proj_type']=='adversarial':
+        if self.opts['cost']=='sw' and (self.opts['sw_proj_type']=='max-sw' or self.opts['sw_proj_type']=='max-gsw'):
             theta_discr_opt = self.discr_optimizer()
             theta_discr_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                                 scope='theta_discriminator')
@@ -266,7 +266,7 @@ class Run(object):
                                             self.data.handle: self.train_handle,
                                             self.is_training: True})
             # training theta_discriminator if needed
-            if self.opts['cost']=='sw' and self.opts['sw_proj_type']=='adversarial':
+            if self.opts['cost']=='sw' and (self.opts['sw_proj_type']=='max-sw' or self.opts['sw_proj_type']=='max-gsw'):
                 if (it-1)%self.opts['d_updt_freq']==0:
                     for _ in range(self.opts['d_updt_it']):
                         _ = self.sess.run(self.theta_discr_opt, feed_dict={
