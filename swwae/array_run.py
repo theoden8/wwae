@@ -108,7 +108,7 @@ def main():
     opts['sw_proj_type'] = FLAGS.slicing_dist
     # opts['d_updt_freq'] = FLAGS.disc_freq
     # opts['d_updt_it'] = FLAGS.disc_it
-    freq = [10,25,50]
+    freq = [1, 5, 10, 25, 50]
     opts['d_updt_freq'] = freq[FLAGS.id-1]
     opts['d_updt_it'] = freq[FLAGS.id-1]
     # Model set up
@@ -132,12 +132,11 @@ def main():
     out_subdir = os.path.join(opts['out_dir'], opts['model'])
     if not tf.io.gfile.isdir(out_subdir):
         utils.create_dir(out_subdir)
-    if FLAGS.res_dir:
-        exp_name = FLAGS.res_dir + '_' + opts['cost']
-    else:
-        exp_name = opts['cost']
+    exp_name = opts['cost']
     if opts['cost']=='sw':
-        exp_name += '_' + opts['sw_proj_type']# + '_L' + str(opts['sw_proj_num']) + '_dfreq' + str(opts['d_updt_freq']) + '_dit' + str(opts['d_updt_it'])
+        exp_name += '_' + opts['sw_proj_type'] + '_L' + str(opts['sw_proj_num']) + '_dfreq' + str(opts['d_updt_freq']) + '_dit' + str(opts['d_updt_it'])
+    if FLAGS.res_dir:
+        exp_name += '_' + FLAGS.res_dir
     opts['exp_dir'] = os.path.join(out_subdir, exp_name)
     if not tf.io.gfile.isdir(opts['exp_dir']):
         utils.create_dir(opts['exp_dir'])

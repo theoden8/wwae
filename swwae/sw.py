@@ -109,7 +109,7 @@ def projection(opts, x, reuse=False):
         # noise = tf.reshape(distrib.sample(B*L*c), [B,L,c])
         noise = tf.random.normal([B,L,c], 0.0, 3*pi/L/6)
         thetas = thetas + noise
-    elif opts['sw_proj_type']=='adversarial':
+    elif opts['sw_proj_type']=='max-sw':
         thetas = theta_discriminator(opts, x, scope='theta_discriminator',
                                     reuse=reuse)
     proj_mat = tf.stack([tf.math.cos(thetas),tf.math.sin(thetas)], axis=-1)
