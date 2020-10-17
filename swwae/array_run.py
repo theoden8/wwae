@@ -134,7 +134,9 @@ def main():
         utils.create_dir(out_subdir)
     exp_name = opts['cost']
     if opts['cost']=='sw':
-        exp_name += '_' + opts['sw_proj_type'] + '_L' + str(opts['sw_proj_num']) + '_dfreq' + str(opts['d_updt_freq']) + '_dit' + str(opts['d_updt_it'])
+        exp_name += '_' + opts['sw_proj_type'] + '_L' + str(opts['sw_proj_num'])
+        if opts['sw_proj_type']=='max-sw' or opts['sw_proj_type']=='max-gsw':
+            exp_name += '_dfreq' + str(opts['d_updt_freq']) + '_dit' + str(opts['d_updt_it'])
     if FLAGS.res_dir:
         exp_name += '_' + FLAGS.res_dir
     opts['exp_dir'] = os.path.join(out_subdir, exp_name)

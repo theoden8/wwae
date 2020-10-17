@@ -27,7 +27,7 @@ parser.add_argument("--data_dir", type=str,
                     help='directory in which data is stored')
 parser.add_argument("--out_dir", type=str, default='code_outputs',
                     help='root_directory in which outputs are saved')
-parser.add_argument("--res_dir", type=str, default='res',
+parser.add_argument("--res_dir", type=str,
                     help='directory in which exp. res are saved')
 parser.add_argument("--num_it", type=int, default=300000,
                     help='iteration number')
@@ -41,8 +41,14 @@ parser.add_argument("--beta", type=float, default=0.,
                     help='beta')
 parser.add_argument("--slicing_dist", type=str, default='det',
                     help='slicing distribution')
-parser.add_argument("--L", type=int, default=16,
+parser.add_argument("--L", type=int, default=32,
                     help='Number of slices')
+parser.add_argument("--gamma", type=float, default=1.,
+                    help='weight for mass reg. in sw')
+parser.add_argument("--disc_freq", type=int, default=1,
+                    help='discriminator update frequency for aversarial sw')
+parser.add_argument("--disc_it", type=int, default=1,
+                    help='it. num. when updating discriminator for aversarial sw')
 parser.add_argument("--sigma_pen", action='store_true', default=False,
                     help='penalization of Sigma_q')
 parser.add_argument("--sigma_pen_val", type=float, default=0.01,
@@ -85,22 +91,21 @@ def main():
         raise Exception('You must provide a data_dir')
 
     # Set method param
-    opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
-    if opts['cost']!='sw':
-        opts['transform_rgb_img'] = 'none'
-        opts['vizu_rgb_transformed'] = False
-    else:
-        opts['transform_rgb_img'] = FLAGS.trans_rgb
-        if opts['transform_rgb_img']=='none':
-            opts['vizu_rgb_transformed'] = False
     opts['net_archi'] = FLAGS.net_archi
     opts['pen_enc_sigma'] = FLAGS.sigma_pen
     opts['lambda_pen_enc_sigma'] = FLAGS.sigma_pen_val
 
-    # Slicing config
-    opts['sw_proj_type'] = FLAGS.slicing_dist
+    # ground cost config
+    opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
+    if opts['cost']!='sw':
+        opts['transform_rgb_img'] = 'none'
+    else:
+        opts['transform_rgb_img'] = FLAGS.trans_rgb
     opts['sw_proj_num'] = FLAGS.L
-
+    opts['gamma'] = FLAGS.gamma
+    opts['sw_proj_type'] = FLAGS.slicing_dist
+    opts['d_updt_freq'] = FLAGS.disc_freq
+    opts['d_updt_it'] = FLAGS.disc_it
     # Model set up
     opts['model'] = FLAGS.model
     opts['decoder'] = FLAGS.decoder
@@ -112,7 +117,6 @@ def main():
         opts['lr'] = FLAGS.lr
     opts['beta'] = FLAGS.beta
 
-
     # Create directories
     results_dir = 'results'
     if not tf.io.gfile.isdir(results_dir):
@@ -120,22 +124,23 @@ def main():
     opts['out_dir'] = os.path.join(results_dir,FLAGS.out_dir)
     if not tf.io.gfile.isdir(opts['out_dir']):
         utils.create_dir(opts['out_dir'])
-    out_subdir = os.path.join(opts['out_dir'], opts['model'] + '_' + opts['cost'])
+    out_subdir = os.path.join(opts['out_dir'], opts['model'])
     if not tf.io.gfile.isdir(out_subdir):
         utils.create_dir(out_subdir)
-    opts['exp_dir'] = FLAGS.res_dir
-    exp_dir = os.path.join(out_subdir,
-                           '{}_{}_{:%Y_%m_%d_%H_%M}'.format(
-                                opts['exp_dir'],
-                                opts['beta'],
-                                datetime.now()), )
-    opts['exp_dir'] = exp_dir
-    if not tf.io.gfile.isdir(exp_dir):
-        utils.create_dir(exp_dir)
-        utils.create_dir(os.path.join(exp_dir, 'checkpoints'))
+    exp_name = opts['cost']
+    if opts['cost']=='sw':
+        exp_name += '_' + opts['sw_proj_type'] + '_L' + str(opts['sw_proj_num'])
+        if opts['sw_proj_type']=='max-sw' or opts['sw_proj_type']=='max-gsw':
+            exp_name += '_dfreq' + str(opts['d_updt_freq']) + '_dit' + str(opts['d_updt_it'])
+    if FLAGS.res_dir:
+        exp_name += '_' + FLAGS.res_dir
+    opts['exp_dir'] = os.path.join(out_subdir, exp_name)
+    if not tf.io.gfile.isdir(opts['exp_dir']):
+        utils.create_dir(opts['exp_dir'])
+        utils.create_dir(os.path.join(opts['exp_dir'], 'checkpoints'))
 
     # Verbose
-    logging.basicConfig(filename=os.path.join(exp_dir,'outputs.log'),
+    logging.basicConfig(filename=os.path.join(opts['exp_dir'],'outputs.log'),
         level=logging.INFO, format='%(asctime)s - %(message)s')
 
     # Loading the dataset
@@ -143,8 +148,8 @@ def main():
     assert data.train_size >= opts['batch_size'], 'Training set too small'
 
     opts['it_num'] = FLAGS.num_it
-    opts['print_every'] = int(opts['it_num'] / 10.)
-    opts['evaluate_every'] = int(opts['print_every'] / 1.) + 1
+    opts['print_every'] = 100 #int(opts['it_num'] / 25.)
+    opts['evaluate_every'] = 100 #int(opts['print_every'] / 2.) + 1
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
     opts['save_train_data'] = FLAGS.save_data
@@ -163,7 +168,7 @@ def main():
     # Training/testing/vizu
     if FLAGS.mode=="train":
         # Dumping all the configs to the text file
-        with utils.o_gfile((exp_dir, 'params.txt'), 'w') as text:
+        with utils.o_gfile((opts['exp_dir'], 'params.txt'), 'w') as text:
             text.write('Parameters:\n')
             for key in opts:
                 text.write('%s : %s\n' % (key, opts[key]))

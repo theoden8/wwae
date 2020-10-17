@@ -49,23 +49,19 @@ def distrib_proj(opts, x, reuse=False):
     B = tf.cast(tf.shape(x)[0], tf.int32)
     L = opts['sw_proj_num']
     # get pixel grid projection
-    proj = projection(opts, x, reuse) # (B,L,c,h*w)
+    proj = projection(opts, x, reuse) #(B,L,h*w)
     # sort proj.
-    sorted_proj = tf.sort(proj, axis=-1) # (B,L,c, h*w)
+    sorted_proj = tf.tile(tf.expand_dims(tf.sort(proj, axis=-1), axis=2), [1,1,c,1]) #(B,L,h*w)
     # get proj. argsort
-    sorted_indices = tf.argsort(proj, axis=-1, stable=True) # (B,L,c,h*w)
+    sorted_indices = tf.argsort(proj, axis=-1, stable=True)
+    sorted_indices = tf.tile(tf.expand_dims(sorted_indices, axis=2), [1,1,c,1]) #(B,L,c,h*w)
     # create sort indices
-#    b_indices = tf.tile(tf.expand_dims(sorted_indices,axis=0),[B,1,1]) # (B,L,h*w)
-#    bc_indices = tf.tile(tf.expand_dims(b_indices,axis=2),[1,1,c,1]) # (B,L,c,h*w)
-
     i_b = tf.tile(tf.reshape(tf.range(B), [B,1,1,1]), [1,L,c,h*w])
     i_L = tf.tile(tf.reshape(tf.range(L), [1,L,1,1]), [B,1,c,h*w])
     i_c = tf.tile(tf.reshape(tf.range(c), [1,1,c,1]), [B,L,1,h*w])
-
-    indices = tf.stack([i_b,i_L,i_c,sorted_indices], axis=-1)
-
+    indices = tf.stack([i_b,i_L,i_c,sorted_indices], axis=-1) #(batch,L,c,h*w,4)
     # sort im. intensities
-    x_flat = tf.transpose(tf.tile(tf.reshape(x, [-1,1,h*w,c]), [1,L,1,1]), [0,1,3,2]) # (batch,L,c,h*w)
+    x_flat = tf.transpose(tf.tile(tf.reshape(x, [-1,1,h*w,c]), [1,L,1,1]), [0,1,3,2]) #(batch,L,c,h*w)
     x_sorted = tf.gather_nd(x_flat, indices) #(batch,L,c,h*w)
 
     return sorted_proj, x_sorted
@@ -84,40 +80,29 @@ def projection(opts, x, reuse=False):
     # get directions to project
     if opts['sw_proj_type']=='det':
         thetas = tf.range(L, dtype=tf.float32) / (pi * L)
-        thetas = tf.tile(tf.reshape(thetas, [1,L,1]), [B,1,c])
+        thetas = tf.tile(tf.reshape(thetas, [1,L]), [B,1])
     elif opts['sw_proj_type']=='uniform':
-        # distrib = tfp.distributions.Uniform(low=0., high=pi)
-        # thetas = tf.reshape(distrib.sample(B*L*c), [B,L,c])
-        thetas = tf.tile(tf.random.uniform([B,L,1], 0., pi), [1,1,c])
+        thetas = tf.random.uniform([B,L], 0., pi)
     elif opts['sw_proj_type']=='unidet':
         thetas = tf.range(L, dtype=tf.float32) / (pi * L)
-        thetas = tf.tile(tf.reshape(thetas, [1,L,1]), [B,1,c])
-        # distrib = tfp.distributions.Uniform(low=0., high=pi/L)
-        # shift = tf.tile(tf.reshape(distrib.sample(B*c), [B,1,c]), [1,L,1])
-        shift = tf.random.uniform([B,L,1], 0., pi/L)
-        # shift = tf.tile(shift, [1,1,c])
+        thetas = tf.tile(tf.reshape(thetas, [1,L]), [B,1])
+        shift = tf.random.uniform([B,L], 0., pi/L)
         thetas = thetas + shift
     elif opts['sw_proj_type']=='gaussian_small_var':
         thetas = tf.range(L, dtype=tf.float32) / (pi * L)
-        thetas = tf.tile(tf.reshape(thetas, [1,L,1]), [B,1,c])
-        # distrib = tfp.distributions.Normal(loc=0., scale=pi/L/6)
-        # noise = tf.reshape(distrib.sample(B*L*c), [B,L,c])
-        noise = tf.random.normal([B,L,1], 0.0, pi/L/6)
+        thetas = tf.tile(tf.reshape(thetas, [1,L]), [B,1])
+        noise = tf.random.normal([B,L], 0.0, pi/L/6)
         thetas = thetas + noise
     elif opts['sw_proj_type']=='gaussian_large_var':
         thetas = tf.range(L, dtype=tf.float32) / (pi * L)
-        thetas = tf.tile(tf.reshape(thetas, [1,L,1]), [B,1,c])
-        # distrib = tfp.distributions.Normal(loc=0., scale=pi/L/6)
-        # noise = tf.reshape(distrib.sample(B*L*c), [B,L,c])
-        noise = tf.random.normal([B,L,1], 0.0, 3*pi/L/6)
+        thetas = tf.tile(tf.reshape(thetas, [1,L]), [B,1])
+        noise = tf.random.normal([B,L], 0.0, 3*pi/L/6)
         thetas = thetas + noise
     elif opts['sw_proj_type']=='max-sw':
         thetas = theta_discriminator(opts, x, scope='theta_discriminator',
                                     reuse=reuse)
-        thetas = tf.tile(thetas, [1,1,c])
-    proj_mat = tf.stack([tf.math.cos(thetas),tf.math.sin(thetas)], axis=-1)
+    proj_mat = tf.stack([tf.math.cos(thetas),tf.math.sin(thetas)], axis=-1) #(B,L,2)
     # project grid into proj dir
-    # proj = tf.linalg.matmul(proj_mat, coord, transpose_b=True) # (B,L,c,(h*w))
-    proj = tf.compat.v1.matmul(proj_mat, coord, transpose_b=True) # (B,L,c,(h*w))
+    proj = tf.compat.v1.matmul(proj_mat, coord, transpose_b=True) #(B,L,(h*w))
 
     return proj
