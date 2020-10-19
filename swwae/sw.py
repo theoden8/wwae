@@ -71,42 +71,62 @@ def projection(opts, x, reuse=False):
     Wraper to project images pixels gird into the L diferent directions
     return projections coordinates
     """
+
     # get coor grid
     h, w, c = x.get_shape().as_list()[1:]
     B = tf.cast(tf.shape(x)[0], tf.int32)
     L = opts['sw_proj_num']
-    X,Y = tf.meshgrid(tf.range(h), tf.range(w))
-    coord = tf.cast(tf.reshape(tf.stack([X,Y],axis=-1), [-1,2]), tf.float32) # ((h*w),2)
-    # get directions to project
-    if opts['sw_proj_type']=='det':
-        thetas = tf.range(L, dtype=tf.float32) / (pi * L)
-        thetas = tf.tile(tf.reshape(thetas, [1,L]), [B,1])
-    elif opts['sw_proj_type']=='uniform':
-        thetas = tf.random.uniform([B,L], 0., pi)
-    elif opts['sw_proj_type']=='unidet':
-        thetas = tf.range(L, dtype=tf.float32) / (pi * L)
-        thetas = tf.tile(tf.reshape(thetas, [1,L]), [B,1])
-        shift = tf.random.uniform([B,L], 0., pi/L)
-        thetas = thetas + shift
-    elif opts['sw_proj_type']=='gaussian_small_var':
-        thetas = tf.range(L, dtype=tf.float32) / (pi * L)
-        thetas = tf.tile(tf.reshape(thetas, [1,L]), [B,1])
-        noise = tf.random.normal([B,L], 0.0, pi/L/6)
-        thetas = thetas + noise
-    elif opts['sw_proj_type']=='gaussian_large_var':
-        thetas = tf.range(L, dtype=tf.float32) / (pi * L)
-        thetas = tf.tile(tf.reshape(thetas, [1,L]), [B,1])
-        noise = tf.random.normal([B,L], 0.0, 3*pi/L/6)
-        thetas = thetas + noise
-    elif opts['sw_proj_type']=='max-sw':
-        main_dir = tf.range(L, dtype=tf.float32) / (pi * L)
-        main_dir = tf.tile(tf.reshape(main_dir, [1,L]), [B,1])
-        learned_dir = theta_discriminator(opts, x,
+    if opts['sw_proj_type']=='max-gsw':
+        # pdb.set_trace()
+        # we learn the (non-linear) proj in gsw
+        proj = theta_discriminator(opts, x,
+                                    output_dim=h*w,
                                     scope='theta_discriminator',
                                     reuse=reuse)
-        thetas = main_dir + learned_dir
-    proj_mat = tf.stack([tf.math.cos(thetas),tf.math.sin(thetas)], axis=-1) #(B,L,2)
-    # project grid into proj dir
-    proj = tf.compat.v1.matmul(proj_mat, coord, transpose_b=True) #(B,L,(h*w))
+        proj = tf.reshape(proj, [-1,L,h*w])
+    else:
+        # use linear projection along thetas directions
+        X,Y = tf.meshgrid(tf.range(h), tf.range(w))
+        X = tf.cast(X, tf.float32)
+        Y = tf.cast(Y, tf.float32)
+        # centering and normalizing pos. between -1 and 1
+        X = (2.*X - float(h)) / float(h)
+        Y = (2.*Y - float(w)) / float(w)
+        # pdb.set_trace()
+        coord = tf.reshape(tf.stack([X,Y],axis=-1), [-1,2]) # ((h*w),2)
+        # get directions to project
+        if opts['sw_proj_type']=='det':
+            thetas = tf.range(L, dtype=tf.float32) / (pi * L)
+            thetas = tf.tile(tf.reshape(thetas, [1,L]), [B,1])
+        elif opts['sw_proj_type']=='uniform':
+            thetas = tf.random.uniform([B,L], 0., pi)
+        elif opts['sw_proj_type']=='unidet':
+            thetas = tf.range(L, dtype=tf.float32) / (pi * L)
+            thetas = tf.tile(tf.reshape(thetas, [1,L]), [B,1])
+            shift = tf.random.uniform([B,L], 0., pi/L)
+            thetas = thetas + shift
+        elif opts['sw_proj_type']=='gaussian_small_var':
+            thetas = tf.range(L, dtype=tf.float32) / (pi * L)
+            thetas = tf.tile(tf.reshape(thetas, [1,L]), [B,1])
+            noise = tf.random.normal([B,L], 0.0, pi/L/6)
+            thetas = thetas + noise
+        elif opts['sw_proj_type']=='gaussian_large_var':
+            thetas = tf.range(L, dtype=tf.float32) / (pi * L)
+            thetas = tf.tile(tf.reshape(thetas, [1,L]), [B,1])
+            noise = tf.random.normal([B,L], 0.0, 3*pi/L/6)
+            thetas = thetas + noise
+        elif opts['sw_proj_type']=='max-sw':
+            main_dir = tf.range(L, dtype=tf.float32) / (pi * L)
+            main_dir = tf.tile(tf.reshape(main_dir, [1,L]), [B,1])
+            learned_dir = theta_discriminator(opts, x,
+                                        output_dim=1,
+                                        scope='theta_discriminator',
+                                        reuse=reuse)
+            thetas = main_dir + learned_dir
+        else:
+            raise ValueError('Unknown {} sw projection' % opts['sw_proj_type'])
+        proj_mat = tf.stack([tf.math.cos(thetas),tf.math.sin(thetas)], axis=-1) #(B,L,2)
+        # project grid into proj dir
+        proj = tf.compat.v1.matmul(proj_mat, coord, transpose_b=True) #(B,L,(h*w))
 
     return proj

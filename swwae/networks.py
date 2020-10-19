@@ -81,12 +81,13 @@ def decoder(opts, input, output_dim, scope=None,
 
     return x, mean, Sigma
 
-def theta_discriminator(opts, inputs, scope=None,
+def theta_discriminator(opts, inputs, output_dim,
+                                    scope=None,
                                     reuse=False):
     """
     Discriminator network to learn proj. dir.
     inputs: [batch,w,h,c]
-    outputs: [batch,L,c]
+    outputs: [batch,L*output_dim]
     """
     in_shape = inputs.get_shape().as_list()[1:]
     layer_x = tf.compat.v1.layers.flatten(inputs)
@@ -101,25 +102,31 @@ def theta_discriminator(opts, inputs, scope=None,
                                     256, init=opts['mlp_init'],
                                     scope='hid1/lin')
         layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
-        # hidden 2
+        # # hidden 2
         layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
                                     256, init=opts['mlp_init'],
                                     scope='hid2/lin')
         layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
-        # # final layer
-        # outputs = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
-        #                             opts['sw_proj_num']*in_shape[-1],
-        #                             init=opts['mlp_init'],
-        #                             scope='hid_final')
         # final layer
         outputs = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
-                                    opts['sw_proj_num'],
+                                    opts['sw_proj_num']*output_dim,
                                     init=opts['mlp_init'],
                                     scope='hid_final')
-        # piece wise linear activation
-        outputs = tf.math.maximum(pi/2., tf.math.minimum(-pi/2., outputs))
+        outputs = tf.nn.tanh(outputs)
+        if opts['sw_proj_type']=='max-sw':
+            # rescaling theta between -pi/2 and pi/2
+            outputs = pi/2. * outputs
 
-    return tf.reshape(outputs, [-1,opts['sw_proj_num']])
+        # if opts['sw_proj_type']=='max-sw':
+        #     rescaling theta between -pi/2 and pi/2
+        #     outputs = tf.math.maximum(pi/2., tf.math.minimum(-pi/2., outputs))
+        # elif opts['sw_proj_type']=='max-gsw':
+        #     # proj between -1 and 1
+        #     outputs = tf.nn.tanh(outputs)
+        # else:
+        #     raise ValueError('Unknown {} sw projection' % opts['sw_proj_type'])
+
+    return outputs
 
 def obs_discriminator(opts, inputs, scope=None,
                                     reuse=False):
