@@ -118,7 +118,7 @@ def theta_discriminator(opts, inputs, output_dim,
         #     outputs = pi/2. * outputs
         #
         if opts['sw_proj_type']=='max-sw':
-            rescaling theta between -pi/2 and pi/2
+            # rescaling theta between -pi/2 and pi/2
             outputs = tf.math.maximum(pi/2., tf.math.minimum(-pi/2., outputs))
         elif opts['sw_proj_type']=='max-gsw':
             # proj between -1 and 1
