@@ -100,15 +100,15 @@ def main():
     opts['sw_proj_num'] = FLAGS.L
     opts['gamma'] = FLAGS.gamma
     distributions = ['max-sw', 'max-gsw']
-    freq = [1, 10, 25, 50]
-    sw_config = list(itertools.product(distributions,freq))
-    coef_id = (FLAGS.id-1) % len(sw_config)
-    opts['sw_proj_type'] = sw_config[coef_id][0]
-    opts['d_updt_freq'] = sw_config[coef_id][1]
-    opts['d_updt_it'] = sw_config[coef_id][1]
-    # opts['sw_proj_type'] = FLAGS.slicing_dist
-    # opts['d_updt_freq'] = FLAGS.disc_freq
-    # opts['d_updt_it'] = FLAGS.disc_it
+    # freq = [1, 10, 25, 50]
+    # sw_config = list(itertools.product(distributions,freq))
+    # coef_id = (FLAGS.id-1) % len(sw_config)
+    # opts['sw_proj_type'] = sw_config[coef_id][0]
+    # opts['d_updt_freq'] = sw_config[coef_id][1]
+    # opts['d_updt_it'] = sw_config[coef_id][1]
+    opts['sw_proj_type'] = FLAGS.slicing_dist
+    opts['d_updt_freq'] = FLAGS.disc_freq
+    opts['d_updt_it'] = FLAGS.disc_it
     # Model set up
     opts['model'] = FLAGS.model
     opts['decoder'] = FLAGS.decoder
