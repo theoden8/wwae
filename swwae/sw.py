@@ -89,10 +89,9 @@ def projection(opts, x, reuse=False):
         X,Y = tf.meshgrid(tf.range(h), tf.range(w))
         X = tf.cast(X, tf.float32)
         Y = tf.cast(Y, tf.float32)
-        # centering and normalizing pos. between -1 and 1
-        X = (2.*X - float(h)) / float(h)
-        Y = (2.*Y - float(w)) / float(w)
-        # pdb.set_trace()
+        # # centering and normalizing pos. between -1 and 1
+        # X = (2.*X - float(h)) / float(h)
+        # Y = (2.*Y - float(w)) / float(w)
         coord = tf.reshape(tf.stack([X,Y],axis=-1), [-1,2]) # ((h*w),2)
         # get directions to project
         if opts['sw_proj_type']=='det':

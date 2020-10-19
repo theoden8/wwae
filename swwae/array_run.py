@@ -99,12 +99,16 @@ def main():
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
     opts['sw_proj_num'] = FLAGS.L
     opts['gamma'] = FLAGS.gamma
-    opts['sw_proj_type'] = FLAGS.slicing_dist
+    distributions = ['max-sw', 'max-gsw']
+    freq = [1, 10, 25, 50]
+    sw_config = list(itertools.product(distributions,freq))
+    coef_id = (FLAGS.id-1) % len(sw_config)
+    opts['sw_proj_type'] = list(sw_config[coef_id][0])
+    opts['d_updt_freq'] = list(sw_config[coef_id][1])
+    opts['d_updt_it'] = list(sw_config[coef_id][1])
+    # opts['sw_proj_type'] = FLAGS.slicing_dist
     # opts['d_updt_freq'] = FLAGS.disc_freq
     # opts['d_updt_it'] = FLAGS.disc_it
-    freq = [1, 5, 10, 25, 50]
-    opts['d_updt_freq'] = freq[FLAGS.id-1]
-    opts['d_updt_it'] = freq[FLAGS.id-1]
     # Model set up
     opts['model'] = FLAGS.model
     opts['decoder'] = FLAGS.decoder
@@ -147,7 +151,7 @@ def main():
     assert data.train_size >= opts['batch_size'], 'Training set too small'
 
     opts['it_num'] = FLAGS.num_it
-    opts['print_every'] = int(opts['it_num'] / 25.)
+    opts['print_every'] = int(opts['it_num'] / 10.)
     opts['evaluate_every'] = int(opts['print_every'] / 2.) + 1
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
