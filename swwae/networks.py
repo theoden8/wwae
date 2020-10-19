@@ -112,19 +112,19 @@ def theta_discriminator(opts, inputs, output_dim,
                                     opts['sw_proj_num']*output_dim,
                                     init=opts['mlp_init'],
                                     scope='hid_final')
-        outputs = tf.nn.tanh(outputs)
-        if opts['sw_proj_type']=='max-sw':
-            # rescaling theta between -pi/2 and pi/2
-            outputs = pi/2. * outputs
-
+        # outputs = tf.nn.tanh(outputs)
         # if opts['sw_proj_type']=='max-sw':
-        #     rescaling theta between -pi/2 and pi/2
-        #     outputs = tf.math.maximum(pi/2., tf.math.minimum(-pi/2., outputs))
-        # elif opts['sw_proj_type']=='max-gsw':
-        #     # proj between -1 and 1
-        #     outputs = tf.nn.tanh(outputs)
-        # else:
-        #     raise ValueError('Unknown {} sw projection' % opts['sw_proj_type'])
+        #     # rescaling theta between -pi/2 and pi/2
+        #     outputs = pi/2. * outputs
+        #
+        if opts['sw_proj_type']=='max-sw':
+            rescaling theta between -pi/2 and pi/2
+            outputs = tf.math.maximum(pi/2., tf.math.minimum(-pi/2., outputs))
+        elif opts['sw_proj_type']=='max-gsw':
+            # proj between -1 and 1
+            outputs = tf.nn.tanh(outputs)
+        else:
+            raise ValueError('Unknown {} sw projection' % opts['sw_proj_type'])
 
     return outputs
 
