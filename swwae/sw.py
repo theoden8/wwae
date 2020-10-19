@@ -99,8 +99,12 @@ def projection(opts, x, reuse=False):
         noise = tf.random.normal([B,L], 0.0, 3*pi/L/6)
         thetas = thetas + noise
     elif opts['sw_proj_type']=='max-sw':
-        thetas = theta_discriminator(opts, x, scope='theta_discriminator',
+        main_dir = tf.range(L, dtype=tf.float32) / (pi * L)
+        main_dir = tf.tile(tf.reshape(main_dir, [1,L]), [B,1])
+        learned_dir = theta_discriminator(opts, x,
+                                    scope='theta_discriminator',
                                     reuse=reuse)
+        thetas = main_dir + learned_dir
     proj_mat = tf.stack([tf.math.cos(thetas),tf.math.sin(thetas)], axis=-1) #(B,L,2)
     # project grid into proj dir
     proj = tf.compat.v1.matmul(proj_mat, coord, transpose_b=True) #(B,L,(h*w))

@@ -112,7 +112,7 @@ def theta_discriminator(opts, inputs, scope=None,
                                     init=opts['mlp_init'],
                                     scope='hid_final')
         # piece wise linear activation
-        outputs = tf.math.maximum(pi, tf.math.minimum(0., outputs+pi/2.))
+        outputs = tf.math.maximum(pi/2., tf.math.minimum(-pi/2., outputs))
 
     return tf.reshape(outputs, [-1,opts['sw_proj_num']])
 
