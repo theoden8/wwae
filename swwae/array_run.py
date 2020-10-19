@@ -57,8 +57,6 @@ parser.add_argument("--sigma_pen_val", type=float, default=0.01,
                     help='value of penalization of Sigma_q')
 parser.add_argument("--cost", default='l2sq',
                     help='ground cost [average/wavelength/learned/none]')
-parser.add_argument("--trans_rgb", default='none',
-                    help='tranformation of RGB imgs [l1, l2, l2sq, l2sq_norm, sw2]')
 parser.add_argument('--save_model', action='store_false', default=True,
                     help='save final model weights [True/False]')
 parser.add_argument("--save_data", action='store_false', default=True,
@@ -99,10 +97,6 @@ def main():
 
     # ground cost config
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
-    if opts['cost']!='sw':
-        opts['transform_rgb_img'] = 'none'
-    else:
-        opts['transform_rgb_img'] = FLAGS.trans_rgb
     opts['sw_proj_num'] = FLAGS.L
     opts['gamma'] = FLAGS.gamma
     opts['sw_proj_type'] = FLAGS.slicing_dist

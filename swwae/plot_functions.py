@@ -367,8 +367,7 @@ def plot_interpolation(opts, interpolations, exp_dir, filename, train=True):
     plt.close()
 
 
-def plot_transformed(opts, data, trans, exp_dir, filename):
-
+def plot_projected(opts, data, trans, exp_dir, filename):
     num_pics = opts['plot_num_pics']
     num_cols = opts['plot_num_cols']
     assert num_pics % num_cols == 0

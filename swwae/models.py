@@ -168,28 +168,9 @@ class WAE(Model):
         enc_z, _, enc_Sigma, recon_x, dec_mean, _ = self.forward_pass(inputs=inputs,
                                                 is_training=is_training,
                                                 reuse=reuse)
-        # transforming RGB imgs if needed
-        if self.opts['transform_rgb_img']=='average':
-            inputs_transformed = tf.reduce_mean(inputs,axis=-1,keepdims=true)
-            recon_x_transformed = tf.reduce_mean(recon_x,axis=-1,keepdims=true)
-        elif self.opts['transform_rgb_img']=='wavelength':
-            raise Exception('{} not implemented yet.'.format(self.opts['transform_rgb_img']))
-        elif self.opts['transform_rgb_img']=='learned':
-            inputs_transformed = obs_discriminator(self.opts, inputs,
-                                                scope='obs_discriminator',
-                                                reuse=reuse)
-            recon_x_transformed = obs_discriminator(self.opts, recon_x,
-                                                scope='obs_discriminator',
-                                                reuse=True)
-        elif self.opts['transform_rgb_img']=='none':
-            inputs_transformed = inputs
-            recon_x_transformed = recon_x
-        else:
-            raise Exception('{} transformation unknown.'.format(self.opts['transform_rgb_img']))
-
-        rec = self.reconstruction_loss(inputs_transformed, recon_x_transformed, dec_mean, reuse=reuse)
+        rec = self.reconstruction_loss(inputs, recon_x, dec_mean, reuse=reuse)
         noise = tf.compat.v1.random_normal(shape=tf.shape(enc_z))
         pz_sample = tf.add(self.pz_mean, (noise * self.pz_sigma))
         reg = beta*self.mmd_penalty(enc_z, pz_sample)
 
-        return rec, reg, inputs_transformed
+        return rec, reg

@@ -16,5 +16,5 @@ source /share/apps/examples/source_files/python/python-3.6.4.source
 source /share/apps/examples/source_files/cuda/cuda-10.0.source
 
 # python3 run.py --num_it 200000 --data_dir ../../data --dataset mnist --cost sw --out_dir mnist --model WAE --beta 0.
-python3 run.py --num_it 150000 --data_dir ../../data --dataset mnist --out_dir mnist_test --model WAE --lr 0.001 --beta 0 --slicing_dist max-sw --save_model --cost sw --L 16 --net_archi mlp
+python3 run.py --num_it 150000 --data_dir ../../data --dataset mnist --out_dir mnist_test --model WAE --lr 0.0001 --beta 0 --slicing_dist max-gsw --save_model --cost sw --L 1 --net_archi mlp
 # python3 array_run.py --num_it 150000 --data_dir ../../data --dataset mnist --out_dir mnist_autoenc --model WAE --lr 0.001 --beta 0 --slicing_dist det --save_model --cost sw --L 16

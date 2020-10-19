@@ -10,10 +10,10 @@
 
 #$ -t 1-3
 
-#$ -N advswsvhn
+#$ -N mgswsvhn
 
 source /share/apps/examples/source_files/python/python-3.6.4.source
 source /share/apps/examples/source_files/cuda/cuda-10.0.source
 
-python3 array_run.py --num_it 150000 --data_dir ../../data --dataset svhn --out_dir svhn_autoenc --model WAE --lr 0.001 --beta 0 --slicing_dist max-sw --save_model --cost sw --L 16 --res_dir det_init --id $SGE_TASK_ID
+python3 array_run.py --num_it 150000 --data_dir ../../data --dataset svhn --out_dir svhn_autoenc --model WAE --lr 0.0001 --beta 0 --slicing_dist max-gsw --save_model --cost sw --L 1 --id $SGE_TASK_ID
 #python3 run.py --num_it 150000 --data_dir ../../data --dataset svhn --out_dir svhn_test --model WAE --lr 0.001 --beta 0 --slicing_dist det --save_model --cost sw --L 16 --net_archi mlp
