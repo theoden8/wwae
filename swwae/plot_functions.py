@@ -372,9 +372,9 @@ def plot_projected(opts, data, trans, exp_dir, filename):
     num_cols = opts['plot_num_cols']
     assert num_pics % num_cols == 0
     assert num_pics % 2 == 0
-    if opts['input_normalize_sym']:
-        data = data / 2. + 0.5
-        trans = trans / 2. + 0.5
+    # if opts['input_normalize_sym']:
+    data = data / 2. + 0.5
+    trans = trans / 2. + 0.5
     images = []
     for img in [data, trans]:
         greyscale = img.shape[-1] == 1
