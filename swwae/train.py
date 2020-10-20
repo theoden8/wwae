@@ -254,6 +254,12 @@ class Run(object):
                                 global_step=it)
             #####  TRAINING LOOP #####
             it += 1
+            # training
+            _ = self.sess.run(self.opt, feed_dict={
+                                self.data.handle: self.train_handle,
+                                self.lr_decay: decay,
+                                self.beta: self.opts['beta'],
+                                self.is_training: True})
             # training theta_discriminator if needed
             if self.opts['cost']=='sw' and (self.opts['sw_proj_type']=='max-sw' or self.opts['sw_proj_type']=='max-gsw'):
                 if (it-1)%self.opts['d_updt_freq']==0:
@@ -261,12 +267,6 @@ class Run(object):
                         _ = self.sess.run(self.theta_discr_opt, feed_dict={
                                             self.data.handle: self.train_handle,
                                             self.is_training: True})
-            # training
-            _ = self.sess.run(self.opt, feed_dict={
-                                self.data.handle: self.train_handle,
-                                self.lr_decay: decay,
-                                self.beta: self.opts['beta'],
-                                self.is_training: True})
 
             ##### TESTING LOOP #####
             if it % self.opts['evaluate_every'] == 0:
