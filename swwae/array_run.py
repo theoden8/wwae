@@ -97,17 +97,14 @@ def main():
 
     # ground cost config
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
+    opts['d_updt_freq'] = FLAGS.disc_freq
+    critic_config = [1, 5, 10, 25, 50]
+    coef_id = (FLAGS.id-1) % len(critic_config)
+    opts['d_updt_it'] = critic_config[coef_id]
+    # sw
     opts['sw_proj_num'] = FLAGS.L
     opts['gamma'] = FLAGS.gamma
-    # distributions = ['max-sw', 'max-gsw']
-    distributions = ['max-gsw',]
-    freq = [1, 10, 50]
-    sw_config = list(itertools.product(distributions,freq,freq))
-    coef_id = (FLAGS.id-1) % len(sw_config)
-    opts['sw_proj_type'] = sw_config[coef_id][0]
-    opts['d_updt_freq'] = sw_config[coef_id][1]
-    opts['d_updt_it'] = sw_config[coef_id][2]
-    # opts['sw_proj_type'] = FLAGS.slicing_dist
+    opts['sw_proj_type'] = FLAGS.slicing_dist
     # opts['d_updt_freq'] = FLAGS.disc_freq
     # opts['d_updt_it'] = FLAGS.disc_it
     # Model set up
@@ -136,6 +133,8 @@ def main():
         exp_name += '_' + opts['sw_proj_type'] + '_L' + str(opts['sw_proj_num'])
         if opts['sw_proj_type']=='max-sw' or opts['sw_proj_type']=='max-gsw':
             exp_name += '_dfreq' + str(opts['d_updt_freq']) + '_dit' + str(opts['d_updt_it'])
+    if opts['cost']=='wgan':
+        exp_name += '_dit' + str(opts['d_updt_it'])
     if FLAGS.res_dir:
         exp_name += '_' + FLAGS.res_dir
     opts['exp_dir'] = os.path.join(out_subdir, exp_name)

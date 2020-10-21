@@ -174,25 +174,42 @@ class Run(object):
         else:
             assert False, 'Unknown optimizer.'
 
-    def discr_optimizer(self, lr=0.0001):
-        return tf.train.AdamOptimizer(lr)
+    def adam_discr_optimizer(self, lr=1e-4, beta1=0.9, beta2=0.999):
+        return tf.train.AdamOptimizer(learning_rate=lr, beta1=beta1, beta2=beta2)
+
+    def RMSProp_discr_optimizer(self, lr=5e-5):
+        return tf.train.RMSPropOptimizer(lr)
 
     def add_optimizers(self):
         opts = self.opts
+        # Encoder/decoder optimizer
         lr = opts['lr']
         opt = self.optimizer(lr, self.lr_decay)
         encoder_vars = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
-                                                scope='encoder')
+                                            scope='encoder')
         decoder_vars = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
-                                                scope='decoder')
+                                            scope='decoder')
         with tf.control_dependencies(self.extra_update_ops):
             self.opt = opt.minimize(loss=self.objective, var_list=encoder_vars + decoder_vars)
-
+        # max-sw/max-gsw theta discriminator optimizer
         if self.opts['cost']=='sw' and (self.opts['sw_proj_type']=='max-sw' or self.opts['sw_proj_type']=='max-gsw'):
-            theta_discr_opt = self.discr_optimizer()
+            theta_discr_opt = self.adam_discr_optimizer()
             theta_discr_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                                scope='theta_discriminator')
+                                            scope='theta_discriminator')
             self.theta_discr_opt = theta_discr_opt.minimize(loss=-self.loss_rec, var_list=theta_discr_vars)
+        # wgan/wgan-gp critic optimizer
+        if self.opts['cost']=='wgan':
+            critic_opt = self.RMSProp_discr_optimizer()
+            critic_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                            scope='w1_critic')
+            self.w1_critic_opt = critic_opt.minimize(loss=-self.loss_rec, var_list=critic_vars)
+            # weights clipping
+            clip_ops = []
+            for var in critic_vars:
+                clip_bounds = [-.1, .1]
+                clip_ops.append(tf.assign(var,tf.clip_by_value(var,
+                                            clip_bounds[0], clip_bounds[1])))
+            self.clip_critic_weights = tf.group(*clip_ops)
 
 
     def train(self, MODEL_PATH=None, WEIGHTS_FILE=None):
@@ -205,9 +222,9 @@ class Run(object):
         # - Set up for training
         train_size = self.data.train_size
         logging.error('\nTrain size: {}, trBatch num.: {}, Ite. num: {}'.format(
-                                        train_size,
-                                        int(train_size/self.opts['batch_size']),
-                                        self.opts['it_num']))
+                                            train_size,
+                                            int(train_size/self.opts['batch_size']),
+                                            self.opts['it_num']))
         npics = self.opts['plot_num_pics']
         fixed_noise = sample_pz(self.opts, self.pz_params, npics)
         # anchors_ids = np.random.choice(npics, 5, replace=True)
@@ -254,19 +271,27 @@ class Run(object):
                                 global_step=it)
             #####  TRAINING LOOP #####
             it += 1
+            # training theta_discriminator if needed
+            if self.opts['cost']=='sw' and (self.opts['sw_proj_type']=='max-sw' or self.opts['sw_proj_type']=='max-gsw'):
+                if (it-1)%self.opts['d_updt_freq']==0:
+                    for i in range(self.opts['d_updt_it']):
+                        _ = self.sess.run(self.theta_discr_opt, feed_dict={
+                                            self.data.handle: self.train_handle,
+                                            self.is_training: True})
+            # training w1 critic if needed
+            if self.opts['cost']=='wgan':
+                if (it-1)%self.opts['d_updt_freq']==0:
+                    for i in range(self.opts['d_updt_it']):
+                        _ = self.sess.run(self.w1_critic_opt, feed_dict={
+                                            self.data.handle: self.train_handle,
+                                            self.is_training: True})
+                        _ = self.sess.run(self.clip_critic_weights)
             # training
             _ = self.sess.run(self.opt, feed_dict={
                                 self.data.handle: self.train_handle,
                                 self.lr_decay: decay,
                                 self.beta: self.opts['beta'],
                                 self.is_training: True})
-            # training theta_discriminator if needed
-            if self.opts['cost']=='sw' and (self.opts['sw_proj_type']=='max-sw' or self.opts['sw_proj_type']=='max-gsw'):
-                if (it-1)%self.opts['d_updt_freq']==0:
-                    for _ in range(self.opts['d_updt_it']):
-                        _ = self.sess.run(self.theta_discr_opt, feed_dict={
-                                            self.data.handle: self.train_handle,
-                                            self.is_training: True})
 
             ##### TESTING LOOP #####
             if it % self.opts['evaluate_every'] == 0:
@@ -394,7 +419,7 @@ class Run(object):
                 if self.opts['cost']=='sw' and self.opts['sw_proj_type']=='max-gsw':
                     proj = self.sess.run(self.projections,
                                             feed_dict={self.inputs_img: self.data.data_vizu})
-                    proj = np.reshape(proj, (-1, self.data.data_shape[0], self.data.data_shape[1], 1))
+                    proj = np.reshape(proj, (-1, self.data.data_shape[0], self.data.data_shape[1], self.opts['sw_proj_num']))
                     plot_projected(self.opts, self.data.data_vizu, proj,
                                             exp_dir, 'proj_it%07d.png' % (it))
 

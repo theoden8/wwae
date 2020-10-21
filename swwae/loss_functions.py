@@ -7,6 +7,7 @@ from utils import get_batch_size
 from ops._ops import logsumexp
 from sw import sw
 from sw_v2 import sw_v2
+from wgan import wgan
 
 import pdb
 
@@ -115,6 +116,8 @@ def wae_ground_cost(opts, x1, x2, reuse=False):
         cost = l1_cost(x1, x2)
     elif opts['cost'] == 'sw':
         cost = sw(opts, x1, x2, reuse=reuse)
+    elif opts['cost'] == 'wgan':
+        cost = wgan(opts, x1, x2, reuse=reuse)
     elif opts['cost'] == 'sw_v2':
         cost = sw_v2(opts, x1, x2)
     else:
@@ -128,7 +131,7 @@ def l2_cost(x1, x2):
     # return tf.reduce_mean(cost)
     return cost
 
-def l2sq_cost(x1,x2):
+def l2sq_cost(x1, x2):
     # c(x,y) = sum_i(||x - y||_2^2[:,i])
     cost = tf.reduce_sum(tf.square(x1 - x2), axis=[-3,-2,-1])
     # return tf.reduce_mean(cost)

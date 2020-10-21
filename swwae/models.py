@@ -157,8 +157,8 @@ class WAE(Model):
                 stat += res1 - res2
         return stat
 
-    def reconstruction_loss(self, x1, x2, logits, reuse=False):
-        cost = wae_ground_cost(self.opts, x1, x2, reuse=reuse) #[batch,]
+    def reconstruction_loss(self, obs, rec, logits, reuse=False):
+        cost = wae_ground_cost(self.opts, obs, rec, reuse=reuse) #[batch,]
 
         return tf.reduce_mean(cost)
 

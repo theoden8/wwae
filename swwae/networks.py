@@ -112,11 +112,6 @@ def theta_discriminator(opts, inputs, output_dim,
                                     opts['sw_proj_num']*output_dim,
                                     init=opts['mlp_init'],
                                     scope='hid_final')
-        # outputs = tf.nn.tanh(outputs)
-        # if opts['sw_proj_type']=='max-sw':
-        #     # rescaling theta between -pi/2 and pi/2
-        #     outputs = pi/2. * outputs
-        #
         if opts['sw_proj_type']=='max-sw':
             # rescaling theta between -pi/2 and pi/2
             outputs = tf.math.maximum(pi/2., tf.math.minimum(-pi/2., outputs))
@@ -127,6 +122,43 @@ def theta_discriminator(opts, inputs, output_dim,
             raise ValueError('Unknown {} sw projection' % opts['sw_proj_type'])
 
     return outputs
+
+def critic(opts, inputs, scope=None, reuse=False):
+    """
+    Critic network of the w1
+    inputs: [batch,w,h,c]
+    outputs: [batch,w,h,c]
+    """
+    in_shape = inputs.get_shape().as_list()[1:]
+    layer_x = tf.compat.v1.layers.flatten(inputs)
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
+        # hidden 0
+        layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                    512, init=opts['mlp_init'],
+                                    scope='hid0/lin')
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # hidden 1
+        layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                    512, init=opts['mlp_init'],
+                                    scope='hid1/lin')
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # hidden 2
+        layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                    512, init=opts['mlp_init'],
+                                    scope='hid2/lin')
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # hidden 3
+        layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                    512, init=opts['mlp_init'],
+                                    scope='hid3/lin')
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # final layer
+        outputs = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                    np.prod(in_shape),
+                                    init=opts['mlp_init'],
+                                    scope='hid_final')
+
+        return tf.reshape(outputs, [-1,]+in_shape)
 
 def obs_discriminator(opts, inputs, scope=None,
                                     reuse=False):
