@@ -157,6 +157,8 @@ def critic(opts, inputs, scope=None, reuse=False):
                                     np.prod(in_shape),
                                     init=opts['mlp_init'],
                                     scope='hid_final')
+        # clipping
+        outputs = tf.nn.sigmoid(outputs)
 
         return tf.reshape(outputs, [-1,]+in_shape)
 

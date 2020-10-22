@@ -200,7 +200,7 @@ class Run(object):
         # wgan/wgan-gp critic optimizer
         if self.opts['cost']=='wgan':
             # critic_opt = self.RMSProp_discr_optimizer()
-            critic_opt = self.adam_discr_optimizer(lr=1e-4,beta1=0.5,beta2=0.9)            
+            critic_opt = self.adam_discr_optimizer(lr=1e-4,beta1=0.5,beta2=0.9)
             critic_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                             scope='w1_critic')
             self.w1_critic_opt = critic_opt.minimize(loss=-self.loss_rec, var_list=critic_vars)
@@ -286,7 +286,7 @@ class Run(object):
                         _ = self.sess.run(self.w1_critic_opt, feed_dict={
                                             self.data.handle: self.train_handle,
                                             self.is_training: True})
-                        _ = self.sess.run(self.clip_critic_weights)
+                        # _ = self.sess.run(self.clip_critic_weights)
             # training
             _ = self.sess.run(self.opt, feed_dict={
                                 self.data.handle: self.train_handle,
