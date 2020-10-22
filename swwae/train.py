@@ -206,7 +206,7 @@ class Run(object):
             # weights clipping
             clip_ops = []
             for var in critic_vars:
-                clip_bounds = [-.1, .1]
+                clip_bounds = [-.01, .01]
                 clip_ops.append(tf.assign(var,tf.clip_by_value(var,
                                             clip_bounds[0], clip_bounds[1])))
             self.clip_critic_weights = tf.group(*clip_ops)
