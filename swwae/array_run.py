@@ -44,7 +44,7 @@ parser.add_argument("--slicing_dist", type=str, default='det',
 parser.add_argument("--L", type=int, default=32,
                     help='Number of slices')
 parser.add_argument("--gamma", type=float, default=1.,
-                    help='weight for mass reg. in sw')
+                    help='weight for mass reg. in ground cost')
 parser.add_argument("--disc_freq", type=int, default=1,
                     help='discriminator update frequency for aversarial sw')
 parser.add_argument("--disc_it", type=int, default=1,
