@@ -49,6 +49,8 @@ parser.add_argument("--disc_freq", type=int, default=1,
                     help='discriminator update frequency for aversarial sw')
 parser.add_argument("--disc_it", type=int, default=1,
                     help='it. num. when updating discriminator for aversarial sw')
+parser.add_argument("--critic_clip", type=str, default='piecewise',
+                    help='clipping method for the critic')
 parser.add_argument("--id", type=int, default=0,
                     help='exp. config. id')
 parser.add_argument("--sigma_pen", action='store_true', default=False,
@@ -98,9 +100,12 @@ def main():
     # ground cost config
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
     opts['d_updt_freq'] = FLAGS.disc_freq
-    critic_config = [5, 10, 1, 20]
+    critic_it = [5, 10, 1]
+    critic_clip = ['piecewise', 'tanh']
+    critic_config = list(itertools.product(critic_it,critic_clip))
     coef_id = (FLAGS.id-1) % len(critic_config)
-    opts['d_updt_it'] = critic_config[coef_id]
+    opts['d_updt_it'] = critic_config[coef_id][0]
+    opts['wgan_critic_clip'] = critic_config[coef_id][1]
     # sw
     opts['sw_proj_num'] = FLAGS.L
     opts['gamma'] = FLAGS.gamma
@@ -134,7 +139,7 @@ def main():
         if opts['sw_proj_type']=='max-sw' or opts['sw_proj_type']=='max-gsw':
             exp_name += '_dfreq' + str(opts['d_updt_freq']) + '_dit' + str(opts['d_updt_it'])
     if opts['cost']=='wgan':
-        exp_name += '_dit' + str(opts['d_updt_it'])
+        exp_name += '_dit' + str(opts['d_updt_it'] + '_' + opts['wgan_critic_clip'])
     if FLAGS.res_dir:
         exp_name += '_' + FLAGS.res_dir
     opts['exp_dir'] = os.path.join(out_subdir, exp_name)

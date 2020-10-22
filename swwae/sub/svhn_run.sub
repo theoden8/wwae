@@ -8,13 +8,13 @@
 #$ -l tmem=24G
 #$ -l h_rt=10:00:00
 
-#$ -t 1-4
+#$ -t 1-6
 
 #$ -N wgansvhn
 
 source /share/apps/examples/source_files/python/python-3.6.4.source
 source /share/apps/examples/source_files/cuda/cuda-10.0.source
 
-python3 array_run.py --num_it 300000 --data_dir ../../data --dataset svhn --out_dir svhn_autoenc --model WAE --lr 0.0001 --beta 0 --save_model --cost wgan --id $SGE_TASK_ID --res_dir mass_reg
+python3 array_run.py --num_it 300000 --data_dir ../../data --dataset svhn --out_dir svhn_autoenc --model WAE --lr 0.0001 --beta 0 --save_model --cost wgan --id $SGE_TASK_ID
 # python3 run.py --num_it 20000 --data_dir ../../data --dataset svhn --out_dir svhn_test --model WAE --lr 0.0001 --beta 0 --save_model --cost wgan  --net_archi mlp --disc_freq 1 --disc_it 5 --res_dir wgan_test
 # python3 run.py --num_it 300000 --data_dir ../../data --dataset svhn --out_dir svhn_test --model WAE --lr 0.0001 --beta 0 --save_model --cost wgan --net_archi mlp --res_dir mass_reg

@@ -114,7 +114,7 @@ def theta_discriminator(opts, inputs, output_dim,
                                     scope='hid_final')
         if opts['sw_proj_type']=='max-sw':
             # rescaling theta between -pi/2 and pi/2
-            outputs = tf.math.maximum(pi/2., tf.math.minimum(-pi/2., outputs))
+            outputs = tf.math.minimum(pi/2., tf.math.maximum(-pi/2., outputs))
         elif opts['sw_proj_type']=='max-gsw':
             # proj between -1 and 1
             outputs = tf.nn.tanh(outputs)
@@ -158,7 +158,13 @@ def critic(opts, inputs, scope=None, reuse=False):
                                     init=opts['mlp_init'],
                                     scope='hid_final')
         # clipping
-        outputs = tf.nn.sigmoid(outputs)
+        if opts['wgan_critic_clip']=='piecewise':
+            outputs = tf.math.minimum(.5, tf.math.maximum(-.5, outputs))
+        elif opts['wgan_critic_clip']=='tanh':
+            outputs = .5*tf.nn.tanh(outputs)
+        else:
+            raise ValueError('Unknown {} clipping' % opts['wgan_critic_clip'])
+
 
         return tf.reshape(outputs, [-1,]+in_shape)
 
