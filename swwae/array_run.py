@@ -98,7 +98,7 @@ def main():
     # ground cost config
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
     opts['d_updt_freq'] = FLAGS.disc_freq
-    critic_config = [1, 5, 10, 25, 50]
+    critic_config = [1, 5, 10, 20]
     coef_id = (FLAGS.id-1) % len(critic_config)
     opts['d_updt_it'] = critic_config[coef_id]
     # sw
