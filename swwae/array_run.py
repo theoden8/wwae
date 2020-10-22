@@ -139,7 +139,7 @@ def main():
         if opts['sw_proj_type']=='max-sw' or opts['sw_proj_type']=='max-gsw':
             exp_name += '_dfreq' + str(opts['d_updt_freq']) + '_dit' + str(opts['d_updt_it'])
     if opts['cost']=='wgan':
-        exp_name += '_dit' + str(opts['d_updt_it'] + '_' + opts['wgan_critic_clip'])
+        exp_name += '_dit' + str(opts['d_updt_it']) + '_' + opts['wgan_critic_clip'])
     if FLAGS.res_dir:
         exp_name += '_' + FLAGS.res_dir
     opts['exp_dir'] = os.path.join(out_subdir, exp_name)
