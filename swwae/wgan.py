@@ -11,8 +11,6 @@ def wgan(opts, x, y, reuse=False):
     y[b,h,w,c]: reconstruction
     """
 
-    # stopping gradient from decoder
-    # rec = tf.stop_gradient(y)
     # get images intensities
     x_int = x / tf.reduce_sum(x, axis=[1,2], keepdims=True) #[batch,w,h,c]
     y_int = y / tf.reduce_sum(y, axis=[1,2], keepdims=True) #[batch,w,h,c]
@@ -22,15 +20,3 @@ def wgan(opts, x, y, reuse=False):
     cost = tf.reduce_sum(pot*(x_int-y_int), axis=[1,2]) #[batch,c]
 
     return tf.reduce_mean(cost, axis=-1)
-
-# def get_pot(opts,x,reuse=False):
-#     """ Wrapper to get weighted potential sum_ij f_ij x_ij
-#     """
-#     # normalize images to get intensities
-#     x_norm = x / tf.reduce_sum(x, axis=[1,2], keepdims=True) #[batch,w,h,c]
-#     # get critic of inputs
-#     x_critic = critic(opts, x, scope='w1_critic', reuse=reuse) #[batch,w,h,c]
-#     # sum over pixel space
-#     sum = tf.reduce_sum(x_norm*x_critic, axis=[1,2]) #[batch,c]
-#
-#     return sum
