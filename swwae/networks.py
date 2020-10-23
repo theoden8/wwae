@@ -129,7 +129,7 @@ def critic(opts, inputs, scope=None, reuse=False):
     inputs: [batch,w,h,c]
     outputs: [batch,w,h,c]
     """
-    in_shape = inputs.get_shape().as_list()[1:]
+    batch_size, in_shape =  tf.shape(inputs)[0], inputs.get_shape().as_list()[1:]
     if opts['wgan_critic_archi']=='small_mlp':
         layer_x = tf.compat.v1.layers.flatten(inputs)
         with tf.compat.v1.variable_scope(scope, reuse=reuse):
