@@ -104,15 +104,15 @@ def main():
     opts['gamma'] = FLAGS.gamma
     # wgan ground cost
     critic_it = [5, 10]
-    critic_net = ['small_mlp', 'small_conv', 'big_conv']
-    critic_config = list(itertools.product(critic_it,critic_net))
+    critic_net = ['small_mlp', 'small_conv', 'big_conv', 'small_fullconv', 'big_fullconv']
+    critic_config = list(itertools.product(critic_net,critic_it))
     coef_id = (FLAGS.id-1) % len(critic_config)
-    opts['wgan_critic_archi'] = critic_config[coef_id][1]
+    opts['wgan_critic_archi'] = critic_config[coef_id][0]
     # opts['wgan_critic_archi'] = FLAGS.critic_archi
     opts['wgan_critic_clip'] = FLAGS.critic_clip
     opts['d_updt_freq'] = FLAGS.disc_freq
     # opts['d_updt_it'] = FLAGS.disc_it
-    opts['d_updt_it'] = critic_config[coef_id][0]
+    opts['d_updt_it'] = critic_config[coef_id][1]
     # sw ground cost
     opts['sw_proj_num'] = FLAGS.L
     opts['sw_proj_type'] = FLAGS.slicing_dist

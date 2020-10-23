@@ -181,13 +181,13 @@ def critic(opts, inputs, scope=None, reuse=False):
         with tf.compat.v1.variable_scope(scope, reuse=reuse):
             # hidden 0
             layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                        output_dim=32, filter_size=5,
+                                        output_dim=32, filter_size=4,
                                         stride=2, scope='hid0/conv',
                                         init=opts['conv_init'])
             layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
             # hidden 1
             layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                        output_dim=64, filter_size=5,
+                                        output_dim=64, filter_size=4,
                                         stride=2, scope='hid1/conv',
                                         init=opts['conv_init'])
             layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
@@ -202,34 +202,75 @@ def critic(opts, inputs, scope=None, reuse=False):
         with tf.compat.v1.variable_scope(scope, reuse=reuse):
             # hidden 0
             layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                        output_dim=16, filter_size=5,
+                                        output_dim=16, filter_size=4,
                                         stride=2, scope='hid0/conv',
                                         init=opts['conv_init'])
             layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
             # hidden 1
             layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                        output_dim=32, filter_size=5,
+                                        output_dim=32, filter_size=4,
                                         stride=2, scope='hid1/conv',
                                         init=opts['conv_init'])
             layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
             # hidden 2
             layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                        output_dim=64, filter_size=5,
+                                        output_dim=64, filter_size=4,
                                         stride=2, scope='hid2/conv',
                                         init=opts['conv_init'])
             layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
             # hidden 3
             layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                        output_dim=128, filter_size=5,
+                                        output_dim=128, filter_size=4,
                                         stride=2, scope='hid3/conv',
                                         init=opts['conv_init'])
             layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
             # final layer
-            layer_x = tf.reshape(layer_x, [-1,int(in_shape[0]/16),int(in_shape[1]/16),64])
+            layer_x = tf.reshape(layer_x, [-1,int(in_shape[0]/16),int(in_shape[1]/16),128])
             outputs = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
                                         np.prod(in_shape),
                                         init=opts['mlp_init'],
                                         scope='hid_final')
+    elif opts['wgan_critic_archi']=='small_fullconv':
+        layer_x = inputs
+        with tf.compat.v1.variable_scope(scope, reuse=reuse):
+            # hidden 0
+            layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                        output_dim=64, filter_size=4,
+                                        stride=2, scope='hid0/conv',
+                                        init=opts['conv_init'])
+            layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+            # final layer
+            outputs = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                        output_shape=[batch_size,]+in_shape, filter_size=4,
+                                        stride=2, scope='hid_final/deconv',
+                                        init= opts['conv_init'])
+    elif opts['wgan_critic_archi']=='big_fullconv':
+        layer_x = inputs
+        with tf.compat.v1.variable_scope(scope, reuse=reuse):
+            # hidden 0
+            layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                        output_dim=32, filter_size=4,
+                                        stride=2, scope='hid0/conv',
+                                        init=opts['conv_init'])
+            layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+            # hidden 1
+            layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                        output_dim=64, filter_size=4,
+                                        stride=2, scope='hid1/conv',
+                                        init=opts['conv_init'])
+            layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+            # hidden 2
+            layer_x = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                        output_shape=[batch_size,int(in_shape[0]/2),int(in_shape[1]/2),32],
+                                        filter_size=4,
+                                        stride=2, scope='hid2/conv',
+                                        init=opts['conv_init'])
+            layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+            # final layer
+            outputs = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                        output_shape=[batch_size,]+in_shape, filter_size=4,
+                                        stride=2, scope='hid_final/deconv',
+                                        init= opts['conv_init'])
     else:
         raise ValueError('Unknown {} archi for critic' % opts['wgan_critic_archi'])
     # clipping outputs
