@@ -130,43 +130,117 @@ def critic(opts, inputs, scope=None, reuse=False):
     outputs: [batch,w,h,c]
     """
     in_shape = inputs.get_shape().as_list()[1:]
-    layer_x = tf.compat.v1.layers.flatten(inputs)
-    with tf.compat.v1.variable_scope(scope, reuse=reuse):
-        # hidden 0
-        layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
-                                    512, init=opts['mlp_init'],
-                                    scope='hid0/lin')
-        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
-        # hidden 1
-        layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
-                                    512, init=opts['mlp_init'],
-                                    scope='hid1/lin')
-        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
-        # hidden 2
-        layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
-                                    512, init=opts['mlp_init'],
-                                    scope='hid2/lin')
-        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
-        # hidden 3
-        layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
-                                    512, init=opts['mlp_init'],
-                                    scope='hid3/lin')
-        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
-        # final layer
-        outputs = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
-                                    np.prod(in_shape),
-                                    init=opts['mlp_init'],
-                                    scope='hid_final')
-        # clipping
-        if opts['wgan_critic_clip']=='piecewise':
-            outputs = tf.math.minimum(.5, tf.math.maximum(-.5, outputs))
-        elif opts['wgan_critic_clip']=='tanh':
-            outputs = .5*tf.nn.tanh(outputs)
-        else:
-            raise ValueError('Unknown {} clipping' % opts['wgan_critic_clip'])
+    if opts['wgan_critic_archi']=='small_mlp':
+        layer_x = tf.compat.v1.layers.flatten(inputs)
+        with tf.compat.v1.variable_scope(scope, reuse=reuse):
+            # hidden 0
+            layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                        256, init=opts['mlp_init'],
+                                        scope='hid0/lin')
+            layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+            # hidden 1
+            layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                        256, init=opts['mlp_init'],
+                                        scope='hid1/lin')
+            layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+            # final layer
+            outputs = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                        np.prod(in_shape),
+                                        init=opts['mlp_init'],
+                                        scope='hid_final')
+    elif opts['wgan_critic_archi']=='big_mlp':
+        layer_x = tf.compat.v1.layers.flatten(inputs)
+        with tf.compat.v1.variable_scope(scope, reuse=reuse):
+            # hidden 0
+            layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                        512, init=opts['mlp_init'],
+                                        scope='hid0/lin')
+            layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+            # hidden 1
+            layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                        512, init=opts['mlp_init'],
+                                        scope='hid1/lin')
+            layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+            # hidden 2
+            layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                        512, init=opts['mlp_init'],
+                                        scope='hid2/lin')
+            layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+            # hidden 3
+            layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                        512, init=opts['mlp_init'],
+                                        scope='hid3/lin')
+            layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+            # final layer
+            outputs = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                        np.prod(in_shape),
+                                        init=opts['mlp_init'],
+                                        scope='hid_final')
+    elif opts['wgan_critic_archi']=='small_conv':
+        layer_x = inputs
+        with tf.compat.v1.variable_scope(scope, reuse=reuse):
+            # hidden 0
+            layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                        output_dim=32, filter_size=5,
+                                        stride=2, scope='hid0/conv',
+                                        init=opts['conv_init'])
+            layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+            # hidden 1
+            layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                        output_dim=64, filter_size=5,
+                                        stride=2, scope='hid1/conv',
+                                        init=opts['conv_init'])
+            layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+            # final layer
+            layer_x = tf.reshape(layer_x, [-1,int(in_shape[0]/4),int(in_shape[1]/4),64])
+            outputs = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                        np.prod(in_shape),
+                                        init=opts['mlp_init'],
+                                        scope='hid_final')
+    elif opts['wgan_critic_archi']=='big_conv':
+        layer_x = inputs
+        with tf.compat.v1.variable_scope(scope, reuse=reuse):
+            # hidden 0
+            layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                        output_dim=16, filter_size=5,
+                                        stride=2, scope='hid0/conv',
+                                        init=opts['conv_init'])
+            layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+            # hidden 1
+            layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                        output_dim=32, filter_size=5,
+                                        stride=2, scope='hid1/conv',
+                                        init=opts['conv_init'])
+            layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+            # hidden 2
+            layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                        output_dim=64, filter_size=5,
+                                        stride=2, scope='hid2/conv',
+                                        init=opts['conv_init'])
+            layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+            # hidden 3
+            layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                        output_dim=128, filter_size=5,
+                                        stride=2, scope='hid3/conv',
+                                        init=opts['conv_init'])
+            layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+            # final layer
+            layer_x = tf.reshape(layer_x, [-1,int(in_shape[0]/16),int(in_shape[1]/16),64])
+            outputs = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                        np.prod(in_shape),
+                                        init=opts['mlp_init'],
+                                        scope='hid_final')
+    else:
+        raise ValueError('Unknown {} archi for critic' % opts['wgan_critic_archi'])
+    # clipping outputs
+    if opts['wgan_critic_clip']=='piecewise':
+        outputs = tf.math.minimum(.5, tf.math.maximum(-.5, outputs))
+    elif opts['wgan_critic_clip']=='tanh':
+        outputs = .5*tf.nn.tanh(outputs)
+    else:
+        raise ValueError('Unknown {} clipping' % opts['wgan_critic_clip'])
 
-
-        return tf.reshape(outputs, [-1,]+in_shape)
+    return tf.reshape(outputs, [-1,]+in_shape)
 
 def obs_discriminator(opts, inputs, scope=None,
                                     reuse=False):
