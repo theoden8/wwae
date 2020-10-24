@@ -103,16 +103,18 @@ def main():
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
     opts['gamma'] = FLAGS.gamma
     # wgan ground cost
-    critic_it = [5, 10]
-    critic_net = ['small_mlp', 'small_conv', 'big_conv', 'small_fullconv', 'big_fullconv']
-    critic_config = list(itertools.product(critic_net,critic_it))
+    critic_net = ['mlp', 'conv', 'fullconv']
+    critic_it = [1, 5, 10]
+    critic_clip = ['piecewise', 'tanh']
+    critic_config = list(itertools.product(critic_net,critic_it,critic_clip))
     coef_id = (FLAGS.id-1) % len(critic_config)
-    opts['wgan_critic_archi'] = critic_config[coef_id][0]
     # opts['wgan_critic_archi'] = FLAGS.critic_archi
-    opts['wgan_critic_clip'] = FLAGS.critic_clip
-    opts['d_updt_freq'] = FLAGS.disc_freq
+    opts['wgan_critic_archi'] = critic_config[coef_id][0]
+    # opts['wgan_critic_clip'] = FLAGS.critic_clip
+    opts['wgan_critic_clip'] = critic_config[coef_id][2]
     # opts['d_updt_it'] = FLAGS.disc_it
     opts['d_updt_it'] = critic_config[coef_id][1]
+    opts['d_updt_freq'] = FLAGS.disc_freq
     # sw ground cost
     opts['sw_proj_num'] = FLAGS.L
     opts['sw_proj_type'] = FLAGS.slicing_dist
@@ -162,8 +164,8 @@ def main():
     assert data.train_size >= opts['batch_size'], 'Training set too small'
 
     opts['it_num'] = FLAGS.num_it
-    opts['print_every'] = int(opts['it_num'] / 20.)
-    opts['evaluate_every'] = int(opts['print_every'] / 2.) + 1
+    opts['print_every'] = int(opts['it_num'] / 5.)
+    opts['evaluate_every'] = int(opts['print_every'] / 8.) + 1
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
     opts['save_train_data'] = FLAGS.save_data

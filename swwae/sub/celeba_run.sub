@@ -6,14 +6,14 @@
 
 #$ -l gpu=True
 #$ -l tmem=26G
-#$ -l h_rt=12:00:00
+#$ -l h_rt=32:00:00
 
-#$ -t 7-10
+#$ -t 1-18
 
 #$ -N wgancelebA
 
 source /share/apps/examples/source_files/python/python-3.6.4.source
 source /share/apps/examples/source_files/cuda/cuda-10.0.source
 
-python3 array_run.py --num_it 100000 --data_dir ../../data --dataset celebA --out_dir celebA_critic_archi --model WAE --lr 0.0001 --beta 0 --save_model --cost wgan --id $SGE_TASK_ID
+python3 array_run.py --num_it 200000 --data_dir ../../data --dataset celebA --out_dir celebA_critic_ablation --model WAE --lr 0.0001 --beta 0 --cost wgan --id $SGE_TASK_ID
 # python3 run.py --num_it 300000 --beta 0. --data_dir ../../data --dataset celebA --cost sw --out_dir celebA_det --model WAE --L 32 --lr 0.0005 --save_model
