@@ -1,35 +1,14 @@
 # TODO list
 
-* Implementation
-  * batch_size = 100
-  * L = 32
-  * lr = 1e-3 (no decay)
-  * random/det uniform projection on [0,pi]
-  * compare with l2sq
-
-* Ablation, what remain to be done
-  * L=32
-    * cifar: det, gauss, unif
-    * mnist: det, gauss, unif
-    * celebA: det, gauss, unif
-  * when done try L=16
-  
-
-* Writing
-  * Sec.1: intro blabla
-  * Sec.2: generative models
-    * VAE (Benoit)
-    * WAE (Benoit)
-    * limits and improvments?
-  * Sec.3: SW: derivation and implementation
-    * theoretical bounds
-  * Sec.4: Experiments
-    * follow https://arxiv.org/pdf/1903.12436.pdf
-    * MNIST (32,32,1), SVHN, CelebA, cifar10    
-    * Projection ablation
-      * compare loss + reconstruction score for different num of projections (non random?)
-      * compare loss + reconstruction score for different projection distribution (fixed num of projections)
-    * Auto-encoder ablation (not latent reg)
-      * compare reconstruction score (MSE, FID) for (beta-)VAE/WAE L2/ WAE SW
-    * Generative models
-      * compare rec/samples with (beta-)VAE/WAE l2 using MSE and FID
+* proof/derivation of space of Lipschitz function in discrete space
+* see implementation of min-cost flow problems simplex solvers to compare with our approximation
+* implementation:
+  * networks archi
+  * plotting functions
+  * LSUN
+  * benchmarks methods
+* overleaf:
+  * clean Sec.~\ref{sec:wwae}
+  * update and finish Sec.~\ref{sec:sw}
+  * populate Sec.~\ref{sec:experiments}
+  * write Sec.~\ref{sec:related}
