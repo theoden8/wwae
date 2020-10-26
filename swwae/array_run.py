@@ -49,10 +49,12 @@ parser.add_argument("--disc_freq", type=int, default=1,
                     help='discriminator update frequency for aversarial sw')
 parser.add_argument("--disc_it", type=int, default=1,
                     help='it. num. when updating discriminator for aversarial sw')
-parser.add_argument("--critic_clip", type=str, default='piecewise',
+parser.add_argument("--critic_clip", type=str, default='none',
                     help='clipping method for the critic')
-parser.add_argument("--critic_archi", type=str, default='small_mlp',
+parser.add_argument("--critic_archi", type=str, default='fullconv',
                     help='clipping method for the critic')
+parser.add_argument("--critic_pen", type=float, default=10.,
+                    help='regularization weight for the critic')
 parser.add_argument("--id", type=int, default=0,
                     help='exp. config. id')
 parser.add_argument("--sigma_pen", action='store_true', default=False,
@@ -60,7 +62,7 @@ parser.add_argument("--sigma_pen", action='store_true', default=False,
 parser.add_argument("--sigma_pen_val", type=float, default=0.01,
                     help='value of penalization of Sigma_q')
 parser.add_argument("--cost", default='l2sq',
-                    help='ground cost [average/wavelength/learned/none]')
+                    help='ground cost')
 parser.add_argument('--save_model', action='store_false', default=True,
                     help='save final model weights [True/False]')
 parser.add_argument("--save_data", action='store_false', default=True,
@@ -115,6 +117,7 @@ def main():
     # opts['d_updt_it'] = FLAGS.disc_it
     opts['d_updt_it'] = critic_config[coef_id][1]
     opts['d_updt_freq'] = FLAGS.disc_freq
+    opts['lambda'] = FLAGS.critic_pen
     # sw ground cost
     opts['sw_proj_num'] = FLAGS.L
     opts['sw_proj_type'] = FLAGS.slicing_dist

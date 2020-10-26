@@ -6,7 +6,6 @@ import math as m
 from utils import get_batch_size
 from ops._ops import logsumexp
 from sw import sw
-from sw_v2 import sw_v2
 from wgan import wgan
 
 import pdb
@@ -105,6 +104,7 @@ def wae_ground_cost(opts, x1, x2, reuse=False):
     x2: image reconstruction   [batch,h,w,c]
     return batch reconstruction cost [batch,]
     """
+    reg = None
     # Compute chosen cost
     if opts['cost'] == 'l2':
         cost = l2_cost(x1, x2)
@@ -117,12 +117,10 @@ def wae_ground_cost(opts, x1, x2, reuse=False):
     elif opts['cost'] == 'sw':
         cost = sw(opts, x1, x2, reuse=reuse)
     elif opts['cost'] == 'wgan':
-        cost = wgan(opts, x1, x2, reuse=reuse)
-    elif opts['cost'] == 'sw_v2':
-        cost = sw_v2(opts, x1, x2)
+        cost, critic_reg = wgan(opts, x1, x2, reuse=reuse)
     else:
         assert False, 'Unknown cost function %s' % opts['cost']
-    return cost
+    return cost, critic_reg
 
 def l2_cost(x1, x2):
     # c(x,y) = ||x - y||_2

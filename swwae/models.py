@@ -158,9 +158,9 @@ class WAE(Model):
         return stat
 
     def reconstruction_loss(self, obs, rec, reuse=False):
-        cost = wae_ground_cost(self.opts, obs, rec, reuse=reuse) #[batch,]
+        cost, critic_reg = wae_ground_cost(self.opts, obs, rec, reuse=reuse) #[batch,]
 
-        return tf.reduce_mean(cost)
+        return tf.reduce_mean(cost), critic_reg
 
     def loss(self, inputs, beta, is_training, reuse=False):
 
@@ -168,9 +168,9 @@ class WAE(Model):
         enc_z, _, enc_Sigma, recon_x, dec_mean, _ = self.forward_pass(inputs=inputs,
                                                 is_training=is_training,
                                                 reuse=reuse)
-        rec = self.reconstruction_loss(inputs, recon_x, reuse=reuse)
+        rec, critic_reg = self.reconstruction_loss(inputs, recon_x, reuse=reuse)
         noise = tf.compat.v1.random_normal(shape=tf.shape(enc_z))
         pz_sample = tf.add(self.pz_mean, (noise * self.pz_sigma))
         reg = beta*self.mmd_penalty(enc_z, pz_sample)
 
-        return rec, reg
+        return rec, reg, critic_reg

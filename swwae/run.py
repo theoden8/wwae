@@ -44,19 +44,23 @@ parser.add_argument("--slicing_dist", type=str, default='det',
 parser.add_argument("--L", type=int, default=32,
                     help='Number of slices')
 parser.add_argument("--gamma", type=float, default=1.,
-                    help='weight for mass reg. in sw')
+                    help='weight for mass reg. in ground cost')
 parser.add_argument("--disc_freq", type=int, default=1,
                     help='discriminator update frequency for aversarial sw')
-parser.add_argument("--disc_it", type=int, default=1,
+parser.add_argument("--disc_it", type=int, default=5,
                     help='it. num. when updating discriminator for aversarial sw')
+parser.add_argument("--critic_clip", type=str, default='none',
+                    help='clipping method for the critic')
+parser.add_argument("--critic_archi", type=str, default='fullconv',
+                    help='clipping method for the critic')
+parser.add_argument("--critic_pen", type=float, default=10.,
+                    help='regularization weight for the critic')
 parser.add_argument("--sigma_pen", action='store_true', default=False,
                     help='penalization of Sigma_q')
 parser.add_argument("--sigma_pen_val", type=float, default=0.01,
                     help='value of penalization of Sigma_q')
 parser.add_argument("--cost", default='l2sq',
                     help='ground cost [average/wavelength/learned/none]')
-parser.add_argument("--trans_rgb", default='none',
-                    help='tranformation of RGB imgs [l1, l2, l2sq, l2sq_norm, sw2]')
 parser.add_argument('--save_model', action='store_false', default=True,
                     help='save final model weights [True/False]')
 parser.add_argument("--save_data", action='store_false', default=True,
@@ -97,15 +101,16 @@ def main():
 
     # ground cost config
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
-    if opts['cost']!='sw':
-        opts['transform_rgb_img'] = 'none'
-    else:
-        opts['transform_rgb_img'] = FLAGS.trans_rgb
-    opts['sw_proj_num'] = FLAGS.L
     opts['gamma'] = FLAGS.gamma
-    opts['sw_proj_type'] = FLAGS.slicing_dist
+    # wgan ground cost
+    opts['wgan_critic_archi'] = FLAGS.critic_archi
+    opts['wgan_critic_clip'] = FLAGS.critic_clip
     opts['d_updt_freq'] = FLAGS.disc_freq
     opts['d_updt_it'] = FLAGS.disc_it
+    opts['lambda'] = FLAGS.critic_pen
+    # sw ground cost
+    opts['sw_proj_num'] = FLAGS.L
+    opts['sw_proj_type'] = FLAGS.slicing_dist
     # Model set up
     opts['model'] = FLAGS.model
     opts['decoder'] = FLAGS.decoder
@@ -149,7 +154,7 @@ def main():
 
     opts['it_num'] = FLAGS.num_it
     opts['print_every'] = 100 #int(opts['it_num'] / 25.)
-    opts['evaluate_every'] = 100 #int(opts['print_every'] / 2.) + 1
+    opts['evaluate_every'] = int(opts['print_every'] / 2.) + 1
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
     opts['save_train_data'] = FLAGS.save_data

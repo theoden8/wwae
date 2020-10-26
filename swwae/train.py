@@ -49,11 +49,12 @@ class Run(object):
             raise NotImplementedError()
 
         # --- Define Objective
-        self.loss_rec, self.loss_reg = self.model.loss(
+        self.loss_rec, self.loss_reg, self.critic_reg = self.model.loss(
                                     inputs=self.data.next_element,
                                     beta=self.beta,
                                     is_training=self.is_training)
         self.objective = self.loss_rec + self.loss_reg
+        self.critic_objective = -self.loss_rec + opts['lambda']*self.critic_reg
 
         # --- encode & decode pass for testing
         self.z_samples, self.z_mean, self.z_sigma, self.recon_x, _, _ =\
@@ -203,7 +204,7 @@ class Run(object):
             critic_opt = self.adam_discr_optimizer(lr=1e-4,beta1=0.5,beta2=0.9)
             critic_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                             scope='w1_critic')
-            self.w1_critic_opt = critic_opt.minimize(loss=-self.loss_rec, var_list=critic_vars)
+            self.w1_critic_opt = critic_opt.minimize(loss=self.critic_objective, var_list=critic_vars)
             # weights clipping
             clip_ops = []
             for var in critic_vars:
