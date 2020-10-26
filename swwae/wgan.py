@@ -38,10 +38,11 @@ def critic_reg(critic_ouput):
             if i!=1 and j!=1:
                 padding = [[0,0], [i,2-i], [j,2-j], [0,0]]
                 grad = tf.pad(critic_ouput, padding)-tf.pad(critic_ouput, [[0,0], [1,1], [1,1], [0,0]])
+                max_grad = tf.reduce_max(tf.abs(grad[:,1:-1,1:-1]), axis=[1,2])
                 if i==j:
-                    l = tf.reduce_sum(tf.square(tf.abs(grad[:,1:-1,1:-1])-tf.sqrt(2.)), axis=[1,2])
+                    l = tf.square(max_grad-tf.sqrt(2.))
                 else:
-                    l = tf.reduce_sum(tf.square(tf.abs(grad[:,1:-1,1:-1])-1), axis=[1,2])
+                    l = tf.square(max_grad-1.)
                 losses.append(l)
 
     return tf.reduce_sum(tf.stack(losses, axis=-1), axis=-1)
