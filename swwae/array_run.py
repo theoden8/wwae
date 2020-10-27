@@ -47,7 +47,7 @@ parser.add_argument("--gamma", type=float, default=1.,
                     help='weight for mass reg. in ground cost')
 parser.add_argument("--disc_freq", type=int, default=1,
                     help='discriminator update frequency for aversarial sw')
-parser.add_argument("--disc_it", type=int, default=1,
+parser.add_argument("--disc_it", type=int, default=5,
                     help='it. num. when updating discriminator for aversarial sw')
 parser.add_argument("--critic_clip", type=str, default='none',
                     help='clipping method for the critic')
