@@ -33,8 +33,7 @@ def critic_reg(critic_ouput):
     critic_ouput[b,h,w,c]: output of the critic.
     """
     losses = []
-    max_grad_diag = 0.
-    max_grad_side = 0.
+    glob_max_grad = 0.
     for i in range(3):
         for j in range(3):
             if i!=1 and j!=1:
@@ -43,11 +42,11 @@ def critic_reg(critic_ouput):
                 max_grad = tf.reduce_max(tf.abs(grad[:,1:-1,1:-1]), axis=[1,2])
                 if i==j:
                     # update max_grad_diag if needed
-                    max_grad_diag = tf.maximum(max_grad,max_grad_diag)
+                    glob_max_grad = tf.maximum(max_grad / tf.sqrt(2.), glob_max_grad)
                 else:
                     # update max_grad_side if needed
-                    max_grad_side = tf.maximum(max_grad,max_grad_side)
-    return tf.square(max_grad_diag-tf.sqrt(2.)) + tf.square(max_grad_side-1.)
+                    glob_max_grad = tf.maximum(max_grad, glob_max_grad)
+    return tf.square(glob_max_grad-1)
 
     #             if i==j:
     #                 l = tf.square(max_grad-tf.sqrt(2.))
