@@ -46,6 +46,7 @@ def critic_reg(critic_ouput):
                 else:
                     # update max_grad_side if needed
                     glob_max_grad = tf.maximum(max_grad, glob_max_grad)
+
     return tf.square(glob_max_grad-1)
 
     #             if i==j:
