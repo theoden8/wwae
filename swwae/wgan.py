@@ -48,10 +48,3 @@ def critic_reg(critic_ouput):
                     glob_max_grad = tf.maximum(max_grad, glob_max_grad)
 
     return tf.square(glob_max_grad-1)
-
-    #             if i==j:
-    #                 l = tf.square(max_grad-tf.sqrt(2.))
-    #             else:
-    #                 l = tf.square(max_grad-1.)
-    #             losses.append(l)
-    # return tf.reduce_sum(tf.stack(losses, axis=-1), axis=-1)

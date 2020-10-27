@@ -144,7 +144,7 @@ def main():
     opts['out_dir'] = os.path.join(results_dir,FLAGS.out_dir)
     if not tf.io.gfile.isdir(opts['out_dir']):
         utils.create_dir(opts['out_dir'])
-    out_subdir = os.path.join(opts['out_dir'], opts['model'])# + '_' + str(int((FLAGS.id-1) / len(critic_config))))
+    out_subdir = os.path.join(opts['out_dir'], opts['model'] + '_' + str(int((FLAGS.id-1) / len(lambdas))))
     if not tf.io.gfile.isdir(out_subdir):
         utils.create_dir(out_subdir)
     exp_name = opts['cost']
@@ -156,7 +156,7 @@ def main():
         # critic archi
         exp_name += '_' + opts['wgan_critic_archi']
         # critic training setup
-        exp_name += '_dit' + str(opts['d_updt_it']) + '_' + opts['wgan_critic_clip']
+        exp_name += '_dit' + str(opts['d_updt_it'])# + '_' + opts['wgan_critic_clip']
         # critic reg
         exp_name += '_lbm' + str(opts['lambda'])
     if FLAGS.res_dir:
