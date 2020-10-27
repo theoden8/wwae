@@ -70,7 +70,7 @@ class Run(object):
         Smean, Svar = tf.nn.moments(Sigma_tr, axes=[0])
         self.encSigmas_stats = tf.stack([Smean, Svar], axis=-1)
         if self.opts['pen_enc_sigma'] and self.opts['encoder'] == 'gauss':
-            pen_enc_sigma = self.opts['lambda_pen_enc_sigma'] * tf.reduce_mean(
+            pen_enc_sigma = self.opts['beta_pen_enc_sigma'] * tf.reduce_mean(
                 tf.reduce_sum(tf.abs(tf.math.log(self.z_sigma)), axis=-1))
             self.objective+= pen_enc_sigma
 
@@ -238,7 +238,7 @@ class Run(object):
         MSE, MSE_test = [], []
         if self.opts['vizu_encSigma']:
             enc_Sigmas = []
-        # - Init decay lr and lambda
+        # - Init decay lr and beta
         decay = 1.
         decay_rate = 0.80
         # fix decay
@@ -247,8 +247,8 @@ class Run(object):
         wait = 0
         batches_num = self.data.train_size//self.opts['batch_size']
         ada_decay_steps = batches_num
-        # lambda
-        wait_lambda = 0
+        # beta
+        wait_beta = 0
 
         # - Load trained model or init variables
         if self.opts['use_trained']:
@@ -444,17 +444,17 @@ class Run(object):
 
 
             # - Update regularizer if necessary
-            if self.opts['lambda_schedule'] == 'adaptive':
+            if self.opts['beta_schedule'] == 'adaptive':
                 if it >= .0 and len(Loss_rec) > 0:
-                    if wait_lambda > 1000 * batches_num + 1:
-                        # opts['lambda'] = list(2*np.array(opts['lambda']))
-                        self.opts['lambda'][-1] = 2*self.opts['lambda'][-1]
-                        wae_lambda = self.opts['lambda']
-                        logging.error('Lambda updated to %s\n' % wae_lambda)
+                    if wait_beta > 1000 * batches_num + 1:
+                        # opts['beta'] = list(2*np.array(opts['beta']))
+                        self.opts['beta'][-1] = 2*self.opts['beta'][-1]
+                        wae_beta = self.opts['beta']
+                        logging.error('beta updated to %s\n' % wae_beta)
                         print('')
-                        wait_lambda = 0
+                        wait_beta = 0
                     else:
-                        wait_lambda += 1
+                        wait_beta += 1
 
             # - logging
             if (it)%50000 ==0 :

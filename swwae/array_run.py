@@ -99,25 +99,28 @@ def main():
     # Set method param
     opts['net_archi'] = FLAGS.net_archi
     opts['pen_enc_sigma'] = FLAGS.sigma_pen
-    opts['lambda_pen_enc_sigma'] = FLAGS.sigma_pen_val
+    opts['beta_pen_enc_sigma'] = FLAGS.sigma_pen_val
 
     # ground cost config
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
     opts['gamma'] = FLAGS.gamma
     # wgan ground cost
-    critic_net = ['mlp', 'conv', 'fullconv']
-    critic_it = [1, 5, 10]
-    critic_clip = ['piecewise', 'tanh']
-    critic_config = list(itertools.product(critic_net,critic_it,critic_clip))
-    coef_id = (FLAGS.id-1) % len(critic_config)
-    # opts['wgan_critic_archi'] = FLAGS.critic_archi
-    opts['wgan_critic_archi'] = critic_config[coef_id][0]
-    # opts['wgan_critic_clip'] = FLAGS.critic_clip
-    opts['wgan_critic_clip'] = critic_config[coef_id][2]
-    # opts['d_updt_it'] = FLAGS.disc_it
-    opts['d_updt_it'] = critic_config[coef_id][1]
+    # critic_net = ['mlp', 'conv', 'fullconv']
+    # critic_it = [1, 5, 10]
+    # critic_clip = ['piecewise', 'tanh']
+    # critic_config = list(itertools.product(critic_net,critic_it,critic_clip))
+    # coef_id = (FLAGS.id-1) % len(critic_config)
+    # opts['wgan_critic_archi'] = critic_config[coef_id][0]
+    # opts['wgan_critic_clip'] = critic_config[coef_id][2]
+    # opts['d_updt_it'] = critic_config[coef_id][1]
+    opts['wgan_critic_archi'] = FLAGS.critic_archi
+    opts['wgan_critic_clip'] = FLAGS.critic_clip
+    opts['d_updt_it'] = FLAGS.disc_it
     opts['d_updt_freq'] = FLAGS.disc_freq
-    opts['lambda'] = FLAGS.critic_pen
+    lambdas = [.01, .1, 1., 10., 100.]
+    coef_id = (FLAGS.id-1) % len(lambdas)
+    opts['lambda'] = lambdas[coef_id]
+    # opts['lambda'] = FLAGS.critic_pen
     # sw ground cost
     opts['sw_proj_num'] = FLAGS.L
     opts['sw_proj_type'] = FLAGS.slicing_dist
@@ -150,7 +153,12 @@ def main():
         if opts['sw_proj_type']=='max-sw' or opts['sw_proj_type']=='max-gsw':
             exp_name += '_dfreq' + str(opts['d_updt_freq']) + '_dit' + str(opts['d_updt_it'])
     if opts['cost']=='wgan':
-        exp_name += '_' + opts['wgan_critic_archi'] + '_dit' + str(opts['d_updt_it']) + '_' + opts['wgan_critic_clip']
+        # critic archi
+        exp_name += '_' + opts['wgan_critic_archi']
+        # critic training setup
+        exp_name += '_dit' + str(opts['d_updt_it']) + '_' + opts['wgan_critic_clip']
+        # critic reg
+        exp_name += '_lbm' + str(opts['lambda'])
     if FLAGS.res_dir:
         exp_name += '_' + FLAGS.res_dir
     opts['exp_dir'] = os.path.join(out_subdir, exp_name)

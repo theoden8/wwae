@@ -44,7 +44,7 @@ config['transform_rgb_img'] = 'none' #[average/wavelength/learned/none]
 config['d_updt_freq'] = 1
 config['d_updt_it'] = 5
 config['pen_enc_sigma'] = False
-config['lambda_pen_enc_sigma'] = 0.001
+config['beta_pen_enc_sigma'] = 0.001
 config['sw_proj_num'] = 15
 config['sw_proj_type'] = 'det'  # det for deterministic, or 'uniform'
 # Model set up
@@ -52,9 +52,9 @@ config['pz_scale'] = 1.
 config['prior'] = 'gaussian' # dirichlet, gaussian
 config['encoder'] = 'gauss' # deterministic, gaussian
 config['decoder'] = 'det' # deterministic, gaussian
-# lambda set up
-config['lambda'] = 10
-config['lambda_schedule'] = 'constant' # adaptive, constant
+# beta set up
+config['beta'] = 10
+config['beta_schedule'] = 'constant' # adaptive, constant
 # NN set up
 config['init_std'] = 0.099999
 config['init_bias'] = 0.0

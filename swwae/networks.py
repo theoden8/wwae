@@ -213,8 +213,8 @@ def critic(opts, inputs, scope=None, reuse=False):
         outputs = tf.math.minimum(.5, tf.math.maximum(-.5, outputs))
     elif opts['wgan_critic_clip']=='tanh':
         outputs = .5*tf.nn.tanh(outputs)
-    else:
-        raise ValueError('Unknown {} clipping' % opts['wgan_critic_clip'])
+    # else:
+    #     raise ValueError('Unknown {} clipping' % opts['wgan_critic_clip'])
 
     return tf.reshape(outputs, [-1,]+in_shape)
 
