@@ -16,4 +16,4 @@ source /share/apps/examples/source_files/python/python-3.6.4.source
 source /share/apps/examples/source_files/cuda/cuda-10.0.source
 
 # python3 run.py --num_it 300000 --beta 0. --data_dir ../../data --dataset cifar10 --cost sw --out_dir cifar10_det --model WAE --L 32 --lr 0.0005 --save_model
-python3 array_run.py --num_it 100000 --data_dir ../../data --dataset cifar10 --out_dir cifar10_critic_reg_ablation --model WAE --lr 0.0001 --beta 0 --cost wgan --save_model --id $SGE_TASK_ID --res_dir nn_v2
+python3 array_run.py --num_it 100000 --data_dir ../../data --dataset cifar10 --out_dir cifar10_critic_reg_ablation --model WAE --lr 0.0001 --beta 0 --cost wgan --save_model --id $SGE_TASK_ID --res_dir nn_v3
