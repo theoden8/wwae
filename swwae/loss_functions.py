@@ -104,7 +104,7 @@ def wae_ground_cost(opts, x1, x2, reuse=False):
     x2: image reconstruction   [batch,h,w,c]
     return batch reconstruction cost [batch,]
     """
-    reg = None
+    critic_reg = None
     # Compute chosen cost
     if opts['cost'] == 'l2':
         cost = l2_cost(x1, x2)

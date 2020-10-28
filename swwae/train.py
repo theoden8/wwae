@@ -54,7 +54,8 @@ class Run(object):
                                     beta=self.beta,
                                     is_training=self.is_training)
         self.objective = self.loss_rec + self.loss_reg
-        self.critic_objective = -self.loss_rec + opts['lambda']*self.critic_reg
+        if self.critic_reg is not None:
+            self.critic_objective = -self.loss_rec + opts['lambda']*self.critic_reg
 
         # --- encode & decode pass for testing
         self.z_samples, self.z_mean, self.z_sigma, self.recon_x, _, _ =\
