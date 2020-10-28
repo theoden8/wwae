@@ -206,6 +206,27 @@ def critic(opts, inputs, scope=None, reuse=False):
                                         output_shape=[batch_size,]+in_shape, filter_size=4,
                                         stride=2, scope='hid_final/deconv',
                                         init= opts['conv_init'])
+    elif opts['wgan_critic_archi']=='shallowfullconv':
+        layer_x = inputs
+        with tf.compat.v1.variable_scope(scope, reuse=reuse):
+            # hidden 0
+            layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                        output_dim=32, filter_size=4,
+                                        stride=2, scope='hid0/conv',
+                                        init=opts['conv_init'])
+            layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+            # hidden 1
+            layer_x = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                        output_shape=[batch_size,in_shape[0],in_shape[1],32],
+                                        filter_size=4,
+                                        stride=2, scope='hid1/deconv',
+                                        init=opts['conv_init'])
+            layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+            # final layer
+            outputs = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                        output_shape=[batch_size,]+in_shape, filter_size=1,
+                                        stride=1, scope='hid_final/deconv',
+                                        init= opts['conv_init'])
     else:
         raise ValueError('Unknown {} archi for critic' % opts['wgan_critic_archi'])
     # clipping outputs
