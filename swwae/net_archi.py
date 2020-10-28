@@ -174,7 +174,7 @@ def cifar10_conv_encoder(opts, input, output_dim, reuse=False,
     layer_x = input
     # hidden 0
     layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=128, filter_size=4,
+                                output_dim=64, filter_size=4,
                                 stride=2, scope='hid0/conv',
                                 init=opts['conv_init'])
     if opts['normalization']=='batchnorm':
@@ -183,7 +183,7 @@ def cifar10_conv_encoder(opts, input, output_dim, reuse=False,
     layer_x = ops._ops.non_linear(layer_x,'relu')
     # hidden 1
     layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=256, filter_size=4,
+                                output_dim=128, filter_size=4,
                                 stride=2, scope='hid1/conv',
                                 init=opts['conv_init'])
     if opts['normalization']=='batchnorm':
@@ -192,12 +192,21 @@ def cifar10_conv_encoder(opts, input, output_dim, reuse=False,
     layer_x = ops._ops.non_linear(layer_x,'relu')
     # hidden 2
     layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=512, filter_size=4,
+                                output_dim=256, filter_size=4,
                                 stride=2, scope='hid2/conv',
                                 init=opts['conv_init'])
     if opts['normalization']=='batchnorm':
         layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
                                 'hid2/bn', is_training, reuse)
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+    # hidden 3
+    layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=512, filter_size=4,
+                                stride=2, scope='hid3/conv',
+                                init=opts['conv_init'])
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
+                                'hid3/bn', is_training, reuse)
     layer_x = ops._ops.non_linear(layer_x,'relu')
     # output layer
     layer_x = tf.reshape(layer_x, [-1,np.prod(layer_x.get_shape().as_list()[1:])])
@@ -246,15 +255,27 @@ def  cifar10_conv_decoder(opts, input, output_dim, reuse,
         layer_x = ops.batchnorm.Batchnorm_layers( opts, layer_x,
                                 'hid2/bn', is_training, reuse)
     layer_x = ops._ops.non_linear(layer_x,'relu')
-    # output layer
-    # outputs = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
-    #                             output_shape=[batch_size,]+output_dim, filter_size=1,
-    #                             stride=1, scope='hid_final/deconv',
-    #                             init= opts['conv_init'])
-    outputs = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_shape=[batch_size,]+output_dim, filter_size=4,
-                                stride=2, scope='hid_final/deconv',
+    # hidden 3
+    _out_shape = [batch_size, 2*layer_x.get_shape().as_list()[1],
+                                2*layer_x.get_shape().as_list()[2],
+                                64]
+    layer_x = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_shape=_out_shape, filter_size=4,
+                                stride=2, scope='hid3/deconv',
                                 init= opts['conv_init'])
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers( opts, layer_x,
+                                'hid3/bn', is_training, reuse)
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+    # output layer
+    outputs = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_shape=[batch_size,]+output_dim, filter_size=1,
+                                stride=1, scope='hid_final/deconv',
+                                init= opts['conv_init'])
+    # outputs = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
+    #                             output_shape=[batch_size,]+output_dim, filter_size=4,
+    #                             stride=2, scope='hid_final/deconv',
+    #                             init= opts['conv_init'])
 
     return outputs
 
@@ -319,12 +340,12 @@ def  celebA_conv_decoder(opts, input, output_dim, reuse,
     layer_x = input
     # Linear layers
     layer_x = ops.linear.Linear(opts, layer_x, np.prod(input.get_shape().as_list()[1:]),
-                                4*4*512, scope='hid0/lin')
+                                8*8*512, scope='hid0/lin')
     if opts['normalization']=='batchnorm':
         layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
                                 'hid0/bn', is_training, reuse)
     layer_x = ops._ops.non_linear(layer_x,'relu')
-    layer_x = tf.reshape(layer_x, [-1, 4, 4, 512])
+    layer_x = tf.reshape(layer_x, [-1, 8, 8, 512])
     # hidden 1
     _out_shape = [batch_size, 2*layer_x.get_shape().as_list()[1],
                                 2*layer_x.get_shape().as_list()[2],
@@ -363,9 +384,13 @@ def  celebA_conv_decoder(opts, input, output_dim, reuse,
     layer_x = ops._ops.non_linear(layer_x,'relu')
     # output layer
     outputs = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_shape=[batch_size,]+output_dim, filter_size=5,
-                                stride=2, scope='hid_final/deconv',
+                                output_shape=[batch_size,]+output_dim, filter_size=1,
+                                stride=1, scope='hid_final/deconv',
                                 init= opts['conv_init'])
+    # outputs = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
+    #                             output_shape=[batch_size,]+output_dim, filter_size=5,
+    #                             stride=2, scope='hid_final/deconv',
+    #                             init= opts['conv_init'])
 
     return outputs
 
