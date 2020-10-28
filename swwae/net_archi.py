@@ -108,7 +108,7 @@ def mnist_conv_encoder(opts, input, output_dim, reuse=False,
     # hidden 3
     layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
                                 output_dim=256, filter_size=4,
-                                stride=3, scope='hid2/conv',
+                                stride=3, scope='hid3/conv',
                                 init=opts['conv_init'])
     if opts['normalization']=='batchnorm':
         layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
