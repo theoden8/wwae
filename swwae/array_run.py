@@ -152,7 +152,7 @@ def main():
     opts['out_dir'] = os.path.join(results_dir,FLAGS.out_dir)
     if not tf.io.gfile.isdir(opts['out_dir']):
         utils.create_dir(opts['out_dir'])
-    out_subdir = os.path.join(opts['out_dir'], opts['model'] + '_' + str(int((FLAGS.id-1) / len(lambdas))))
+    out_subdir = os.path.join(opts['out_dir'], opts['model'] + '_' + str(int((FLAGS.id-1) / len(exp_config))))
     if not tf.io.gfile.isdir(out_subdir):
         utils.create_dir(out_subdir)
     exp_name = opts['cost']
