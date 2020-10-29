@@ -205,7 +205,8 @@ class Run(object):
             critic_opt = self.adam_discr_optimizer(lr=1e-4,beta1=0.5,beta2=0.9)
             critic_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                             scope='w1_critic')
-            self.w1_critic_opt = critic_opt.minimize(loss=self.critic_objective, var_list=critic_vars)
+            with tf.control_dependencies(self.extra_update_ops):
+                self.w1_critic_opt = critic_opt.minimize(loss=self.critic_objective, var_list=critic_vars)
             # weights clipping
             clip_ops = []
             for var in critic_vars:

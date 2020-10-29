@@ -4,7 +4,7 @@ from networks import critic
 
 import pdb
 
-def wgan(opts, x, y, reuse=False):
+def wgan(opts, x, y, is_training=False, reuse=False):
     """
     Compute the W1 between images intensities.
     x[b,h,w,c]: true observation
@@ -18,7 +18,7 @@ def wgan(opts, x, y, reuse=False):
     x_int = x / mx #[batch,w,h,c]
     y_int = y / my #[batch,w,h,c]
     # get pot.
-    critic_ouput = critic(opts, x-y, scope='w1_critic', reuse=reuse) #[batch,w,h,c]
+    critic_ouput = critic(opts, x-y, 'w1_critic', is_training, reuse) #[batch,w,h,c]
     # sum_diff
     cost = tf.reduce_sum(critic_ouput*(x_int-y_int), axis=[1,2]) #[batch,c]
     cost += opts['gamma'] * (1. - tf.reshape(my/mx,[-1,c]))**2
