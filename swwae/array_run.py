@@ -52,7 +52,9 @@ parser.add_argument("--disc_it", type=int, default=5,
 parser.add_argument("--critic_clip", type=str, default='none',
                     help='clipping method for the critic')
 parser.add_argument("--critic_archi", type=str, default='fullconv',
-                    help='clipping method for the critic')
+                    help='archi for the critic')
+parser.add_argument("--critic_normalization", type=str, default='none',
+                    help='normalization for the critic')
 parser.add_argument("--critic_pen", type=float, default=10.,
                     help='regularization weight for the critic')
 parser.add_argument("--id", type=int, default=0,
@@ -113,14 +115,20 @@ def main():
     # opts['wgan_critic_archi'] = critic_config[coef_id][0]
     # opts['wgan_critic_clip'] = critic_config[coef_id][2]
     # opts['d_updt_it'] = critic_config[coef_id][1]
-    opts['wgan_critic_archi'] = FLAGS.critic_archi
     opts['wgan_critic_clip'] = FLAGS.critic_clip
     opts['d_updt_it'] = FLAGS.disc_it
     opts['d_updt_freq'] = FLAGS.disc_freq
-    lambdas = [.01, .1, 1., 10., 100.]
-    coef_id = (FLAGS.id-1) % len(lambdas)
-    opts['lambda'] = lambdas[coef_id]
+    lambdas = [.1, 1., 10., 100.]
+    archi = ['mlp', 'fullconv']
+    bn = ['batchnorm', 'none']
+    exp_config = list(itertools.product(lambdas, archi, bn))
+    coef_id = (FLAGS.id-1) % len(exp_config)
+    opts['lambda'] = exp_config[coef_id][0]
     # opts['lambda'] = FLAGS.critic_pen
+    opts['wgan_critic_archi'] = exp_config[coef_id][1]
+    # opts['wgan_critic_archi'] = FLAGS.critic_archi
+    opts['wgan_critic_normalization'] = exp_config[coef_id][2]
+    # opts['wgan_critic_normalization'] = FLAGS.critic_normalization
     # sw ground cost
     opts['sw_proj_num'] = FLAGS.L
     opts['sw_proj_type'] = FLAGS.slicing_dist
@@ -155,10 +163,12 @@ def main():
     if opts['cost']=='wgan':
         # critic archi
         exp_name += '_' + opts['wgan_critic_archi']
+        # critic normalization
+        exp_name += '_' + opts['wgan_critic_normalization']
         # critic training setup
-        exp_name += '_dit' + str(opts['d_updt_it'])# + '_' + opts['wgan_critic_clip']
+        exp_name += '_dit' + str(opts['d_updt_it'])
         # critic reg
-        exp_name += '_lbm' + str(opts['lambda'])
+        exp_name += '_lbd' + str(opts['lambda'])
     if FLAGS.res_dir:
         exp_name += '_' + FLAGS.res_dir
     opts['exp_dir'] = os.path.join(out_subdir, exp_name)
@@ -175,7 +185,7 @@ def main():
     assert data.train_size >= opts['batch_size'], 'Training set too small'
 
     opts['it_num'] = FLAGS.num_it
-    opts['print_every'] = int(opts['it_num'] / 10.)
+    opts['print_every'] = int(opts['it_num'] / 5.)
     opts['evaluate_every'] = int(opts['print_every'] / 8.) + 1
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
