@@ -135,18 +135,13 @@ def critic(opts, inputs, scope=None, reuse=False):
         with tf.compat.v1.variable_scope(scope, reuse=reuse):
             # hidden 0
             layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
-                                        512, init=opts['mlp_init'],
+                                        1024, init=opts['mlp_init'],
                                         scope='hid0/lin')
             layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
             # hidden 1
             layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
-                                        512, init=opts['mlp_init'],
+                                        1024, init=opts['mlp_init'],
                                         scope='hid1/lin')
-            layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
-            # hidden 2
-            layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
-                                        512, init=opts['mlp_init'],
-                                        scope='hid2/lin')
             layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
             # final layer
             outputs = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
