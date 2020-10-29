@@ -40,7 +40,7 @@ def critic_reg(critic_ouput):
                 padding = [[0,0], [i,2-i], [j,2-j], [0,0]]
                 grad = tf.pad(critic_ouput, padding, mode='SYMMETRIC')-tf.pad(critic_ouput, [[0,0], [1,1], [1,1], [0,0]], mode='SYMMETRIC')
                 max_grad = tf.reduce_max(tf.abs(grad[:,1:-1,1:-1]), axis=[1,2])
-                if i==j or i==2 and j==0 or i==0 and j==2:
+                if i==j or (i==2 and j==0) or (i==0 and j==2):
                     # update max_grad_diag if needed
                     glob_max_grad = tf.maximum(max_grad / tf.sqrt(2.), glob_max_grad)
                 else:
