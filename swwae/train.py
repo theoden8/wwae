@@ -95,7 +95,7 @@ class Run(object):
                                     reuse=True)
 
         # --- FID score
-        if opts['fid']:
+        if self.opts['fid']:
             self.inception_graph = tf.Graph()
             self.inception_sess = tf.Session(graph=self.inception_graph)
             with self.inception_graph.as_default():
@@ -366,7 +366,7 @@ class Run(object):
                 else:
                     raise NotImplementedError('Model type not recognised')
 
-                if opts['fid']:
+                if self.opts['fid']:
                     FID_rec.append(fid_score(fid_inputs='reconstruction'))
                     FID_gen.append(fid_score(fid_inputs='samples'))
 
@@ -536,7 +536,7 @@ class Run(object):
         else:
             raise NotImplementedError('Model type not recognised')
 
-        if opts['fid']:
+        if self.opts['fid']:
             FID_rec.append(fid_score(fid_inputs='reconstruction'))
             FID_gen.append(fid_score(fid_inputs='samples'))
 
