@@ -21,6 +21,7 @@ def save_train(opts, data_train, data_test,
                      loss, loss_test,
                      loss_rec, loss_rec_test,
                      mse, mse_test,
+                     fid_rec, fid_gen,
                      loss_reg, loss_reg_test,
                      exp_dir,
                      filename):
@@ -34,7 +35,7 @@ def save_train(opts, data_train, data_test,
         img3    -   samples
         img4    -   loss curves
         img5    -   split loss curves
-        img6    -   mse
+        img6    -   mse/fid
 
     """
     num_pics = opts['plot_num_pics']
@@ -183,22 +184,31 @@ def save_train(opts, data_train, data_test,
     plt.legend(loc='upper right')
     plt.text(0.47, 1., 'Log split Loss curves', ha="center", va="bottom",
                                 size=20, transform=ax.transAxes)
-    ### The mse curves
+    ### The mse/fid curves
     base = plt.cm.get_cmap('tab10')
     color_list = base(np.linspace(0, 1, 6))
     ax = plt.subplot(gs[1, 2])
     # Test
     y = mse_test
     y = np.log(y[::x_step])
-    plt.plot(x, y, linewidth=4, color=color_list[0], label='MSE test')
+    plt.plot(x, y, linewidth=4, color=color_list[2], label='MSE test')
     # Train
     y = mse
     y = np.log(y[::x_step])
-    plt.plot(x, y, linewidth=4, color=color_list[0], linestyle='--', label='MSE')
+    plt.plot(x, y, linewidth=4, color=color_list[2], linestyle='--', label='MSE')
+    if len(fid_rec)>0:
+        # FID rec
+        y = fid_rec
+        y = np.log(y[::x_step])
+        plt.plot(x, y, linewidth=4, color=color_list[0], label='FID rec')
+        # FID rec
+        y = fid_gen
+        y = np.log(y[::x_step])
+        plt.plot(x, y, linewidth=4, color=color_list[1], label='FID gen')
 
     plt.grid(axis='y')
     plt.legend(loc='upper right')
-    plt.text(0.47, 1., 'MSE curves', ha="center", va="bottom",
+    plt.text(0.47, 1., 'MSE/FID curves', ha="center", va="bottom",
                                 size=20, transform=ax.transAxes)
 
     ### Saving plots
