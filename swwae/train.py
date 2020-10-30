@@ -238,6 +238,7 @@ class Run(object):
         Loss, Loss_test, Loss_rec, Loss_rec_test = [], [], [], []
         Loss_reg, Loss_reg_test = [], []
         MSE, MSE_test = [], []
+        FID_rec, FID_gen = [], []
         if self.opts['vizu_encSigma']:
             enc_Sigmas = []
         # - Init decay lr and beta
@@ -299,7 +300,7 @@ class Run(object):
 
             ##### TESTING LOOP #####
             if it % self.opts['evaluate_every'] == 0:
-                logging.error('\nIteration {}/{}'.format(it, self.opts['it_num']))
+                # logging.error('\nIteration {}/{}'.format(it, self.opts['it_num']))
                 feed_dict={self.data.handle: self.train_handle,
                                 self.beta: self.opts['beta'],
                                 self.is_training: False}
@@ -341,7 +342,8 @@ class Run(object):
                 Loss_reg_test.append(loss_reg)
 
                 # Printing various loss values
-                debug_str = 'ITER: %d/%d, ' % (it, self.opts['it_num'])
+                logging.error('')
+                debug_str = 'IT: %d/%d, ' % (it, self.opts['it_num'])
                 logging.error(debug_str)
                 debug_str = 'TRAIN LOSS=%.3f, TEST LOSS=%.3f' % (Loss[-1],Loss_test[-1])
                 logging.error(debug_str)
@@ -352,17 +354,22 @@ class Run(object):
                                             MSE_test[-1])
                 logging.error(debug_str)
                 if self.opts['model'] == 'BetaVAE':
-                    debug_str = 'beta*KL=%10.3e, beta*TEST KL=%10.3e, \n '  % (
+                    debug_str = 'beta*KL=%10.3e, beta*TEST KL=%10.3e'  % (
                                             Loss_reg[-1],
                                             Loss_reg_test[-1])
                     logging.error(debug_str)
                 elif self.opts['model'] == 'WAE':
-                    debug_str = 'beta*MMD=%10.3e, beta*TEST MMD=%10.3e \n ' % (
+                    debug_str = 'beta*MMD=%10.3e, beta*TEST MMD=%10.3e' % (
                                             Loss_reg[-1],
                                             Loss_reg_test[-1])
                     logging.error(debug_str)
                 else:
                     raise NotImplementedError('Model type not recognised')
+
+                if opts['fid']:
+                    FID_rec.append(fid_score(fid_inputs='reconstruction'))
+                    FID_gen.append(fid_score(fid_inputs='samples'))
+
             ##### Vizu LOOP #####
             if it % self.opts['print_every'] == 0:
                 # - Encode, decode and sample
@@ -389,6 +396,7 @@ class Run(object):
                           Loss, Loss_test,                                      # loss
                           Loss_rec, Loss_rec_test,                              # rec loss
                           MSE, MSE_test,                                        # mse
+                          FID_rec, FID_gen,                                     # FID
                           Loss_reg, Loss_reg_test,                              # divergence terms
                           exp_dir,                                              # working directory
                           'res_it%07d.png' % (it))                              # filename
@@ -460,7 +468,8 @@ class Run(object):
 
             # - logging
             if (it)%50000 ==0 :
-                logging.error('Train it.: {}/{} \n'.format(it,self.opts['it_num']))
+                logging.error('')
+                logging.error('Train it.: {}/{}'.format(it,self.opts['it_num']))
 
         # - Save the final model
         if self.opts['save_final'] and it > 0:
@@ -504,27 +513,32 @@ class Run(object):
         Loss_reg_test.append(loss_reg)
 
         # Printing various loss values
+        logging.error('')
         logging.error('Training done.')
         debug_str = 'TRAIN LOSS=%.3f, TEST LOSS=%.3f' % (Loss[-1],Loss_test[-1])
         logging.error(debug_str)
-        debug_str = 'REC=%.3f, TEST REC=%.3f, MSE=%10.3e, TEST MSE=%10.3e, \n '  % (
+        debug_str = 'REC=%.3f, TEST REC=%.3f, MSE=%10.3e, TEST MSE=%10.3e'  % (
                                         Loss_rec[-1],
                                         Loss_rec_test[-1],
                                         MSE[-1],
                                         MSE_test[-1])
         logging.error(debug_str)
         if self.opts['model'] == 'BetaVAE':
-            debug_str = 'beta*KL=%10.3e, beta*TEST KL=%10.3e, \n '  % (
+            debug_str = 'beta*KL=%10.3e, beta*TEST KL=%10.3e'  % (
                                         Loss_reg[-1],
                                         Loss_reg_test[-1])
             logging.error(debug_str)
         elif self.opts['model'] == 'WAE':
-            debug_str = 'beta*MMD=%10.3e, beta*TEST MMD=%10.3e \n ' % (
+            debug_str = 'beta*MMD=%10.3e, beta*TEST MMD=%10.3e' % (
                                         Loss_reg[-1],
                                         Loss_reg_test[-1])
             logging.error(debug_str)
         else:
             raise NotImplementedError('Model type not recognised')
+
+        if opts['fid']:
+            FID_rec.append(fid_score(fid_inputs='reconstruction'))
+            FID_gen.append(fid_score(fid_inputs='samples'))
 
         # - save training data
         if self.opts['save_train_data']:
@@ -801,7 +815,11 @@ class Run(object):
                                         generations,
                                         opts['exp_dir'])
 
-    def fid_score(self, MODEL_PATH, WEIGHTS_FILE, COMPUTE_DATASET_STASTICS, fid_inputs='samples'):
+    def fid_score(self, load_trained_model=False, MODEL_PATH=None,
+                                        WEIGHTS_FILE=None,
+                                        compute_dataset_statistics=False,
+                                        fid_inputs='samples',
+                                        save_score=False):
         """
         Compute FID score
         """
@@ -809,12 +827,13 @@ class Run(object):
         opts = self.opts
 
         # --- Load trained weights
-        if not tf.gfile.IsDirectory(MODEL_PATH):
-            raise Exception("model doesn't exist")
-        WEIGHTS_PATH = os.path.join(MODEL_PATH,'checkpoints',WEIGHTS_FILE)
-        if not tf.gfile.Exists(WEIGHTS_PATH+".meta"):
-            raise Exception("weights file doesn't exist")
-        self.saver.restore(self.sess, WEIGHTS_PATH)
+        if load_trained_model:
+            if not tf.gfile.IsDirectory(MODEL_PATH):
+                raise Exception("model doesn't exist")
+            WEIGHTS_PATH = os.path.join(MODEL_PATH,'checkpoints',WEIGHTS_FILE)
+            if not tf.gfile.Exists(WEIGHTS_PATH+".meta"):
+                raise Exception("weights file doesn't exist")
+            self.saver.restore(self.sess, WEIGHTS_PATH)
 
         if self.data.dataset == 'celebA':
             compare_dataset_name = 'celeba_stats.npz'
@@ -836,7 +855,7 @@ class Run(object):
         stats_path = os.path.join(fid_dir, compare_dataset_name)
 
         # --- Compute stats on real dataset if needed
-        if COMPUTE_DATASET_STASTICS:
+        if not os.path.isfile(stats_path) or compute_dataset_statistics:
             preds_list = []
             for n in range(batch_num):
                 batch_id = np.random.randint(full_size, size=batch_size)
@@ -854,8 +873,6 @@ class Run(object):
             # saving stats
             np.savez(stats_path, m=mu, s=sigma)
         else:
-            if not os.path.isfile(stats_path):
-                raise NotImplementedError('No statistics found for given dataset')
             stats = np.load(stats_path)
             mu = stats['m']
             sigma = stats['s']
@@ -901,8 +918,13 @@ class Run(object):
         # --- Logging
         debug_str = 'FID={:.3f} for {} data'.format(fid_scores, test_size)
         logging.error(debug_str)
-        fid_res_dir = os.path.join(MODEL_PATH,fid_dir)
-        if not tf.io.gfile.isdir(fid_res_dir):
-            utils.create_dir(fid_res_dir)
-        filename = 'fid_' + fid_inputs
-        np.save(os.path.join(fid_res_dir,filename),fid_scores)
+
+        # --- Saving
+        if save_score:
+            fid_res_dir = os.path.join(MODEL_PATH,fid_dir)
+            if not tf.io.gfile.isdir(fid_res_dir):
+                utils.create_dir(fid_res_dir)
+            filename = 'fid_' + fid_inputs
+            np.save(os.path.join(fid_res_dir,filename),fid_scores)
+
+        return fid_scores
