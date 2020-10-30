@@ -137,17 +137,11 @@ def critic(opts, inputs, scope=None, is_training=False, reuse=False):
             layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
                                         1024, init=opts['mlp_init'],
                                         scope='hid0/lin')
-            if opts['wgan_critic_normalization']=='batchnorm':
-                layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
-                                        'hid0/bn', is_training, reuse)
             layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
             # hidden 1
             layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
                                         1024, init=opts['mlp_init'],
                                         scope='hid1/lin')
-            if opts['wgan_critic_normalization']=='batchnorm':
-                layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
-                                        'hid1/bn', is_training, reuse)
             layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
             # final layer
             outputs = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
@@ -162,28 +156,22 @@ def critic(opts, inputs, scope=None, is_training=False, reuse=False):
                                         output_dim=32, filter_size=4,
                                         stride=2, scope='hid0/conv',
                                         init=opts['conv_init'])
-            if opts['wgan_critic_normalization']=='batchnorm':
-                layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
-                                        'hid0/bn', is_training, reuse)
             layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
             # hidden 1
             layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
                                         output_dim=64, filter_size=4,
                                         stride=2, scope='hid1/conv',
                                         init=opts['conv_init'])
-            if opts['wgan_critic_normalization']=='batchnorm':
-                layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
-                                        'hid1/bn', is_training, reuse)
             layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
-            # hidden 2
-            layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                        output_dim=128, filter_size=4,
-                                        stride=2, scope='hid2/conv',
-                                        init=opts['conv_init'])
-            if opts['wgan_critic_normalization']=='batchnorm':
-                layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
-                                        'hid2/bn', is_training, reuse)
-            layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+            # # hidden 2
+            # layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+            #                             output_dim=128, filter_size=4,
+            #                             stride=2, scope='hid2/conv',
+            #                             init=opts['conv_init'])
+            # if opts['wgan_critic_normalization']=='batchnorm':
+            #     layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
+            #                             'hid2/bn', is_training, reuse)
+            # layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
             # final layer
             outputs = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
                                         np.prod(in_shape),
@@ -197,9 +185,6 @@ def critic(opts, inputs, scope=None, is_training=False, reuse=False):
                                         output_dim=32, filter_size=3,
                                         stride=2, scope='hid0/conv',
                                         init=opts['conv_init'])
-            if opts['wgan_critic_normalization']=='batchnorm':
-                layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
-                                        'hid0/bn', is_training, reuse)
             layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
             # hidden 1
             layer_x = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
@@ -207,9 +192,6 @@ def critic(opts, inputs, scope=None, is_training=False, reuse=False):
                                         filter_size=3,
                                         stride=2, scope='hid1/deconv',
                                         init=opts['conv_init'])
-            if opts['wgan_critic_normalization']=='batchnorm':
-                layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
-                                        'hid1/bn', is_training, reuse)
             layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
             # final layer
             outputs = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
@@ -218,13 +200,6 @@ def critic(opts, inputs, scope=None, is_training=False, reuse=False):
                                         init= opts['conv_init'])
     else:
         raise ValueError('Unknown {} archi for critic' % opts['wgan_critic_archi'])
-    # clipping outputs
-    if opts['wgan_critic_clip']=='piecewise':
-        outputs = tf.math.minimum(.5, tf.math.maximum(-.5, outputs))
-    elif opts['wgan_critic_clip']=='tanh':
-        outputs = .5*tf.nn.tanh(outputs)
-    # else:
-    #     raise ValueError('Unknown {} clipping' % opts['wgan_critic_clip'])
 
     return tf.reshape(outputs, [-1,]+in_shape)
 

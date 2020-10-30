@@ -49,12 +49,8 @@ parser.add_argument("--disc_freq", type=int, default=1,
                     help='discriminator update frequency for aversarial sw')
 parser.add_argument("--disc_it", type=int, default=5,
                     help='it. num. when updating discriminator for aversarial sw')
-parser.add_argument("--critic_clip", type=str, default='none',
-                    help='clipping method for the critic')
 parser.add_argument("--critic_archi", type=str, default='fullconv',
                     help='archi for the critic')
-parser.add_argument("--critic_normalization", type=str, default='none',
-                    help='normalization for the critic')
 parser.add_argument("--critic_pen", type=float, default=10.,
                     help='regularization weight for the critic')
 parser.add_argument("--id", type=int, default=0,
@@ -109,26 +105,20 @@ def main():
     # wgan ground cost
     # critic_net = ['mlp', 'conv', 'fullconv']
     # critic_it = [1, 5, 10]
-    # critic_clip = ['piecewise', 'tanh']
-    # critic_config = list(itertools.product(critic_net,critic_it,critic_clip))
+    # critic_config = list(itertools.product(critic_net,critic_it))
     # coef_id = (FLAGS.id-1) % len(critic_config)
     # opts['wgan_critic_archi'] = critic_config[coef_id][0]
-    # opts['wgan_critic_clip'] = critic_config[coef_id][2]
     # opts['d_updt_it'] = critic_config[coef_id][1]
-    opts['wgan_critic_clip'] = FLAGS.critic_clip
     opts['d_updt_it'] = FLAGS.disc_it
     opts['d_updt_freq'] = FLAGS.disc_freq
     lambdas = [.1, 1., 10., 100.]
-    archi = ['mlp', 'fullconv']
-    bn = ['batchnorm', 'none']
-    exp_config = list(itertools.product(lambdas, archi, bn))
+    archi = ['mlp', 'conv', 'fullconv']
+    exp_config = list(itertools.product(archi, lambdas))
     coef_id = (FLAGS.id-1) % len(exp_config)
-    opts['lambda'] = exp_config[coef_id][0]
+    opts['lambda'] = exp_config[coef_id][1]
     # opts['lambda'] = FLAGS.critic_pen
-    opts['wgan_critic_archi'] = exp_config[coef_id][1]
+    opts['wgan_critic_archi'] = exp_config[coef_id][0]
     # opts['wgan_critic_archi'] = FLAGS.critic_archi
-    opts['wgan_critic_normalization'] = exp_config[coef_id][2]
-    # opts['wgan_critic_normalization'] = FLAGS.critic_normalization
     # sw ground cost
     opts['sw_proj_num'] = FLAGS.L
     opts['sw_proj_type'] = FLAGS.slicing_dist
@@ -163,8 +153,6 @@ def main():
     if opts['cost']=='wgan':
         # critic archi
         exp_name += '_' + opts['wgan_critic_archi']
-        # critic normalization
-        exp_name += '_' + opts['wgan_critic_normalization']
         # critic training setup
         exp_name += '_dit' + str(opts['d_updt_it'])
         # critic reg
