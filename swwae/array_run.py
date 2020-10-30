@@ -116,7 +116,7 @@ def main():
     coef_id = (FLAGS.id-1) % len(exp_config)
     opts['lambda'] = exp_config[coef_id][0]
     # opts['lambda'] = FLAGS.critic_pen
-    opts['d_updt_it'] = critic_config[coef_id][1]
+    opts['d_updt_it'] = exp_config[coef_id][1]
     # opts['wgan_critic_archi'] = exp_config[coef_id][0]
     opts['wgan_critic_archi'] = FLAGS.critic_archi
     # sw ground cost
