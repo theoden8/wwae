@@ -367,8 +367,8 @@ class Run(object):
                     raise NotImplementedError('Model type not recognised')
 
                 if self.opts['fid']:
-                    FID_rec.append(fid_score(fid_inputs='reconstruction'))
-                    FID_gen.append(fid_score(fid_inputs='samples'))
+                    FID_rec.append(self.fid_score(fid_inputs='reconstruction'))
+                    FID_gen.append(self.fid_score(fid_inputs='samples'))
 
             ##### Vizu LOOP #####
             if it % self.opts['print_every'] == 0:
@@ -537,8 +537,8 @@ class Run(object):
             raise NotImplementedError('Model type not recognised')
 
         if self.opts['fid']:
-            FID_rec.append(fid_score(fid_inputs='reconstruction'))
-            FID_gen.append(fid_score(fid_inputs='samples'))
+            FID_rec.append(self.fid_score(fid_inputs='reconstruction'))
+            FID_gen.append(self.fid_score(fid_inputs='samples'))
 
         # - save training data
         if self.opts['save_train_data']:
