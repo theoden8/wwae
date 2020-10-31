@@ -47,7 +47,7 @@ parser.add_argument("--gamma", type=float, default=1.,
                     help='weight for mass reg. in ground cost')
 parser.add_argument("--disc_freq", type=int, default=1,
                     help='discriminator update frequency for aversarial sw')
-parser.add_argument("--disc_it", type=int, default=10,
+parser.add_argument("--disc_it", type=int, default=1,
                     help='it. num. when updating discriminator for aversarial sw')
 parser.add_argument("--critic_archi", type=str, default='fullconv',
                     help='archi for the critic')
@@ -127,7 +127,7 @@ def main():
         opts['batch_size'] = FLAGS.batch_size
     if FLAGS.lr:
         opts['lr'] = FLAGS.lr
-    betas = [1., 5., 10. 25., 50., 100.]
+    betas = [1., 5., 10., 25., 50., 100.]
     coef_id = (FLAGS.id-1) % len(betas)
     opts['beta'] = betas[coef_id]
     # opts['beta'] = FLAGS.beta
@@ -145,7 +145,7 @@ def main():
     out_subsubdir = os.path.join(out_subdir, opts['cost'] + '_' + str(int((FLAGS.id-1) / len(betas))))
     if not tf.io.gfile.isdir(out_subsubdir):
         utils.create_dir(out_subsubdir)
-    exp_name = 'beta_' + int(opts['beta']) + '_' + opts['cost']
+    exp_name = 'beta_' + str(opts['beta']) + '_' + opts['cost']
     if opts['cost']=='sw':
         exp_name += '_' + opts['sw_proj_type'] + '_L' + str(opts['sw_proj_num'])
         if opts['sw_proj_type']=='max-sw' or opts['sw_proj_type']=='max-gsw':
