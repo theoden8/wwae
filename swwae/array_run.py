@@ -51,7 +51,7 @@ parser.add_argument("--disc_it", type=int, default=10,
                     help='it. num. when updating discriminator for aversarial sw')
 parser.add_argument("--critic_archi", type=str, default='fullconv',
                     help='archi for the critic')
-parser.add_argument("--critic_pen", type=float, default=10.,
+parser.add_argument("--critic_pen", type=float, default=1.,
                     help='regularization weight for the critic')
 parser.add_argument("--id", type=int, default=0,
                     help='exp. config. id')
@@ -104,26 +104,25 @@ def main():
     opts['gamma'] = FLAGS.gamma
     # wgan ground cost
     # critic_net = ['mlp', 'conv', 'fullconv']
-    critic_it = [1, 10, 50]
     # critic_config = list(itertools.product(critic_net,critic_it))
     # coef_id = (FLAGS.id-1) % len(critic_config)
     # opts['wgan_critic_archi'] = critic_config[coef_id][0]
     # opts['d_updt_it'] = FLAGS.disc_it
-    opts['d_updt_freq'] = FLAGS.disc_freq
-    lambdas = [.1, 1., 10., 100.]
-    # archi = ['mlp', 'conv', 'fullconv']
-    exp_config = list(itertools.product(critic_it, lambdas))
+    # opts['d_updt_freq'] = FLAGS.disc_freq
+    # opts['wgan_critic_archi'] = FLAGS.critic_archi
+    opts['lambda'] = FLAGS.critic_pen
+    critic_it = [1, 5, 10]
+    critic_freq = [1, 5, 10]
+    crtici_archi = ['mlp', 'fullconv']
+    exp_config = list(itertools.product(critic_it, critic_freq, crtici_archi))
     coef_id = (FLAGS.id-1) % len(exp_config)
-    opts['lambda'] = exp_config[coef_id][1]
-    # opts['lambda'] = FLAGS.critic_pen
+    # opts['lambda'] = exp_config[coef_id][1]
+    opts['d_updt_freq'] = exp_config[coef_id][1]
     opts['d_updt_it'] = exp_config[coef_id][0]
-    # opts['wgan_critic_archi'] = exp_config[coef_id][0]
-    opts['wgan_critic_archi'] = FLAGS.critic_archi
+    opts['wgan_critic_archi'] = exp_config[coef_id][2]
     # sw ground cost
     opts['sw_proj_num'] = FLAGS.L
     opts['sw_proj_type'] = FLAGS.slicing_dist
-    # opts['d_updt_freq'] = FLAGS.disc_freq
-    # opts['d_updt_it'] = FLAGS.disc_it
     # Model set up
     opts['model'] = FLAGS.model
     opts['decoder'] = FLAGS.decoder
@@ -142,7 +141,7 @@ def main():
     opts['out_dir'] = os.path.join(results_dir,FLAGS.out_dir)
     if not tf.io.gfile.isdir(opts['out_dir']):
         utils.create_dir(opts['out_dir'])
-    out_subdir = os.path.join(opts['out_dir'], opts['model'] + '_' + str(int((FLAGS.id-1) / len(exp_config))))
+    out_subdir = os.path.join(opts['out_dir'], opts['model']) # + '_' + str(int((FLAGS.id-1) / len(exp_config))))
     if not tf.io.gfile.isdir(out_subdir):
         utils.create_dir(out_subdir)
     exp_name = opts['cost']
@@ -154,9 +153,11 @@ def main():
         # critic archi
         exp_name += '_' + opts['wgan_critic_archi']
         # critic training setup
+        exp_name += '_dfreq' + str(opts['d_updt_freq'])
+        # critic reg
         exp_name += '_dit' + str(opts['d_updt_it'])
         # critic reg
-        exp_name += '_lbd' + str(opts['lambda'])
+        exp_name += '_l' + str(opts['lambda'])
     if FLAGS.res_dir:
         exp_name += '_' + FLAGS.res_dir
     opts['exp_dir'] = os.path.join(out_subdir, exp_name)

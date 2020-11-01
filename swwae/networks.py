@@ -130,7 +130,14 @@ def critic(opts, inputs, scope=None, is_training=False, reuse=False):
     outputs: [batch,w,h,c]
     """
     batch_size, in_shape =  tf.shape(inputs)[0], inputs.get_shape().as_list()[1:]
-    if opts['wgan_critic_archi']=='mlp':
+    if opts['wgan_critic_archi']=='coef':
+        layer_x = inputs
+        with tf.compat.v1.variable_scope(scope, reuse=reuse):
+            coef = tf.compat.v1.get_variable("W", in_shape, tf.float32,
+                    tf.random_normal_initializer(stddev=opts['init_std']))
+            # element-wsie multi
+            outputs = layer_x*coef
+    elif opts['wgan_critic_archi']=='mlp':
         layer_x = tf.compat.v1.layers.flatten(inputs)
         with tf.compat.v1.variable_scope(scope, reuse=reuse):
             # hidden 0
@@ -163,15 +170,6 @@ def critic(opts, inputs, scope=None, is_training=False, reuse=False):
                                         stride=2, scope='hid1/conv',
                                         init=opts['conv_init'])
             layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
-            # # hidden 2
-            # layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-            #                             output_dim=128, filter_size=4,
-            #                             stride=2, scope='hid2/conv',
-            #                             init=opts['conv_init'])
-            # if opts['wgan_critic_normalization']=='batchnorm':
-            #     layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
-            #                             'hid2/bn', is_training, reuse)
-            # layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
             # final layer
             outputs = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
                                         np.prod(in_shape),
@@ -202,22 +200,3 @@ def critic(opts, inputs, scope=None, is_training=False, reuse=False):
         raise ValueError('Unknown {} archi for critic' % opts['wgan_critic_archi'])
 
     return tf.reshape(outputs, [-1,]+in_shape)
-
-def obs_discriminator(opts, inputs, scope=None,
-                                    reuse=False):
-    """
-    Discriminator network to transform RGB images
-    inputs: [batch,w,h,c]
-    outputs: [batch,w,h,1]
-    """
-    in_shape = inputs.get_shape().as_list()[1:]
-    layer_x = tf.compat.v1.layers.flatten(inputs)
-    with tf.compat.v1.variable_scope(scope, reuse=reuse):
-
-        outputs = ops.linear.Linear(opts, layer_x,
-                                    np.prod(in_shape),
-                                    np.prod(in_shape[:-1]),
-                                    init=opts['mlp_init'],
-                                    scope='hid_final')
-
-    return tf.reshape(tf.nn.sigmoid(outputs),[-1,in_shape[0],in_shape[1],1])

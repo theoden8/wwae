@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 import math
 
-from networks import encoder, decoder, obs_discriminator
+from networks import encoder, decoder
 from datahandler import datashapes
 from loss_functions import wae_ground_cost, cross_entropy_loss
 import utils
