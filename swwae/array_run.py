@@ -109,12 +109,11 @@ def main():
     # opts['wgan_critic_archi'] = critic_config[coef_id][0]
     # opts['d_updt_it'] = FLAGS.disc_it
     # opts['d_updt_freq'] = FLAGS.disc_freq
-    # opts['wgan_critic_archi'] = FLAGS.critic_archi
+    opts['wgan_critic_archi'] = FLAGS.critic_archi
     opts['lambda'] = FLAGS.critic_pen
     critic_it = [1, 5, 10]
     critic_freq = [1, 5, 10]
-    crtici_archi = ['mlp', 'fullconv']
-    exp_config = list(itertools.product(critic_it, critic_freq, crtici_archi))
+    exp_config = list(itertools.product(critic_it, critic_freq))
     coef_id = (FLAGS.id-1) % len(exp_config)
     # opts['lambda'] = exp_config[coef_id][1]
     opts['d_updt_freq'] = exp_config[coef_id][1]
