@@ -118,7 +118,6 @@ def main():
     # opts['lambda'] = exp_config[coef_id][1]
     opts['d_updt_freq'] = exp_config[coef_id][1]
     opts['d_updt_it'] = exp_config[coef_id][0]
-    opts['wgan_critic_archi'] = exp_config[coef_id][2]
     # sw ground cost
     opts['sw_proj_num'] = FLAGS.L
     opts['sw_proj_type'] = FLAGS.slicing_dist
