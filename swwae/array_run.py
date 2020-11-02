@@ -147,7 +147,7 @@ def main():
         exp_name += '_' + opts['sw_proj_type'] + '_L' + str(opts['sw_proj_num'])
         if opts['sw_proj_type']=='max-sw' or opts['sw_proj_type']=='max-gsw':
             exp_name += '_dfreq' + str(opts['d_updt_freq']) + '_dit' + str(opts['d_updt_it'])
-    if opts['cost']=='wgan':
+    if opts['cost']=='wgan' or opts['cost']=='wgan_v2':
         # critic archi
         exp_name += '_' + opts['wgan_critic_archi']
         # critic training setup
