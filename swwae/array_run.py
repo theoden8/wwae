@@ -110,14 +110,15 @@ def main():
     # opts['d_updt_it'] = FLAGS.disc_it
     # opts['d_updt_freq'] = FLAGS.disc_freq
     opts['wgan_critic_archi'] = FLAGS.critic_archi
-    opts['lambda'] = FLAGS.critic_pen
+    # opts['lambda'] = FLAGS.critic_pen
+    lambdas = [0.1, 1.]
     critic_it = [1, 5, 10]
     critic_freq = [1, 5, 10]
-    exp_config = list(itertools.product(critic_it, critic_freq))
+    exp_config = list(itertools.product(lambdas, critic_it, critic_freq))
     coef_id = (FLAGS.id-1) % len(exp_config)
-    # opts['lambda'] = exp_config[coef_id][1]
-    opts['d_updt_freq'] = exp_config[coef_id][1]
-    opts['d_updt_it'] = exp_config[coef_id][0]
+    opts['lambda'] = exp_config[coef_id][0]
+    opts['d_updt_freq'] = exp_config[coef_id][2]
+    opts['d_updt_it'] = exp_config[coef_id][1]
     # sw ground cost
     opts['sw_proj_num'] = FLAGS.L
     opts['sw_proj_type'] = FLAGS.slicing_dist
