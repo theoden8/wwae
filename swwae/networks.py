@@ -180,14 +180,14 @@ def critic(opts, inputs, scope=None, is_training=False, reuse=False):
         with tf.compat.v1.variable_scope(scope, reuse=reuse):
             # hidden 0
             layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                        output_dim=32, filter_size=3,
+                                        output_dim=64, filter_size=4,
                                         stride=2, scope='hid0/conv',
                                         init=opts['conv_init'])
             layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
             # hidden 1
             layer_x = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
                                         output_shape=[batch_size,in_shape[0],in_shape[1],32],
-                                        filter_size=3,
+                                        filter_size=4,
                                         stride=2, scope='hid1/deconv',
                                         init=opts['conv_init'])
             layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
