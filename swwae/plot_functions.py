@@ -190,20 +190,20 @@ def save_train(opts, data_train, data_test,
     ax = plt.subplot(gs[1, 2])
     # Test
     y = mse_test
-    y = np.log(y[::x_step])
+    y = y[::x_step]
     plt.plot(x, y, linewidth=4, color=color_list[2], label='MSE test')
     # Train
     y = mse
-    y = np.log(y[::x_step])
+    y = y[::x_step]
     plt.plot(x, y, linewidth=4, color=color_list[2], linestyle='--', label='MSE')
     if len(fid_rec)>0:
         # FID rec
         y = fid_rec
-        y = np.log(y[::x_step])
+        y = y[::x_step]
         plt.plot(x, y, linewidth=4, color=color_list[0], label='FID rec')
         # FID rec
         y = fid_gen
-        y = np.log(y[::x_step])
+        y = y[::x_step]
         plt.plot(x, y, linewidth=4, color=color_list[1], label='FID gen')
 
     plt.grid(axis='y')

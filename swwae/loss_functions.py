@@ -6,7 +6,7 @@ import math as m
 from utils import get_batch_size
 from ops._ops import logsumexp
 from sw import sw
-from wgan import wgan
+from wgan import wgan, wgan_v2 
 
 import pdb
 
@@ -118,6 +118,8 @@ def wae_ground_cost(opts, x1, x2, is_training=False, reuse=False):
         cost = sw(opts, x1, x2, reuse=reuse)
     elif opts['cost'] == 'wgan':
         cost, critic_reg = wgan(opts, x1, x2, is_training=is_training, reuse=reuse)
+    elif opts['cost'] == 'wgan_v2':
+        cost = wgan_v2(opts, x1, x2, is_training=is_training, reuse=reuse)
     else:
         assert False, 'Unknown cost function %s' % opts['cost']
     return cost, critic_reg
