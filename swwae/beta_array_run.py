@@ -45,9 +45,9 @@ parser.add_argument("--L", type=int, default=32,
                     help='Number of slices')
 parser.add_argument("--gamma", type=float, default=1.,
                     help='weight for mass reg. in ground cost')
-parser.add_argument("--disc_freq", type=int, default=1,
+parser.add_argument("--disc_freq", type=int, default=5,
                     help='discriminator update frequency for aversarial sw')
-parser.add_argument("--disc_it", type=int, default=1,
+parser.add_argument("--disc_it", type=int, default=5,
                     help='it. num. when updating discriminator for aversarial sw')
 parser.add_argument("--critic_archi", type=str, default='fullconv',
                     help='archi for the critic')
@@ -142,7 +142,7 @@ def main():
     out_subdir = os.path.join(opts['out_dir'], opts['model'])
     if not tf.io.gfile.isdir(out_subdir):
         utils.create_dir(out_subdir)
-    out_subsubdir = os.path.join(out_subdir, opts['cost'] + '_' + str(int((FLAGS.id-1) / len(betas))))
+    out_subsubdir = os.path.join(out_subdir, opts['cost']) # + '_' + str(int((FLAGS.id-1) / len(betas))))
     if not tf.io.gfile.isdir(out_subsubdir):
         utils.create_dir(out_subsubdir)
     exp_name = 'beta_' + str(opts['beta']) + '_' + opts['cost']
