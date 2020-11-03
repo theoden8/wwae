@@ -18,7 +18,8 @@ def wgan(opts, x, y, is_training=False, reuse=False):
     x_int = x / mx #[batch,w,h,c]
     y_int = y / my #[batch,w,h,c]
     # get pot.
-    critic_ouput = critic(opts, x-y, 'w1_critic', is_training, reuse) #[batch,w,h,c]
+    # critic_ouput = critic(opts, x-y, 'w1_critic', is_training, reuse) #[batch,w,h,c]
+    critic_ouput = critic(opts, x_int-y_int, 'w1_critic', is_training, reuse) #[batch,w,h,c]
     # sum_diff
     cost = tf.reduce_sum(critic_ouput*(x_int-y_int), axis=[1,2]) #[batch,c]
     cost += opts['gamma'] * (1. - tf.reshape(my/mx,[-1,c]))**2
