@@ -115,6 +115,9 @@ def main():
     critic_it = [1, 5, 10]
     critic_freq = [1, 5, 10]
     exp_config = list(itertools.product(lambdas, critic_it, critic_freq))
+    exp_to_remove = [(0.1,1,5),(0.1,1,10),(1.,1,5),(1.,1,10)]
+    for exp in exp_to_remove:
+        exp_config.remove(exp)
     coef_id = (FLAGS.id-1) % len(exp_config)
     opts['lambda'] = exp_config[coef_id][0]
     opts['d_updt_freq'] = exp_config[coef_id][2]
