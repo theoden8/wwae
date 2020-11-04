@@ -103,21 +103,19 @@ def main():
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
     opts['gamma'] = FLAGS.gamma
     # wgan ground cost
-    opts['d_updt_it'] = FLAGS.disc_it
-    opts['d_updt_freq'] = FLAGS.disc_freq
     opts['lambda'] = FLAGS.critic_pen
     opts['wgan_critic_archi'] = FLAGS.critic_archi
-    # lambdas = [.1, 1., 10., 100.]
-    # archi = ['mlp', 'conv', 'fullconv']
-    # exp_config = list(itertools.product(archi, lambdas))
-    # coef_id = (FLAGS.id-1) % len(exp_config)
-    # opts['lambda'] = exp_config[coef_id][1]
-    # opts['wgan_critic_archi'] = exp_config[coef_id][0]
+    freq = [1,5,10]
+    betas = [1.,5.,10.,25.,50.,75.,100.]
+    exp_config = list(itertools.product(freq, betas))
+    coef_id = (FLAGS.id-1) % len(exp_config)
+    opts['d_updt_it'] = exp_config[coef_id][0]
+    opts['d_updt_freq'] = exp_config[coef_id][0]
+    # opts['d_updt_it'] = FLAGS.disc_it
+    # opts['d_updt_freq'] = FLAGS.disc_freq
     # sw ground cost
     opts['sw_proj_num'] = FLAGS.L
     opts['sw_proj_type'] = FLAGS.slicing_dist
-    # opts['d_updt_freq'] = FLAGS.disc_freq
-    # opts['d_updt_it'] = FLAGS.disc_it
     # Model set up
     opts['model'] = FLAGS.model
     opts['decoder'] = FLAGS.decoder
@@ -127,9 +125,7 @@ def main():
         opts['batch_size'] = FLAGS.batch_size
     if FLAGS.lr:
         opts['lr'] = FLAGS.lr
-    betas = [1., 5., 10., 25., 50., 100.]
-    coef_id = (FLAGS.id-1) % len(betas)
-    opts['beta'] = betas[coef_id]
+    opts['beta'] = exp_config[coef_id][1]
     # opts['beta'] = FLAGS.beta
 
     # Create directories
