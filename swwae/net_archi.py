@@ -409,6 +409,16 @@ def mlp_critic(opts, inputs, scope=None, is_training=False, reuse=False):
                                     1024, init=opts['mlp_init'],
                                     scope='hid1/lin')
         layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # hidden 2
+        layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                    1024, init=opts['mlp_init'],
+                                    scope='hid2/lin')
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # hidden 3
+        layer_x = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                    1024, init=opts['mlp_init'],
+                                    scope='hid3/lin')
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
         # final layer
         outputs = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
                                     np.prod(in_shape),
