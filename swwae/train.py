@@ -202,8 +202,8 @@ class Run(object):
         # wgan/wgan-gp critic optimizer
         if self.opts['cost']=='wgan':
             # critic_opt = self.RMSProp_discr_optimizer()
-            critic_opt = self.adam_discr_optimizer(lr=1e-4)
-            # critic_opt = self.adam_discr_optimizer(lr=1e-4,beta1=0.5,beta2=0.9)
+            # critic_opt = self.adam_discr_optimizer(lr=1e-4)
+            critic_opt = self.adam_discr_optimizer(lr=1e-4,beta1=0.5,beta2=0.9)
             critic_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                             scope='w1_critic')
             with tf.control_dependencies(self.extra_update_ops):
