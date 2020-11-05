@@ -111,7 +111,7 @@ def main():
     # opts['d_updt_freq'] = FLAGS.disc_freq
     opts['wgan_critic_archi'] = FLAGS.critic_archi
     # opts['lambda'] = FLAGS.critic_pen
-    lambdas = [0.1, 1.]
+    lambdas = [10.,]
     critic_it = [1, 5, 10]
     critic_freq = [1, 5, 10]
     exp_config = list(itertools.product(lambdas, critic_it, critic_freq))
@@ -176,7 +176,7 @@ def main():
     assert data.train_size >= opts['batch_size'], 'Training set too small'
 
     opts['it_num'] = FLAGS.num_it
-    opts['print_every'] = int(opts['it_num'] / 20.)
+    opts['print_every'] = int(opts['it_num'] / 10.)
     opts['evaluate_every'] = int(opts['print_every'] / 4.) + 1
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
