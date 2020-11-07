@@ -125,7 +125,7 @@ def main():
         opts['batch_size'] = FLAGS.batch_size
     if FLAGS.lr:
         opts['lr'] = FLAGS.lr
-    opts['beta'] = exp_config[coef_id][3]
+    opts['beta'] = exp_config[coef_id][2]
     # opts['beta'] = FLAGS.beta
 
     # Create directories
