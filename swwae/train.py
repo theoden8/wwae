@@ -244,9 +244,9 @@ class Run(object):
             enc_Sigmas = []
         # - Init decay lr and beta
         decay = 1.
-        decay_rate = 0.80
+        decay_rate = 0.95
         # fix decay
-        fix_decay_steps = 100000
+        fix_decay_steps = 10000
         # adaptative decay
         wait = 0
         batches_num = self.data.train_size//self.opts['batch_size']
@@ -861,6 +861,10 @@ class Run(object):
             for n in range(batch_num):
                 batch_id = np.random.randint(full_size, size=batch_size)
                 batch = self.data._sample_observations(batch_id)
+                # rescale inputs in [0,255]
+                if self.opts['input_normalize_sym']:
+                    batch = batch / 2. + 0.5
+                batch *= 255.
                 # Convert to RGB if needed
                 if np.shape(batch)[-1] == 1:
                     batch = np.repeat(batch, 3, axis=-1)
@@ -887,6 +891,10 @@ class Run(object):
                 recons = self.sess.run(self.decoded, feed_dict={
                                         self.inputs_img: batch,
                                         self.is_training: False})
+                # rescale recons in [0,255]
+                if self.opts['input_normalize_sym']:
+                    recons = recons / 2. + 0.5
+                recons *= 255.
                 if np.shape(recons)[-1] == 1:
                     recons = np.repeat(recons, 3, axis=-1)
                 preds_incep = self.inception_sess.run(self.inception_layer,
@@ -903,6 +911,10 @@ class Run(object):
                 samples = self.sess.run(self.generated, feed_dict={
                                         self.pz_samples: batch,
                                         self.is_training: False})
+                # rescale samples in [0,255]
+                if self.opts['input_normalize_sym']:
+                    samples = samples / 2. + 0.5
+                samples *= 255.
                 if np.shape(samples)[-1] == 1:
                     samples = np.repeat(samples, 3, axis=-1)
                 preds_incep = self.inception_sess.run(self.inception_layer,
