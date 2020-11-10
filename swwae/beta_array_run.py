@@ -106,7 +106,7 @@ def main():
     opts['lambda'] = FLAGS.critic_pen
     opts['wgan_critic_archi'] = FLAGS.critic_archi
     freq = [1,5]
-    betas = [0.1,0.5,1.,5.,10.]
+    betas = [2.,4.]
     exp_config = list(itertools.product(freq, freq, betas))
     coef_id = (FLAGS.id-1) % len(exp_config)
     opts['d_updt_it'] = exp_config[coef_id][0]
