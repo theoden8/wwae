@@ -108,19 +108,19 @@ def main():
     # coef_id = (FLAGS.id-1) % len(critic_config)
     # opts['wgan_critic_archi'] = critic_config[coef_id][0]
     # opts['d_updt_it'] = FLAGS.disc_it
-    # opts['d_updt_freq'] = FLAGS.disc_freq
+    opts['d_updt_freq'] = FLAGS.disc_freq
     opts['wgan_critic_archi'] = FLAGS.critic_archi
     # opts['lambda'] = FLAGS.critic_pen
     lambdas = [0.1, 1., 10.,]
     critic_it = [1, 5, 10]
-    critic_freq = [1, 5, 10]
-    exp_config = list(itertools.product(lambdas, critic_it, critic_freq))
+    # critic_freq = [1, 5, 10]
+    exp_config = list(itertools.product(lambdas, critic_it))
     # exp_to_remove = [(0.1,1,5),(0.1,1,10),(1.,1,5),(1.,1,10)]
     # for exp in exp_to_remove:
     #     exp_config.remove(exp)
     coef_id = (FLAGS.id-1) % len(exp_config)
     opts['lambda'] = exp_config[coef_id][0]
-    opts['d_updt_freq'] = exp_config[coef_id][2]
+    # opts['d_updt_freq'] = exp_config[coef_id][2]
     opts['d_updt_it'] = exp_config[coef_id][1]
     # sw ground cost
     opts['sw_proj_num'] = FLAGS.L

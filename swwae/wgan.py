@@ -28,6 +28,35 @@ def wgan(opts, x, y, is_training=False, reuse=False):
 
     return tf.reduce_mean(cost, axis=-1), tf.reduce_mean(reg)
 
+def wgan_v2(opts, x, y, is_training=False, reuse=False):
+    """
+    Compute the W1 between images intensities.
+    x[b,h,w,c]: true observation
+    y[b,h,w,c]: reconstruction
+    """
+    h, w, c = x.get_shape().as_list()[1:]
+    # get per channel masses
+    mx = tf.reduce_sum(x, axis=[1,2], keepdims=True)
+    my = tf.reduce_sum(y, axis=[1,2], keepdims=True)
+    # get images intensities
+    x_int = x / mx #[batch,w,h,c]
+    y_int = y / my #[batch,w,h,c]
+    # get critic
+    critics = []
+    for i in range(c):
+        diff = x_int-y_int
+        channel_input = tf.reshape(diff[:,:,:,i], [-1,h,w,1]) #[batch,w,h,1]
+        out = critic(opts, channel_input, 'w1_critic_' + str(i), is_training, reuse) #[batch,w,h,1]
+        critics.append(out)
+    critic_ouput = tf.concat(critics, axis=-1) #[batch,w,h,3]
+    # sum_diff
+    cost = tf.reduce_sum(critic_ouput*(x_int-y_int), axis=[1,2]) #[batch,c]
+    cost += opts['gamma'] * (1. - tf.reshape(my/mx,[-1,c]))**2
+    # critic Lips. reg
+    reg = critic_reg(critic_ouput) #[batch,c]
+
+    return tf.reduce_mean(cost, axis=-1), tf.reduce_mean(reg)
+
 def critic_reg(critic_ouput):
     """
     Compute lipschitz reg for the critic: (|f_ij - f_kl|-|ij-kl|_l2)^2
@@ -49,29 +78,6 @@ def critic_reg(critic_ouput):
                     glob_max_grad = tf.maximum(max_grad, glob_max_grad)
 
     return tf.square(glob_max_grad-1)
-
-def wgan_v2(opts, x, y, is_training=False, reuse=False):
-    """
-    Compute the W1 between images intensities.
-    x[b,h,w,c]: true observation
-    y[b,h,w,c]: reconstruction
-    """
-    h, w, c = x.get_shape().as_list()[1:]
-    # get per channel masses
-    mx = tf.reduce_sum(x, axis=[1,2], keepdims=True)
-    my = tf.reduce_sum(y, axis=[1,2], keepdims=True)
-    # get images intensities
-    x_int = x / mx #[batch,w,h,c]
-    y_int = y / my #[batch,w,h,c]
-    # get pot.
-    critic_ouput = critic(opts, x-y, 'w1_critic', is_training, reuse) #[batch,w,h,c]
-    max_grad = tf.reshape(critic_max_grad(critic_ouput), [-1,1,1,c]) #[batch,1,1,c]
-    lip_critic_ouput = critic_ouput / max_grad
-    # sum_diff
-    cost = tf.reduce_sum(lip_critic_ouput*(x_int-y_int), axis=[1,2]) #[batch,c]
-    cost += opts['gamma'] * (1. - tf.reshape(my/mx,[-1,c]))**2
-
-    return tf.reduce_mean(cost, axis=-1)
 
 def critic_max_grad(critic_ouput):
     """

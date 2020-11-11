@@ -565,6 +565,6 @@ def celeba_fullconv_critic(opts, inputs, scope=None, is_training=False, reuse=Fa
 
 critic_archi = {'mlp': mlp_critic,
             'conv': conv_critic,
-            'fullconv': {'cifar10':cifar_fullconv_critic, 'celebA':cifar_fullconv_critic},
+            'fullconv': {'mnist':cifar_fullconv_critic, 'svhn':cifar_fullconv_critic, 'cifar10':cifar_fullconv_critic, 'celebA':cifar_fullconv_critic},
             'fullconv_v2': {'cifar10':cifar_fullconv_v2_critic, 'celebA':celeba_fullconv_critic}
             }
