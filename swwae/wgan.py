@@ -22,11 +22,12 @@ def wgan(opts, x, y, is_training=False, reuse=False):
     critic_ouput = critic(opts, x_int-y_int, 'w1_critic', is_training, reuse) #[batch,w,h,c]
     # sum_diff
     cost = tf.reduce_sum(critic_ouput*(x_int-y_int), axis=[1,2]) #[batch,c]
-    cost += opts['gamma'] * (1. - tf.reshape(my/mx,[-1,c]))**2
+    intensities_reg = (1. - tf.reshape(my/mx,[-1,c]))**2 #[batch,c]
+    # cost += opts['gamma'] * (1. - tf.reshape(my/mx,[-1,c]))**2
     # critic Lips. reg
     reg = critic_reg(critic_ouput) #[batch,c]
 
-    return tf.reduce_mean(cost, axis=-1), tf.reduce_mean(reg)
+    return tf.reduce_mean(cost, axis=-1), tf.reduce_mean(intensities_reg, axis=-1), tf.reduce_mean(reg, axis=-1)
 
 def wgan_v2(opts, x, y, is_training=False, reuse=False):
     """
@@ -46,16 +47,17 @@ def wgan_v2(opts, x, y, is_training=False, reuse=False):
     for i in range(c):
         diff = x_int-y_int
         channel_input = tf.reshape(diff[:,:,:,i], [-1,h,w,1]) #[batch,w,h,1]
-        out = critic(opts, channel_input, 'w1_critic_' + str(i), is_training, reuse) #[batch,w,h,1]
+        out = critic(opts, channel_input, 'w1_critic/' + str(i), is_training, reuse) #[batch,w,h,1]
         critics.append(out)
-    critic_ouput = tf.concat(critics, axis=-1) #[batch,w,h,3]
+    critic_ouput = tf.concat(critics, axis=-1) #[batch,w,h,c]
     # sum_diff
     cost = tf.reduce_sum(critic_ouput*(x_int-y_int), axis=[1,2]) #[batch,c]
-    cost += opts['gamma'] * (1. - tf.reshape(my/mx,[-1,c]))**2
+    intensities_reg = (1. - tf.reshape(my/mx,[-1,c]))**2 #[batch,c]
+    # cost += opts['gamma'] * (1. - tf.reshape(my/mx,[-1,c]))**2
     # critic Lips. reg
     reg = critic_reg(critic_ouput) #[batch,c]
 
-    return tf.reduce_mean(cost, axis=-1), tf.reduce_mean(reg)
+    return tf.reduce_mean(cost, axis=-1), tf.reduce_mean(intensities_reg, axis=-1), tf.reduce_mean(reg, axis=-1)
 
 def critic_reg(critic_ouput):
     """

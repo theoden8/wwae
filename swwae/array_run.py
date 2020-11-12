@@ -111,7 +111,7 @@ def main():
     opts['d_updt_freq'] = FLAGS.disc_freq
     opts['wgan_critic_archi'] = FLAGS.critic_archi
     # opts['lambda'] = FLAGS.critic_pen
-    lambdas = [0.1, 1., 10.,]
+    lambdas = [0.1, 1.]
     critic_it = [1, 5, 10]
     # critic_freq = [1, 5, 10]
     exp_config = list(itertools.product(lambdas, critic_it))
@@ -151,7 +151,7 @@ def main():
         exp_name += '_' + opts['sw_proj_type'] + '_L' + str(opts['sw_proj_num'])
         if opts['sw_proj_type']=='max-sw' or opts['sw_proj_type']=='max-gsw':
             exp_name += '_dfreq' + str(opts['d_updt_freq']) + '_dit' + str(opts['d_updt_it'])
-    if opts['cost']=='wgan' or opts['cost']=='wgan_v2':
+    if opts['cost'][:4]=='wgan':
         # critic archi
         exp_name += '_' + opts['wgan_critic_archi']
         # critic training setup

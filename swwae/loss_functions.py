@@ -105,6 +105,7 @@ def wae_ground_cost(opts, x1, x2, is_training=False, reuse=False):
     return batch reconstruction cost [batch,]
     """
     critic_reg = None
+    intensities_reg = 0.
     # Compute chosen cost
     if opts['cost'] == 'l2':
         cost = l2_cost(x1, x2)
@@ -117,12 +118,12 @@ def wae_ground_cost(opts, x1, x2, is_training=False, reuse=False):
     elif opts['cost'] == 'sw':
         cost = sw(opts, x1, x2, reuse=reuse)
     elif opts['cost'] == 'wgan':
-        cost, critic_reg = wgan(opts, x1, x2, is_training=is_training, reuse=reuse)
+        cost, intensities_reg, critic_reg = wgan(opts, x1, x2, is_training=is_training, reuse=reuse)
     elif opts['cost'] == 'wgan_v2':
-        cost, critic_reg = wgan_v2(opts, x1, x2, is_training=is_training, reuse=reuse)
+        cost, intensities_reg, critic_reg = wgan_v2(opts, x1, x2, is_training=is_training, reuse=reuse)
     else:
         assert False, 'Unknown cost function %s' % opts['cost']
-    return cost, critic_reg
+    return cost + opts['gamma']*intensities_reg, critic_reg
 
 def l2_cost(x1, x2):
     # c(x,y) = ||x - y||_2

@@ -13,9 +13,10 @@ from math import ceil
 import utils
 from sampling_functions import sample_pz, linespace
 from plot_functions import save_train, save_test_celeba, save_dimwise_traversals
-from plot_functions import plot_embedded, plot_encSigma, plot_interpolation, plot_projected
+from plot_functions import plot_critic_loss, plot_embedded, plot_encSigma, plot_interpolation, plot_projected
 import models
 from networks import theta_discriminator
+from wgan import wgan, wgan_v2
 from datahandler import datashapes
 from fid.fid import calculate_frechet_distance
 
@@ -63,6 +64,17 @@ class Run(object):
                                     is_training=self.is_training,
                                     reuse=True)
 
+        # --- Critic loss
+        if self.opts['cost']=='wgan':
+            critic_loss, _, _ = wgan(self.opts, self.data.next_element, self.recon_x,
+                                        is_training=self.is_training,
+                                        reuse=True)
+            self.critic_loss = tf.reduce_mean(critic_loss)
+        if self.opts['cost']=='wgan_v2':
+            critic_loss, _, _ = wgan_v2(self.opts, self.data.next_element, self.recon_x,
+                                        is_training=self.is_training,
+                                        reuse=True)
+            self.critic_loss = tf.reduce_mean(critic_loss)
         # --- MSE
         self.mse = self.model.MSE(self.data.next_element, self.recon_x)
 
@@ -200,7 +212,7 @@ class Run(object):
                                             scope='theta_discriminator')
             self.theta_discr_opt = theta_discr_opt.minimize(loss=-self.loss_rec, var_list=theta_discr_vars)
         # wgan/wgan-gp critic optimizer
-        if self.opts['cost']=='wgan':
+        if self.opts['cost'][:4]=='wgan':
             # critic_opt = self.RMSProp_discr_optimizer()
             critic_opt = self.adam_discr_optimizer(lr=1e-4)
             # critic_opt = self.adam_discr_optimizer(lr=1e-4,beta1=0.5,beta2=0.9)
@@ -240,19 +252,20 @@ class Run(object):
         Loss_reg, Loss_reg_test = [], []
         MSE, MSE_test = [], []
         FID_rec, FID_gen = [], []
+        Loss_critic, Loss_critic_test = [], []
         if self.opts['vizu_encSigma']:
             enc_Sigmas = []
         # - Init decay lr and beta
         decay = 1.
         decay_rate = 0.95
-        # fix decay
         fix_decay_steps = 10000
-        # adaptative decay
         wait = 0
         batches_num = self.data.train_size//self.opts['batch_size']
         ada_decay_steps = batches_num
-        # beta
         wait_beta = 0
+
+        # - Testing iterations number
+        test_it_num = int(10000 / self.opts['batch_size'])
 
         # - Load trained model or init variables
         if self.opts['use_trained']:
@@ -285,13 +298,22 @@ class Run(object):
                                             self.data.handle: self.train_handle,
                                             self.is_training: True})
             # training w1 critic if needed
-            if self.opts['cost']=='wgan':
+            if self.opts['cost'][:4]=='wgan':
                 if (it-1)%self.opts['d_updt_freq']==0:
                     for i in range(self.opts['d_updt_it']):
-                        _ = self.sess.run(self.w1_critic_opt, feed_dict={
-                                            self.data.handle: self.train_handle,
-                                            self.is_training: True})
-                        # _ = self.sess.run(self.clip_critic_weights)
+                        _, critic_loss = self.sess.run([self.w1_critic_opt, self.critic_loss],
+                                            feed_dict={self.data.handle: self.train_handle,
+                                                       self.is_training: True})
+                        Loss_critic.append(critic_loss)
+                        critic_loss = 0.
+                        # for it_ in range(test_it_num):
+                        for it_ in range(10):
+                            l = self.sess.run(self.critic_loss,
+                                            feed_dict={self.data.handle: self.test_handle,
+                                                       self.is_training: True})
+                            critic_loss += l / self.opts['batch_size']
+                        Loss_critic_test.append(critic_loss)
+
             # training
             _ = self.sess.run(self.opt, feed_dict={
                                 self.data.handle: self.train_handle,
@@ -322,7 +344,6 @@ class Run(object):
                                             feed_dict=feed_dict)
                     enc_Sigmas.append(enc_sigmastats)
 
-                test_it_num = int(10000 / self.opts['batch_size'])
                 loss, loss_rec, mse, loss_reg = 0., 0., 0., 0.
                 for it_ in range(test_it_num):
                     test_feed_dict={self.data.handle: self.test_handle,
@@ -435,6 +456,11 @@ class Run(object):
                     proj = np.reshape(proj, (-1, self.data.data_shape[0], self.data.data_shape[1], self.opts['sw_proj_num']))
                     plot_projected(self.opts, self.data.data_vizu, proj,
                                             exp_dir, 'proj_it%07d.png' % (it))
+
+                # - Critic loss
+                if self.opts['cost'][:4]=='wgan':
+                    plot_critic_loss(self.opts, Loss_critic, Loss_critic_test,
+                                            exp_dir,'critic_loss_it%07d.png' % (it))
 
             # - Update learning rate if necessary and it
             if self.opts['lr_decay']:

@@ -160,7 +160,7 @@ class WAE(Model):
     def reconstruction_loss(self, obs, rec, is_training=False, reuse=False):
         cost, critic_reg = wae_ground_cost(self.opts, obs, rec, is_training=is_training, reuse=reuse) #[batch,]
 
-        return tf.reduce_mean(cost), critic_reg
+        return tf.reduce_mean(cost), tf.reduce_mean(critic_reg)
 
     def loss(self, inputs, beta, is_training, reuse=False):
 
