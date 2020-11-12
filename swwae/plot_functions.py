@@ -264,11 +264,11 @@ def plot_critic_loss(opts, loss_tr, loss_te, exp_dir,filename):
     total_num = len(loss_tr)
     x = np.arange(total_num)
     for loss, (color, style, label) in zip([loss_te,loss_tr],
-                                        [('blue','-','test'),
+                                        [('red','-','test'),
                                         ('blue','--','train')]):
         y = loss
         # y = np.log(y)
-        ax.plot(x, y, linewidth=1, color=color, linestyle=style, label=label)
+        ax.plot(x, y, linewidth=0.5, color=color, linestyle=style, label=label)
     ax.grid(True, which='major', axis='y')
     xticks = x[::int(total_num/10)]
     xlabels = xticks / opts['d_updt_freq']
