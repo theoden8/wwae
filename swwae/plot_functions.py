@@ -259,6 +259,34 @@ def plot_sinkhorn(opts, sinkhorn_it, exp_dir, filename):
     fig.savefig(utils.o_gfile((save_path, filename), 'wb'),cformat='png')
     plt.close()
 
+def plot_critic_loss(opts, loss_tr, loss_te, exp_dir,filename):
+    fig, ax = plt.subplots()
+    total_num = len(loss_tr)
+    x = np.arange(total_num)
+    for loss, (color, style, label) in zip([loss_te,loss_tr],
+                                        [('blue','-','test'),
+                                        ('blue','--','train')]):
+        y = loss
+        # y = np.log(y)
+        ax.plot(x, y, linewidth=1, color=color, linestyle=style, label=label)
+    ax.grid(True, which='major', axis='y')
+    xticks = x[::int(total_num/10)]
+    xlabels = xticks / opts['d_updt_freq']
+    ax.set_xticks(xticks)
+    ax.set_xticklabels(xlabels.astype(int))
+    ax.set_xlabel('AE networks it.')
+    ax.set_ylabel('Loss')
+    ax.legend(loc='lower right')
+    ax.set_title('Critic loss')
+
+    ### Saving plot
+    plots_dir = 'train_plots'
+    save_path = os.path.join(exp_dir,plots_dir)
+    utils.create_dir(save_path)
+    fig.savefig(utils.o_gfile((save_path, filename), 'wb'),cformat='png')
+    plt.close()
+
+
 
 def plot_embedded(opts, encoded, decoded, labels, exp_dir, filename, train=True):
     num_pics = np.shape(encoded[0])[0]
