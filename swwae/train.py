@@ -305,9 +305,12 @@ class Run(object):
                                             feed_dict={self.data.handle: self.train_handle,
                                                        self.is_training: True})
                         Loss_critic.append(critic_loss)
-                        critic_loss = self.sess.run(self.critic_loss,
-                                        feed_dict={self.data.handle: self.test_handle,
-                                                   self.is_training: True})
+                        critic_loss = 0.
+                        for it- in range(10)
+                            cl = self.sess.run(self.critic_loss,
+                                            feed_dict={self.data.handle: self.test_handle,
+                                                       self.is_training: True})
+                            critic_loss += cl / 10.                           
                         Loss_critic_test.append(critic_loss)
 
             # training
