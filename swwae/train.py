@@ -306,7 +306,7 @@ class Run(object):
                                                        self.is_training: True})
                         Loss_critic.append(critic_loss)
                         critic_loss = 0.
-                        for it_ in range(10)
+                        for it_ in range(10):
                             cl = self.sess.run(self.critic_loss,
                                             feed_dict={self.data.handle: self.test_handle,
                                                        self.is_training: True})
