@@ -271,7 +271,7 @@ def plot_critic_loss(opts, loss_tr, loss_te, exp_dir,filename):
         ax.plot(x, y, linewidth=0.5, color=color, linestyle=style, label=label)
     ax.grid(True, which='major', axis='y')
     xticks = x[::int(total_num/10)]
-    xlabels = xticks / opts['d_updt_freq'] / 10e4
+    xlabels = xticks / opts['d_updt_freq'] / 1000
     ax.set_xticks(xticks)
     ax.set_xticklabels(xlabels.astype(int))
     ax.set_xlabel('AE networks it. x10e4')
