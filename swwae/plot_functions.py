@@ -19,10 +19,9 @@ def save_train(opts, data_train, data_test,
                      rec_train, rec_test,
                      samples,
                      loss, loss_test,
-                     loss_rec, loss_rec_test,
+                     losses, losses_test,
                      mse, mse_test,
                      fid_rec, fid_gen,
-                     loss_reg, loss_reg_test,
                      exp_dir,
                      filename):
 
@@ -33,7 +32,7 @@ def save_train(opts, data_train, data_test,
         img1    -   test reconstructions
         img2    -   train reconstructions
         img3    -   samples
-        img4    -   loss curves
+        img4    -   obj curves
         img5    -   split loss curves
         img6    -   mse/fid
 
@@ -131,28 +130,54 @@ def save_train(opts, data_train, data_test,
 
     ### The loss curves
     ax = plt.subplot(gs[1, 0])
-    size_filter = min(int(len(loss_test)/2),5)
-    # Obj
-    # y = np.convolve(loss_test, np.ones((size_filter,))/size_filter, mode='valid')
-    y = loss_test
-    total_num = len(y)
-    x_step = max(int(total_num / 200), 1)
-    x = np.arange(1, len(y) + 1, x_step)
-    y = np.log(y[::x_step])
-    plt.plot(x, y, linewidth=4, color='black', label='loss test')
-    # y = np.convolve(loss, np.ones((size_filter,))/size_filter, mode='valid')
-    y = loss
-    y = np.log(y[::x_step])
-    plt.plot(x, y, linewidth=2, color='black', linestyle='--',label='loss')
+    # train
+    array_losses = np.array(losses).reshape((-1,4))
+    rec = array_losses[:,0]
+    reg = opts['beta']*array_losses[:,1]
+    for y, (color, label) in zip([loss, rec, reg],
+                                [('black', 'loss tr'),
+                                ('blue', 'rec tr'),
+                                ('red', 'reg tr')]):
+        if label!='reg tr' or opts['beta']>0.:
+            total_num = len(y)
+            # x_step = max(int(total_num / 200), 1)
+            # x = np.arange(1, len(y) + 1, x_step)
+            # y = np.log(y[::x_step])
+            x = np.arange(1, total_num + 1)
+            y = np.log(y)
+            plt.plot(x, y, linewidth=2, color=color, linestyle='--', label=label)
+    # test
+    array_losses = np.array(losses_test).reshape((-1,4))
+    rec = array_losses[:,0]
+    reg = opts['beta']*array_losses[:,1]
+    for y, (color, label) in zip([loss_test, rec, reg],
+                                [('black', 'loss te'),
+                                ('blue', 'rec te'),
+                                ('red', 'reg te')]):
+        if label!='reg te' or opts['beta']>0.:
+            total_num = len(y)
+            # x_step = max(int(total_num / 200), 1)
+            # x = np.arange(1, len(y) + 1, x_step)
+            # y = np.log(y[::x_step])
+            x = np.arange(1, total_num + 1)
+            y = np.log(y)
+            plt.plot(x, y, linewidth=4, color=color, label=label)
 
     plt.grid(axis='y')
-    plt.legend(loc='upper right')
+    handles, labels = plt.gca().get_legend_handles_labels()
+    order, nlabels = [], len(labels)
+    for i in range(nlabels):
+        if i%2==0:
+            order.append(int((nlabels+i)/2))
+        else:
+            order.append(int(i/2))
+    # order = [3,0,4,1,5,2]
+    plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order],loc='upper right')
+    # plt.legend(loc='upper right')
     plt.text(0.47, 1., 'Log Loss curves', ha="center", va="bottom",
                                 size=20, transform=ax.transAxes)
 
-    ### The loss curves
-    base = plt.cm.get_cmap('tab10')
-    color_list = base(np.linspace(0, 1, 6))
+    ### The split loss curves
     ax = plt.subplot(gs[1, 1])
     if opts['model'] == 'BetaVAE':
         labels = ['rec',r'$\beta$KL']
@@ -160,29 +185,48 @@ def save_train(opts, data_train, data_test,
         labels = ['rec',r'$\beta$|mmd|']
     else:
         raise NotImplementedError('Model type not recognised')
-    losses, losses_test = [], []
-    # Test
-    # y = np.convolve(loss_rec_test, np.ones((size_filter,))/size_filter, mode='valid')
-    y = loss_rec_test
-    y = np.log(y[::x_step])
-    losses_test.append(list(y))
-    y = loss_reg_test
-    y = np.log(y[::x_step])
-    losses_test.append(list(y))
-    # Train
-    y = loss_rec
-    y = np.log(y[::x_step])
-    losses.append(list(y))
-    y = loss_reg
-    y = np.log(np.abs(y[::x_step]))
-    losses.append(list(y))
-    for i in range(len(labels)):
-        plt.plot(x, losses_test[i], linewidth=4, color=color_list[i], label=labels[i]+r' test')
-        plt.plot(x, losses[i], linewidth=2, color=color_list[i], linestyle='--', label=labels[i])
-
+    # train
+    array_losses = np.array(losses).reshape((-1,4))
+    for y, (color, label) in zip([array_losses[:,2],
+                                opts['gamma']*array_losses[:,-1],
+                                opts['beta']*array_losses[:,1]],
+                                [('blue', 'grd. cost tr'),
+                                ('green', 'int. reg. tr'),
+                                ('red', 'lat. reg tr')]):
+        if (label!='lat. reg tr' or opts['beta']>0.) and (label!='int. reg. tr' or opts['gamma']>0.):
+            total_num = len(y)
+            # x_step = max(int(total_num / 200), 1)
+            # x = np.arange(1, len(y) + 1, x_step)
+            # y = np.log(y[::x_step])
+            x = np.arange(1, total_num + 1)
+            plt.plot(x, y, linewidth=1, color=color, linestyle='--', label=label)
+    # test
+    array_losses = np.array(losses_test).reshape((-1,4))
+    for y, (color, label) in zip([array_losses[:,2],
+                                opts['gamma']*array_losses[:,-1],
+                                opts['beta']*array_losses[:,1]],
+                                [('blue', 'grd. cost te'),
+                                ('green', 'int. reg. te'),
+                                ('red', 'lat. reg te')]):
+        if (label!='lat. reg te' or opts['beta']>0.) and (label!='int. reg. te' or opts['gamma']>0.):
+            total_num = len(y)
+            # x_step = max(int(total_num / 200), 1)
+            # x = np.arange(1, len(y) + 1, x_step)
+            # y = np.log(y[::x_step])
+            x = np.arange(1, total_num + 1)
+            plt.plot(x, y, linewidth=3, color=color, label=label)
     plt.grid(axis='y')
-    plt.legend(loc='upper right')
-    plt.text(0.47, 1., 'Log split Loss curves', ha="center", va="bottom",
+    handles, labels = plt.gca().get_legend_handles_labels()
+    order, nlabels = [], len(labels)
+    for i in range(nlabels):
+        if i%2==0:
+            order.append(int((nlabels+i)/2))
+        else:
+            order.append(int(i/2))
+    # order = [3,0,4,1,5,2]
+    plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order],loc='upper right')
+    # plt.legend(loc='upper right')
+    plt.text(0.47, 1., 'split Loss curves', ha="center", va="bottom",
                                 size=20, transform=ax.transAxes)
     ### The mse/fid curves
     base = plt.cm.get_cmap('tab10')
@@ -190,21 +234,21 @@ def save_train(opts, data_train, data_test,
     ax = plt.subplot(gs[1, 2])
     # Test
     y = mse_test
-    y = y[::x_step]
+    # y = y[::x_step]
     plt.plot(x, y, linewidth=4, color=color_list[2], label='MSE test')
     # Train
     y = mse
-    y = y[::x_step]
-    plt.plot(x, y, linewidth=4, color=color_list[2], linestyle='--', label='MSE')
+    # y = y[::x_step]
+    plt.plot(x, y, linewidth=2, color=color_list[2], linestyle='--', label='MSE')
     if len(fid_rec)>0:
         # FID rec
         y = fid_rec
-        y = y[::x_step]
+        # y = y[::x_step]
         plt.plot(x, y, linewidth=4, color=color_list[0], label='FID rec')
         # FID rec
         y = fid_gen
-        y = y[::x_step]
-        plt.plot(x, y, linewidth=4, color=color_list[1], label='FID gen')
+        # y = y[::x_step]
+        plt.plot(x, y, linewidth=2, color=color_list[1], label='FID gen')
 
     plt.grid(axis='y')
     plt.legend(loc='upper right')
@@ -259,13 +303,14 @@ def plot_sinkhorn(opts, sinkhorn_it, exp_dir, filename):
     fig.savefig(utils.o_gfile((save_path, filename), 'wb'),cformat='png')
     plt.close()
 
+
 def plot_critic_loss(opts, loss_tr, loss_te, exp_dir,filename):
     fig, ax = plt.subplots()
     total_num = len(loss_tr)
     x = np.arange(total_num)
-    for loss, (color, style, label) in zip([loss_te,loss_tr],
-                                        [('red','-','test'),
-                                        ('blue','--','train')]):
+    for loss, (color, style, label) in zip([loss_tr,loss_te],
+                                        [('blue','--','train'),
+                                        ('red','-','test')]):
         y = loss
         # y = np.log(y)
         ax.plot(x, y, linewidth=0.5, color=color, linestyle=style, label=label)
@@ -285,7 +330,6 @@ def plot_critic_loss(opts, loss_tr, loss_te, exp_dir,filename):
     utils.create_dir(save_path)
     fig.savefig(utils.o_gfile((save_path, filename), 'wb'),cformat='png')
     plt.close()
-
 
 
 def plot_embedded(opts, encoded, decoded, labels, exp_dir, filename, train=True):

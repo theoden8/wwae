@@ -73,16 +73,16 @@ class BetaVAE(Model):
         rec_loss = cross_entropy_loss(self.opts, inputs, mean, sigma)
         return tf.reduce_mean(rec_loss)
 
-    def loss(self, inputs, beta, is_training):
+    def loss(self, inputs, is_training):
 
         _, enc_mean, enc_Sigma, _, dec_mean, dec_Sigma = self.forward_pass(inputs=inputs,
                                               is_training=is_training)
 
         rec = self.reconstruction_loss(inputs, dec_mean, dec_Sigma)
         kl = self.kl_penalty(self.pz_mean, self.pz_sigma, enc_mean, enc_Sigma)
-        reg = beta * kl
+        reg = kl
 
-        return rec, reg, inputs
+        return rec, reg, None, None
 
 
 class WAE(Model):
@@ -158,19 +158,19 @@ class WAE(Model):
         return stat
 
     def reconstruction_loss(self, obs, rec, is_training=False, reuse=False):
-        cost, critic_reg = wae_ground_cost(self.opts, obs, rec, is_training=is_training, reuse=reuse) #[batch,]
+        cost, intensities_reg, critic_reg = wae_ground_cost(self.opts, obs, rec, is_training=is_training, reuse=reuse) #[batch,]
 
-        return tf.reduce_mean(cost), tf.reduce_mean(critic_reg)
+        return tf.reduce_mean(cost), tf.reduce_mean(intensities_reg), tf.reduce_mean(critic_reg)
 
-    def loss(self, inputs, beta, is_training, reuse=False):
+    def loss(self, inputs, is_training, reuse=False):
 
         # --- Encoding and reconstructing
         enc_z, _, enc_Sigma, recon_x, dec_mean, _ = self.forward_pass(inputs=inputs,
                                                 is_training=is_training,
                                                 reuse=reuse)
-        rec, critic_reg = self.reconstruction_loss(inputs, recon_x, is_training=is_training, reuse=reuse)
+        cost, intensities_reg, critic_reg = self.reconstruction_loss(inputs, recon_x, is_training=is_training, reuse=reuse)
         noise = tf.compat.v1.random_normal(shape=tf.shape(enc_z))
         pz_sample = tf.add(self.pz_mean, (noise * self.pz_sigma))
-        reg = beta*self.mmd_penalty(enc_z, pz_sample)
+        reg = self.mmd_penalty(enc_z, pz_sample)
 
-        return rec, reg, critic_reg
+        return cost, reg, intensities_reg, critic_reg

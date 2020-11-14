@@ -123,7 +123,7 @@ def wae_ground_cost(opts, x1, x2, is_training=False, reuse=False):
         cost, intensities_reg, critic_reg = wgan_v2(opts, x1, x2, is_training=is_training, reuse=reuse)
     else:
         assert False, 'Unknown cost function %s' % opts['cost']
-    return cost + opts['gamma']*intensities_reg, critic_reg
+    return cost, intensities_reg, critic_reg
 
 def l2_cost(x1, x2):
     # c(x,y) = ||x - y||_2

@@ -49,12 +49,15 @@ class Run(object):
         else:
             raise NotImplementedError()
 
-        # --- Define Objective
-        self.loss_rec, self.loss_reg, self.critic_reg = self.model.loss(
+        # --- Define Objectives
+        self.cost, self.loss_reg, self.intensities_reg, self.critic_reg = self.model.loss(
                                     inputs=self.data.next_element,
-                                    beta=self.beta,
                                     is_training=self.is_training)
-        self.objective = self.loss_rec + self.loss_reg
+        # rec loss
+        self.loss_rec = self.cost + opts['gamma'] * self.intensities_reg
+        # wae obj
+        self.objective = self.loss_rec + self.beta * self.loss_reg
+        # critic obj
         if self.critic_reg is not None:
             self.critic_objective = -self.loss_rec + opts['lambda']*self.critic_reg
 
@@ -64,17 +67,18 @@ class Run(object):
                                     is_training=self.is_training,
                                     reuse=True)
 
-        # --- Critic loss
-        if self.opts['cost']=='wgan':
-            critic_loss, _, _ = wgan(self.opts, self.data.next_element, self.recon_x,
-                                        is_training=self.is_training,
-                                        reuse=True)
-            self.critic_loss = tf.reduce_mean(critic_loss)
-        if self.opts['cost']=='wgan_v2':
-            critic_loss, _, _ = wgan_v2(self.opts, self.data.next_element, self.recon_x,
-                                        is_training=self.is_training,
-                                        reuse=True)
-            self.critic_loss = tf.reduce_mean(critic_loss)
+        # # --- Critic loss
+        # if self.opts['cost']=='wgan':
+        #     critic_loss, _, _ = wgan(self.opts, self.data.next_element, self.recon_x,
+        #                                 is_training=self.is_training,
+        #                                 reuse=True)
+        #     self.critic_loss = tf.reduce_mean(critic_loss)
+        # if self.opts['cost']=='wgan_v2':
+        #     critic_loss, _, _ = wgan_v2(self.opts, self.data.next_element, self.recon_x,
+        #                                 is_training=self.is_training,
+        #                                 reuse=True)
+        #     self.critic_loss = tf.reduce_mean(critic_loss)
+
         # --- MSE
         self.mse = self.model.MSE(self.data.next_element, self.recon_x)
 
@@ -219,7 +223,7 @@ class Run(object):
             critic_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                             scope='w1_critic')
             with tf.control_dependencies(self.extra_update_ops):
-                self.w1_critic_opt = critic_opt.minimize(loss=self.critic_objective, var_list=critic_vars)
+                self.critic_opt = critic_opt.minimize(loss=self.critic_objective, var_list=critic_vars)
             # weights clipping
             clip_ops = []
             for var in critic_vars:
@@ -248,11 +252,10 @@ class Run(object):
         anchors_ids = [0, 4, 6, 12, 39]
 
         # - Init all monitoring variables
-        Loss, Loss_test, Loss_rec, Loss_rec_test = [], [], [], []
-        Loss_reg, Loss_reg_test = [], []
+        Loss, Loss_test, = [], []
+        Losses_monit, Losses_monit_test = [], []
         MSE, MSE_test = [], []
         FID_rec, FID_gen = [], []
-        Loss_critic, Loss_critic_test = [], []
         if self.opts['vizu_encSigma']:
             enc_Sigmas = []
         # - Init decay lr and beta
@@ -301,18 +304,9 @@ class Run(object):
             if self.opts['cost'][:4]=='wgan':
                 if (it-1)%self.opts['d_updt_freq']==0:
                     for i in range(self.opts['d_updt_it']):
-                        _, critic_loss = self.sess.run([self.w1_critic_opt, self.critic_loss],
+                        _ = self.sess.run(self.critic_opt,
                                             feed_dict={self.data.handle: self.train_handle,
                                                        self.is_training: True})
-                        Loss_critic.append(critic_loss)
-                        critic_loss = 0.
-                        for it_ in range(5):
-                            cl = self.sess.run(self.critic_loss,
-                                            feed_dict={self.data.handle: self.test_handle,
-                                                       self.is_training: True})
-                            critic_loss += cl / 5.
-                        Loss_critic_test.append(critic_loss)
-
             # training
             _ = self.sess.run(self.opt, feed_dict={
                                 self.data.handle: self.train_handle,
@@ -326,16 +320,16 @@ class Run(object):
                 feed_dict={self.data.handle: self.train_handle,
                                 self.beta: self.opts['beta'],
                                 self.is_training: False}
-                [loss, loss_rec, mse, loss_reg] = self.sess.run([
-                                            self.objective,
+                losses = self.sess.run([self.objective,
                                             self.loss_rec,
-                                            self.mse,
-                                            self.loss_reg],
+                                            self.loss_reg,
+                                            self.cost,
+                                            self.intensities_reg,
+                                            self.mse],
                                             feed_dict=feed_dict)
-                Loss.append(loss)
-                Loss_rec.append(loss_rec)
-                MSE.append(mse)
-                Loss_reg.append(loss_reg)
+                Loss.append(losses[0])
+                Losses_monit.append(losses[1:-1])
+                MSE.append(losses[-1])
 
                 # Encoded Sigma
                 if self.opts['vizu_encSigma']:
@@ -343,24 +337,24 @@ class Run(object):
                                             feed_dict=feed_dict)
                     enc_Sigmas.append(enc_sigmastats)
 
-                loss, loss_rec, mse, loss_reg = 0., 0., 0., 0.
+                loss, monitoring, mse = 0., np.zeros(4), 0.
                 for it_ in range(test_it_num):
                     test_feed_dict={self.data.handle: self.test_handle,
                                     self.beta: self.opts['beta'],
                                     self.is_training: False}
-                    [l, l_rec, m, l_reg] = self.sess.run([self.objective,
+                    losses = self.sess.run([self.objective,
                                             self.loss_rec,
-                                            self.mse,
-                                            self.loss_reg],
+                                            self.loss_reg,
+                                            self.cost,
+                                            self.intensities_reg,
+                                            self.mse],
                                             feed_dict=test_feed_dict)
-                    loss += l / test_it_num
-                    loss_rec += l_rec / test_it_num
-                    mse += m / test_it_num
-                    loss_reg += l_reg / test_it_num
+                    loss += losses[0] / test_it_num
+                    monitoring += np.array(losses[1:-1]) / test_it_num
+                    mse += losses[-1] / test_it_num
                 Loss_test.append(loss)
-                Loss_rec_test.append(loss_rec)
+                Losses_monit_test.append(monitoring)
                 MSE_test.append(mse)
-                Loss_reg_test.append(loss_reg)
 
                 # Printing various loss values
                 logging.error('')
@@ -369,20 +363,20 @@ class Run(object):
                 debug_str = 'TRAIN LOSS=%.3f, TEST LOSS=%.3f' % (Loss[-1],Loss_test[-1])
                 logging.error(debug_str)
                 debug_str = 'REC=%.3f, TEST REC=%.3f, MSE=%10.3e, TEST MSE=%10.3e'  % (
-                                            Loss_rec[-1],
-                                            Loss_rec_test[-1],
+                                            Losses_monit[-1][0] + self.opts['gamma']*Losses_monit[-1][3],
+                                            Losses_monit_test[-1][0]+ self.opts['gamma']*Losses_monit_test[-1][3],
                                             MSE[-1],
                                             MSE_test[-1])
                 logging.error(debug_str)
                 if self.opts['model'] == 'BetaVAE':
                     debug_str = 'beta*KL=%10.3e, beta*TEST KL=%10.3e'  % (
-                                            Loss_reg[-1],
-                                            Loss_reg_test[-1])
+                                            self.opts['beta']*Losses_monit[-1][1],
+                                            self.opts['beta']*Losses_monit_test[-1][1])
                     logging.error(debug_str)
                 elif self.opts['model'] == 'WAE':
                     debug_str = 'beta*MMD=%10.3e, beta*TEST MMD=%10.3e' % (
-                                            Loss_reg[-1],
-                                            Loss_reg_test[-1])
+                                            self.opts['beta']*Losses_monit[-1][1],
+                                            self.opts['beta']*Losses_monit_test[-1][1])
                     logging.error(debug_str)
                 else:
                     raise NotImplementedError('Model type not recognised')
@@ -415,10 +409,9 @@ class Run(object):
                           reconstructions_train, reconstructions_vizu,          # reconstructions
                           generations,                                          # model samples
                           Loss, Loss_test,                                      # loss
-                          Loss_rec, Loss_rec_test,                              # rec loss
+                          Losses_monit, Losses_monit_test,                      # losses split
                           MSE, MSE_test,                                        # mse
                           FID_rec, FID_gen,                                     # FID
-                          Loss_reg, Loss_reg_test,                              # divergence terms
                           exp_dir,                                              # working directory
                           'res_it%07d.png' % (it))                              # filename
 
@@ -456,10 +449,10 @@ class Run(object):
                     plot_projected(self.opts, self.data.data_vizu, proj,
                                             exp_dir, 'proj_it%07d.png' % (it))
 
-                # - Critic loss
-                if self.opts['cost'][:4]=='wgan':
-                    plot_critic_loss(self.opts, Loss_critic, Loss_critic_test,
-                                            exp_dir,'critic_loss_it%07d.png' % (it))
+                # # - Critic loss
+                # if self.opts['cost'][:4]=='wgan':
+                #     plot_critic_loss(self.opts, Loss_critic, Loss_critic_test,
+                #                             exp_dir,'critic_loss_it%07d.png' % (it))
 
             # - Update learning rate if necessary and it
             if self.opts['lr_decay']:
@@ -508,56 +501,56 @@ class Run(object):
         feed_dict={self.data.handle: self.train_handle,
                         self.beta: self.opts['beta'],
                         self.is_training: False}
-        [loss, loss_rec, mse, loss_reg] = self.sess.run([
-                                        self.objective,
-                                        self.loss_rec,
-                                        self.mse,
-                                        self.loss_reg],
-                                        feed_dict=feed_dict)
-        Loss.append(loss)
-        Loss_rec.append(loss_rec)
-        MSE.append(mse)
-        Loss_reg.append(loss_reg)
+        losses = self.sess.run([self.objective,
+                                    self.loss_rec,
+                                    self.loss_reg,
+                                    self.cost,
+                                    self.intensities_reg,
+                                    self.mse],
+                                    feed_dict=feed_dict)
+        Loss.append(losses[0])
+        Losses_monit.append(losses[1:-1])
+        MSE.append(losses[-1])
         # Test losses
-        loss, loss_rec, mse, loss_reg= 0., 0., 0., 0.
+        loss, monitoring, mse = 0., np.zeros(4), 0.
         for it_ in range(test_it_num):
             test_feed_dict={self.data.handle: self.test_handle,
                             self.beta: self.opts['beta'],
                             self.is_training: False}
-            [l, l_rec, m, l_reg] = self.sess.run([self.objective,
-                                        self.loss_rec,
-                                        self.mse,
-                                        self.loss_reg],
-                                        feed_dict=test_feed_dict)
-            loss += l / test_it_num
-            loss_rec += l_rec / test_it_num
-            mse += m / test_it_num
-            loss_reg += l_reg / test_it_num
+            losses = self.sess.run([self.objective,
+                                    self.loss_rec,
+                                    self.loss_reg,
+                                    self.cost,
+                                    self.intensities_reg,
+                                    self.mse],
+                                    feed_dict=test_feed_dict)
+            loss += losses[0] / test_it_num
+            monitoring += np.array(losses[1:-1]) / test_it_num
+            mse += losses[-1] / test_it_num
         Loss_test.append(loss)
-        Loss_rec_test.append(loss_rec)
+        Losses_monit_test.append(monitoring)
         MSE_test.append(mse)
-        Loss_reg_test.append(loss_reg)
 
         # Printing various loss values
         logging.error('')
         logging.error('Training done.')
-        debug_str = 'TRAIN LOSS=%.3f, TEST LOSS=%.3f' % (Loss[-1],Loss_test[-1])
+        debug_str = 'TRAIN LOSS=%.3f, TEST LOSS=%.3f' % (Loss[-1], Loss_test[-1])
         logging.error(debug_str)
         debug_str = 'REC=%.3f, TEST REC=%.3f, MSE=%10.3e, TEST MSE=%10.3e'  % (
-                                        Loss_rec[-1],
-                                        Loss_rec_test[-1],
-                                        MSE[-1],
-                                        MSE_test[-1])
+                                    Losses_monit[0][-1] + self.opts['gamma']*Losses_monit[3][-1],
+                                    Losses_monit_test[0][-1]+ self.opts['gamma']*Losses_monit_test[3][-1],
+                                    MSE[-1],
+                                    MSE_test[-1])
         logging.error(debug_str)
         if self.opts['model'] == 'BetaVAE':
             debug_str = 'beta*KL=%10.3e, beta*TEST KL=%10.3e'  % (
-                                        Loss_reg[-1],
-                                        Loss_reg_test[-1])
+                                    self.opts['beta']*Losses_monit[1][-1],
+                                    self.opts['beta']*Losses_monit_test[1][-1])
             logging.error(debug_str)
         elif self.opts['model'] == 'WAE':
             debug_str = 'beta*MMD=%10.3e, beta*TEST MMD=%10.3e' % (
-                                        Loss_reg[-1],
-                                        Loss_reg_test[-1])
+                                    self.opts['beta']*Losses_monit[1][-1],
+                                    self.opts['beta']*Losses_monit_test[1][-1])
             logging.error(debug_str)
         else:
             raise NotImplementedError('Model type not recognised')
@@ -574,9 +567,8 @@ class Run(object):
             name = 'res_train_final'
             np.savez(os.path.join(save_path, name),
                     loss=np.array(Loss), loss_test=np.array(Loss_test),
-                    loss_rec=np.array(Loss_rec), loss_rec_test=np.array(Loss_rec_test),
-                    mse = np.array(MSE), mse_test = np.array(MSE_test),
-                    loss_reg=np.array(Loss_reg), loss_reg_test=np.array(Loss_reg_test))
+                    losses=np.array(Losses_monit), losses_test=np.array(Losses_monit_test),
+                    mse=np.array(MSE), mse_test=np.array(MSE_test))
 
     def test(self, data, WEIGHTS_PATH, verbose):
         """
