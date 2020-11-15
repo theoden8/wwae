@@ -105,14 +105,14 @@ def main():
     # wgan ground cost
     opts['lambda'] = FLAGS.critic_pen
     opts['wgan_critic_archi'] = FLAGS.critic_archi
-    freq = [1,5]
-    betas = [2.,4.]
-    exp_config = list(itertools.product(freq, freq, betas))
+    its = [1, 5]
+    betas = [1., 2., 4., 6. ,8., 10.]
+    exp_config = list(itertools.product(its, betas))
     coef_id = (FLAGS.id-1) % len(exp_config)
     opts['d_updt_it'] = exp_config[coef_id][0]
-    opts['d_updt_freq'] = exp_config[coef_id][1]
+    # opts['d_updt_freq'] = exp_config[coef_id][0]
     # opts['d_updt_it'] = FLAGS.disc_it
-    # opts['d_updt_freq'] = FLAGS.disc_freq
+    opts['d_updt_freq'] = FLAGS.disc_freq
     # sw ground cost
     opts['sw_proj_num'] = FLAGS.L
     opts['sw_proj_type'] = FLAGS.slicing_dist
@@ -125,7 +125,7 @@ def main():
         opts['batch_size'] = FLAGS.batch_size
     if FLAGS.lr:
         opts['lr'] = FLAGS.lr
-    opts['beta'] = exp_config[coef_id][2]
+    opts['beta'] = exp_config[coef_id][1]
     # opts['beta'] = FLAGS.beta
 
     # Create directories
@@ -170,7 +170,7 @@ def main():
 
     opts['it_num'] = FLAGS.num_it
     opts['print_every'] = int(opts['it_num'] / 10.)
-    opts['evaluate_every'] = int(opts['print_every'] / 2.) + 1
+    opts['evaluate_every'] = int(opts['it_num'] / 200.)
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
     opts['save_train_data'] = FLAGS.save_data
