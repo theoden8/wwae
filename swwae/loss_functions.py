@@ -119,8 +119,10 @@ def wae_ground_cost(opts, x1, x2, is_training=False, reuse=False):
         cost = sw(opts, x1, x2, reuse=reuse)
     elif opts['cost'] == 'wgan':
         cost, intensities_reg, critic_reg = wgan(opts, x1, x2, is_training=is_training, reuse=reuse)
+        critic_reg = tf.reduce_mean(critic_reg)
     elif opts['cost'] == 'wgan_v2':
         cost, intensities_reg, critic_reg = wgan_v2(opts, x1, x2, is_training=is_training, reuse=reuse)
+        critic_reg = tf.reduce_mean(critic_reg)
     else:
         assert False, 'Unknown cost function %s' % opts['cost']
     return cost, intensities_reg, critic_reg
