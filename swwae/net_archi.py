@@ -490,7 +490,7 @@ def cifar_fullconv_v2_critic(opts, inputs, scope=None, is_training=False, reuse=
         layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
         # hidden 1
         layer_x = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                    output_shape=[batch_size,in_shape[0],in_shape[1],16],
+                                    output_shape=[batch_size,in_shape[0],in_shape[1],64],
                                     filter_size=3,
                                     stride=2, scope='hid1/deconv',
                                     init=opts['conv_init'])
@@ -591,5 +591,6 @@ def celeba_fullconv_critic(opts, inputs, scope=None, is_training=False, reuse=Fa
 critic_archi = {'mlp': mlp_critic,
             'conv': conv_critic,
             'fullconv': {'mnist':cifar_fullconv_critic, 'svhn':cifar_fullconv_critic, 'cifar10':cifar_fullconv_critic, 'celebA':cifar_fullconv_critic},
-            'fullconv_v2': {'cifar10':cifar_fullconv_v2_critic, 'celebA':cifar_fullconv_v2_critic}
+            'fullconv_v2': {'cifar10':cifar_fullconv_v2_critic, 'celebA':cifar_fullconv_v2_critic},
+            'fullconv_v3': {'cifar10':cifar_fullconv_big_critic, 'celebA':cifar_fullconv_big_critic}
             }

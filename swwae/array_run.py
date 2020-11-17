@@ -111,7 +111,7 @@ def main():
     opts['d_updt_freq'] = FLAGS.disc_freq
     opts['wgan_critic_archi'] = FLAGS.critic_archi
     # opts['lambda'] = FLAGS.critic_pen
-    lambdas = [0.001, 0.01, 0.1, 1.]
+    lambdas = [0.01, 0.1, 1.]
     critic_it = [1, 5, 10]
     # critic_freq = [1, 5, 10]
     exp_config = list(itertools.product(lambdas, critic_it))
