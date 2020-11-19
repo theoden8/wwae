@@ -428,27 +428,39 @@ def mlp_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     return outputs
 
 ######### conv #########
+def singleconv_critic(opts, inputs, scope=None, is_training=False, reuse=False):
+    layer_x = inputs
+    in_shape = inputs.get_shape().as_list()[1:]
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
+        # conv
+        outputs = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=in_shape[-1], filter_size=4,
+                                    stride=1, scope='hid_final',
+                                    init=opts['conv_init'])
+
+    return outputs
+
 def conv_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     layer_x = inputs
     in_shape = inputs.get_shape().as_list()[1:]
     with tf.compat.v1.variable_scope(scope, reuse=reuse):
         # hidden 0
         layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                    output_dim=32, filter_size=4,
-                                    stride=2, scope='hid0/conv',
+                                    output_dim=128, filter_size=4,
+                                    stride=1, scope='hid0/conv',
                                     init=opts['conv_init'])
         layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
         # hidden 1
         layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                    output_dim=64, filter_size=4,
-                                    stride=2, scope='hid1/conv',
+                                    output_dim=128, filter_size=4,
+                                    stride=1, scope='hid1/conv',
                                     init=opts['conv_init'])
         layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
         # final layer
-        outputs = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
-                                    np.prod(in_shape),
-                                    init=opts['mlp_init'],
-                                    scope='hid_final')
+        outputs = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=in_shape[-1], filter_size=4,
+                                    stride=1, scope='hid_final',
+                                    init=opts['conv_init'])
 
     return outputs
 
@@ -589,6 +601,7 @@ def celeba_fullconv_critic(opts, inputs, scope=None, is_training=False, reuse=Fa
     return outputs
 
 critic_archi = {'mlp': mlp_critic,
+            'singleconv': singleconv_critic,
             'conv': conv_critic,
             'fullconv': {'mnist':cifar_fullconv_critic, 'svhn':cifar_fullconv_critic, 'cifar10':cifar_fullconv_critic, 'celebA':cifar_fullconv_critic},
             'fullconv_v2': {'cifar10':cifar_fullconv_v2_critic, 'celebA':cifar_fullconv_v2_critic},
