@@ -464,6 +464,90 @@ def conv_critic(opts, inputs, scope=None, is_training=False, reuse=False):
 
     return outputs
 
+def conv_v2_critic(opts, inputs, scope=None, is_training=False, reuse=False):
+    layer_x = inputs
+    in_shape = inputs.get_shape().as_list()[1:]
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
+        # hidden 0
+        layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=128, filter_size=3,
+                                    stride=1, scope='hid0/conv',
+                                    init=opts['conv_init'])
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # hidden 1
+        layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=128, filter_size=3,
+                                    stride=1, scope='hid1/conv',
+                                    init=opts['conv_init'])
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # final layer
+        outputs = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=in_shape[-1], filter_size=3,
+                                    stride=1, scope='hid_final',
+                                    init=opts['conv_init'])
+
+    return outputs
+
+def conv_v3_critic(opts, inputs, scope=None, is_training=False, reuse=False):
+    layer_x = inputs
+    in_shape = inputs.get_shape().as_list()[1:]
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
+        # hidden 0
+        layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=128, filter_size=4,
+                                    stride=1, scope='hid0/conv',
+                                    init=opts['conv_init'])
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # hidden 1
+        layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=128, filter_size=4,
+                                    stride=1, scope='hid1/conv',
+                                    init=opts['conv_init'])
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # final layer
+        outputs = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=in_shape[-1], filter_size=1,
+                                    stride=1, scope='hid_final',
+                                    init=opts['conv_init'])
+
+    return outputs
+
+def conv_v4_critic(opts, inputs, scope=None, is_training=False, reuse=False):
+    layer_x = inputs
+    in_shape = inputs.get_shape().as_list()[1:]
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
+        # hidden 0
+        layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=64, filter_size=4,
+                                    stride=1, scope='hid0/conv',
+                                    init=opts['conv_init'])
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # hidden 1
+        layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=128, filter_size=4,
+                                    stride=1, scope='hid1/conv',
+                                    init=opts['conv_init'])
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # hidden 2
+        layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=256, filter_size=4,
+                                    stride=2, scope='hid2/conv',
+                                    init=opts['conv_init'])
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # hidden 3
+        layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=512, filter_size=4,
+                                    stride=3, scope='hid3/conv',
+                                    init=opts['conv_init'])
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # final layer
+        outputs = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=in_shape[-1], filter_size=4,
+                                    stride=1, scope='hid_final',
+                                    init=opts['conv_init'])
+
+    return outputs
+
 ######### fullconv #########
 def cifar_fullconv_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     batch_size, in_shape =  tf.shape(inputs)[0], inputs.get_shape().as_list()[1:]
@@ -603,6 +687,9 @@ def celeba_fullconv_critic(opts, inputs, scope=None, is_training=False, reuse=Fa
 critic_archi = {'mlp': mlp_critic,
             'singleconv': singleconv_critic,
             'conv': conv_critic,
+            'conv_v2': conv_v2_critic,
+            'conv_v3': conv_v3_critic,
+            'conv_v4': conv_v4_critic,
             'fullconv': {'mnist':cifar_fullconv_critic, 'svhn':cifar_fullconv_critic, 'cifar10':cifar_fullconv_critic, 'celebA':cifar_fullconv_critic},
             'fullconv_v2': {'cifar10':cifar_fullconv_v2_critic, 'celebA':cifar_fullconv_v2_critic},
             'fullconv_v3': {'cifar10':cifar_fullconv_big_critic, 'celebA':cifar_fullconv_big_critic}
