@@ -531,13 +531,13 @@ def conv_v4_critic(opts, inputs, scope=None, is_training=False, reuse=False):
         # hidden 2
         layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
                                     output_dim=256, filter_size=4,
-                                    stride=2, scope='hid2/conv',
+                                    stride=1, scope='hid2/conv',
                                     init=opts['conv_init'])
         layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
         # hidden 3
         layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
                                     output_dim=512, filter_size=4,
-                                    stride=3, scope='hid3/conv',
+                                    stride=1, scope='hid3/conv',
                                     init=opts['conv_init'])
         layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
         # final layer
