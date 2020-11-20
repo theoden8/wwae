@@ -140,8 +140,8 @@ def critic(opts, inputs, scope=None, is_training=False, reuse=False):
             critic = critic_archi['mlp']
         elif opts['wgan_critic_archi']=='singleconv':
             critic = critic_archi['singleconv']
-        elif opts['wgan_critic_archi']=='conv':
-            critic = critic_archi['conv']
+        elif opts['wgan_critic_archi'][:4]=='conv':
+            critic = critic_archi[opts['wgan_critic_archi']]
         elif opts['wgan_critic_archi'][:8]=='fullconv':
             critic = critic_archi[opts['wgan_critic_archi']][opts['dataset']]
         else:
