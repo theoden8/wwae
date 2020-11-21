@@ -599,6 +599,32 @@ def cifar_fullconv_v2_critic(opts, inputs, scope=None, is_training=False, reuse=
 
     return outputs
 
+def convdeconv_critic(opts, inputs, scope=None, is_training=False, reuse=False):
+    batch_size, in_shape =  tf.shape(inputs)[0], inputs.get_shape().as_list()[1:]
+    layer_x = inputs
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
+        # hidden 0
+        layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=128, filter_size=4,
+                                    stride=2, scope='hid0/conv',
+                                    init=opts['conv_init'])
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # hidden 1
+        layer_x = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_shape=[batch_size,in_shape[0],in_shape[1],128],
+                                    filter_size=4,
+                                    stride=2, scope='hid1/deconv',
+                                    init=opts['conv_init'])
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # final layer
+        outputs = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_shape=[batch_size,]+in_shape, filter_size=1,
+                                    stride=1, scope='hid_final/deconv',
+                                    init= opts['conv_init'])
+
+    return outputs
+
+
 def cifar_fullconv_big_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     batch_size, in_shape =  tf.shape(inputs)[0], inputs.get_shape().as_list()[1:]
     layer_x = inputs
@@ -690,6 +716,7 @@ critic_archi = {'mlp': mlp_critic,
             'conv_v2': conv_v2_critic,
             'conv_v3': conv_v3_critic,
             'conv_v4': conv_v4_critic,
+            'convdeconv': convdeconv_critic,
             'fullconv': {'mnist':cifar_fullconv_critic, 'svhn':cifar_fullconv_critic, 'cifar10':cifar_fullconv_critic, 'celebA':cifar_fullconv_critic},
             'fullconv_v2': {'cifar10':cifar_fullconv_v2_critic, 'celebA':cifar_fullconv_v2_critic},
             'fullconv_v3': {'cifar10':cifar_fullconv_big_critic, 'celebA':cifar_fullconv_big_critic}
