@@ -111,7 +111,7 @@ def main():
     opts['d_updt_freq'] = FLAGS.disc_freq
     # opts['wgan_critic_archi'] = FLAGS.critic_archi
     # opts['lambda'] = FLAGS.critic_pen
-    critic_archi = ['convdeconv',]
+    critic_archi = ['convdeconv','conv_v3']
     lambdas = [0.01, 0.1, 1.]
     critic_it = [1, 5]
     # critic_freq = [1, 5, 10]
