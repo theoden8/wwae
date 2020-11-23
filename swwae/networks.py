@@ -136,16 +136,18 @@ def critic(opts, inputs, scope=None, is_training=False, reuse=False):
             # element-wise multi
             outputs = layer_x*coef
     else:
-        if opts['wgan_critic_archi']=='mlp':
-            critic = critic_archi['mlp']
-        elif opts['wgan_critic_archi']=='singleconv':
-            critic = critic_archi['singleconv']
-        elif opts['wgan_critic_archi'][:4]=='conv':
-            critic = critic_archi[opts['wgan_critic_archi']]
-        elif opts['wgan_critic_archi'][:8]=='fullconv':
-            critic = critic_archi[opts['wgan_critic_archi']][opts['dataset']]
-        else:
-            raise ValueError('Unknown {} archi for critic' % opts['wgan_critic_archi'])
+        critic = critic_archi[opts['wgan_critic_archi']]
+        # if opts['wgan_critic_archi']=='mlp':
+        #     critic = critic_archi['mlp']
+        # elif opts['wgan_critic_archi']=='singleconv':
+        #     critic = critic_archi['singleconv']
+        # elif opts['wgan_critic_archi'][:4]=='conv':
+        #     critic = critic_archi[opts['wgan_critic_archi']]
+        # elif opts['wgan_critic_archi'][:8]=='fullconv':
+        #     critic = critic_archi[opts['wgan_critic_archi']][opts['dataset']]
+        #
+        # else:
+        #     raise ValueError('Unknown {} archi for critic' % opts['wgan_critic_archi'])
         outputs = critic(opts, inputs, scope, is_training, reuse)
 
     return tf.reshape(outputs, [-1,]+in_shape)
