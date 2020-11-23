@@ -727,16 +727,16 @@ def resnet_critic(opts, inputs, scope=None, is_training=False, reuse=False):
                                     stride=1, scope='hid1/conv',
                                     init=opts['conv_init'])
         layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
-        # skip connection
-        layer_x += inputs
-        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # # skip connection
+        # layer_x += inputs
+        # layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
         # final layer
         outputs = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
                                     output_dim=in_shape[-1], filter_size=1,
                                     stride=1, scope='hid_final',
                                     init=opts['conv_init'])
 
-    return outputs
+    return outputs + inputs
 
 
 critic_archi = {'mlp': mlp_critic,
