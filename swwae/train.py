@@ -555,10 +555,6 @@ class Run(object):
         else:
             raise NotImplementedError('Model type not recognised')
 
-        if self.opts['fid']:
-            FID_rec.append(self.fid_score(fid_inputs='reconstruction'))
-            FID_gen.append(self.fid_score(fid_inputs='samples'))
-
         # - save training data
         if self.opts['save_train_data']:
             data_dir = 'train_data'
@@ -569,6 +565,17 @@ class Run(object):
                     loss=np.array(Loss), loss_test=np.array(Loss_test),
                     losses=np.array(Losses_monit), losses_test=np.array(Losses_monit_test),
                     mse=np.array(MSE), mse_test=np.array(MSE_test))
+
+        if self.opts['fid']:
+            FID_rec.append(self.fid_score(fid_inputs='reconstruction'))
+            FID_gen.append(self.fid_score(fid_inputs='samples'))
+            data_dir = 'train_data'
+            save_path = os.path.join(exp_dir, data_dir)
+            if not tf.io.gfile.isdir(save_path):
+                utils.create_dir(save_path)
+            name = 'fid_final'
+            np.savez(os.path.join(save_path, name),
+                    fid_rec=np.array(FID_rec), fid_gen=np.array(FID_gen))
 
     def test(self, data, WEIGHTS_PATH, verbose):
         """

@@ -47,7 +47,7 @@ parser.add_argument("--gamma", type=float, default=1.,
                     help='weight for mass reg. in ground cost')
 parser.add_argument("--disc_freq", type=int, default=1,
                     help='discriminator update frequency for aversarial sw')
-parser.add_argument("--disc_it", type=int, default=5,
+parser.add_argument("--disc_it", type=int, default=1,
                     help='it. num. when updating discriminator for aversarial sw')
 parser.add_argument("--critic_archi", type=str, default='fullconv',
                     help='archi for the critic')
@@ -105,13 +105,14 @@ def main():
     # wgan ground cost
     opts['lambda'] = FLAGS.critic_pen
     opts['wgan_critic_archi'] = FLAGS.critic_archi
-    its = [1, 5]
-    betas = [1., 2., 4., 6. ,8., 10.]
-    exp_config = list(itertools.product(its, betas))
+    # its = [1, 5]
+    betas = [1., 2., 4., 6. ,8., 10., 20.]
+    # exp_config = list(itertools.product(its, betas))
+    exp_config = betas
     coef_id = (FLAGS.id-1) % len(exp_config)
-    opts['d_updt_it'] = exp_config[coef_id][0]
+    # opts['d_updt_it'] = exp_config[coef_id][0]
     # opts['d_updt_freq'] = exp_config[coef_id][0]
-    # opts['d_updt_it'] = FLAGS.disc_it
+    opts['d_updt_it'] = FLAGS.disc_it
     opts['d_updt_freq'] = FLAGS.disc_freq
     # sw ground cost
     opts['sw_proj_num'] = FLAGS.L
@@ -125,7 +126,7 @@ def main():
         opts['batch_size'] = FLAGS.batch_size
     if FLAGS.lr:
         opts['lr'] = FLAGS.lr
-    opts['beta'] = exp_config[coef_id][1]
+    opts['beta'] = exp_config[coef_id]
     # opts['beta'] = FLAGS.beta
 
     # Create directories
@@ -170,7 +171,7 @@ def main():
 
     opts['it_num'] = FLAGS.num_it
     opts['print_every'] = int(opts['it_num'] / 10.)
-    opts['evaluate_every'] = int(opts['it_num'] / 200.)
+    opts['evaluate_every'] = int(opts['it_num'] / 100.)
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
     opts['save_train_data'] = FLAGS.save_data
