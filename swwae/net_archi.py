@@ -213,7 +213,7 @@ def cifar10_conv_encoder(opts, input, output_dim, reuse=False,
 
     return outputs
 
-def  cifar_conv_decoder(opts, input, output_dim, reuse,
+def  cifar10_conv_decoder(opts, input, output_dim, reuse,
                                             is_training):
     """
     Archi used by Ghosh & al.
