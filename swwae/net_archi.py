@@ -255,6 +255,18 @@ def  cifar10_conv_decoder(opts, input, output_dim, reuse,
         layer_x = ops.batchnorm.Batchnorm_layers( opts, layer_x,
                                 'hid2/bn', is_training, reuse)
     layer_x = ops._ops.non_linear(layer_x,'relu')
+    # hidden 3
+    _out_shape = [batch_size, 2*layer_x.get_shape().as_list()[1],
+                                2*layer_x.get_shape().as_list()[2],
+                                64]
+    layer_x = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_shape=_out_shape, filter_size=4,
+                                stride=2, scope='hid3/deconv',
+                                init= opts['conv_init'])
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers( opts, layer_x,
+                                'hid3/bn', is_training, reuse)
+    layer_x = ops._ops.non_linear(layer_x,'relu')
     # output layer
     outputs = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
                                 output_shape=[batch_size,]+output_dim, filter_size=1,
@@ -367,6 +379,18 @@ def  celebA_conv_decoder(opts, input, output_dim, reuse,
     if opts['normalization']=='batchnorm':
         layer_x = ops.batchnorm.Batchnorm_layers( opts, layer_x,
                                 'hid3/bn', is_training, reuse)
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+    # hidden 4
+    _out_shape = [batch_size, 2*layer_x.get_shape().as_list()[1],
+                                2*layer_x.get_shape().as_list()[2],
+                                32]
+    layer_x = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_shape=_out_shape, filter_size=4,
+                                stride=2, scope='hid4/deconv',
+                                init= opts['conv_init'])
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers( opts, layer_x,
+                                'hid4/bn', is_training, reuse)
     layer_x = ops._ops.non_linear(layer_x,'relu')
     # output layer
     outputs = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
