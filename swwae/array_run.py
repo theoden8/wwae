@@ -111,15 +111,15 @@ def main():
     opts['d_updt_freq'] = FLAGS.disc_freq
     # opts['wgan_critic_archi'] = FLAGS.critic_archi
     # opts['lambda'] = FLAGS.critic_pen
-    critic_archi = ['resnet',]
+    critic_archi = ['conv_critic', 'convdeconv', 'resnet']
     lambdas = [0.01, 0.1, 1.]
     critic_it = [1, 5]
     # critic_freq = [1, 5, 10]
-    exp_config = list(itertools.product(lambdas, critic_it, critic_archi))
+    exp_config = list(itertools.product(critic_it, lambdas, critic_archi))
     coef_id = (FLAGS.id-1) % len(exp_config)
-    opts['lambda'] = exp_config[coef_id][0]
+    opts['lambda'] = exp_config[coef_id][1]
     # opts['d_updt_freq'] = exp_config[coef_id][2]
-    opts['d_updt_it'] = exp_config[coef_id][1]
+    opts['d_updt_it'] = exp_config[coef_id][0]
     opts['wgan_critic_archi'] = exp_config[coef_id][2]
     # sw ground cost
     opts['sw_proj_num'] = FLAGS.L

@@ -181,7 +181,7 @@ def cifar10_conv_encoder(opts, input, output_dim, reuse=False,
     layer_x = input
     # hidden 0
     layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=64, filter_size=4,
+                                output_dim=128, filter_size=4,
                                 stride=2, scope='hid0/conv',
                                 init=opts['conv_init'])
     if opts['normalization']=='batchnorm':
@@ -190,7 +190,7 @@ def cifar10_conv_encoder(opts, input, output_dim, reuse=False,
     layer_x = ops._ops.non_linear(layer_x,'relu')
     # hidden 1
     layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=128, filter_size=4,
+                                output_dim=256, filter_size=4,
                                 stride=2, scope='hid1/conv',
                                 init=opts['conv_init'])
     if opts['normalization']=='batchnorm':
@@ -199,21 +199,12 @@ def cifar10_conv_encoder(opts, input, output_dim, reuse=False,
     layer_x = ops._ops.non_linear(layer_x,'relu')
     # hidden 2
     layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=256, filter_size=4,
+                                output_dim=512, filter_size=4,
                                 stride=2, scope='hid2/conv',
                                 init=opts['conv_init'])
     if opts['normalization']=='batchnorm':
         layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
                                 'hid2/bn', is_training, reuse)
-    layer_x = ops._ops.non_linear(layer_x,'relu')
-    # hidden 3
-    layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=512, filter_size=4,
-                                stride=2, scope='hid3/conv',
-                                init=opts['conv_init'])
-    if opts['normalization']=='batchnorm':
-        layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
-                                'hid3/bn', is_training, reuse)
     layer_x = ops._ops.non_linear(layer_x,'relu')
     # output layer
     layer_x = tf.reshape(layer_x, [-1,np.prod(layer_x.get_shape().as_list()[1:])])
@@ -222,22 +213,24 @@ def cifar10_conv_encoder(opts, input, output_dim, reuse=False,
 
     return outputs
 
-def  cifar10_conv_decoder(opts, input, output_dim, reuse,
+def  cifar_conv_decoder(opts, input, output_dim, reuse,
                                             is_training):
     """
     Archi used by Ghosh & al.
     """
     # batch_size
     batch_size = tf.shape(input)[0]
+    w,h = output_dim[0], output_dim[1]
     layer_x = input
     # Linear layers
+    _out_shape = [int(w/2**3), int(h/2**3), 512]
     layer_x = ops.linear.Linear(opts, layer_x, np.prod(input.get_shape().as_list()[1:]),
-                                8*8*512, scope='hid0/lin')
+                                np.prod(_out_shape), scope='hid0/lin')
     if opts['normalization']=='batchnorm':
         layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
                                 'hid0/bn', is_training, reuse)
     layer_x = ops._ops.non_linear(layer_x,'relu')
-    layer_x = tf.reshape(layer_x, [-1, 8, 8, 512])
+    layer_x = tf.reshape(layer_x, [-1,] + _out_shape)
     # hidden 1
     _out_shape = [batch_size, 2*layer_x.get_shape().as_list()[1],
                                 2*layer_x.get_shape().as_list()[2],
@@ -280,7 +273,7 @@ def celebA_conv_encoder(opts, input, output_dim, reuse=False,
     layer_x = input
     # hidden 0
     layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=64, filter_size=5,
+                                output_dim=64, filter_size=4,
                                 stride=2, scope='hid0/conv',
                                 init=opts['conv_init'])
     if opts['normalization']=='batchnorm':
@@ -289,7 +282,7 @@ def celebA_conv_encoder(opts, input, output_dim, reuse=False,
     layer_x = ops._ops.non_linear(layer_x,'relu')
     # hidden 1
     layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=128, filter_size=5,
+                                output_dim=128, filter_size=4,
                                 stride=2, scope='hid1/conv',
                                 init=opts['conv_init'])
     if opts['normalization']=='batchnorm':
@@ -298,7 +291,7 @@ def celebA_conv_encoder(opts, input, output_dim, reuse=False,
     layer_x = ops._ops.non_linear(layer_x,'relu')
     # hidden 2
     layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=256, filter_size=5,
+                                output_dim=256, filter_size=4,
                                 stride=2, scope='hid2/conv',
                                 init=opts['conv_init'])
     if opts['normalization']=='batchnorm':
@@ -307,7 +300,7 @@ def celebA_conv_encoder(opts, input, output_dim, reuse=False,
     layer_x = ops._ops.non_linear(layer_x,'relu')
     # hidden 3
     layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=512, filter_size=5,
+                                output_dim=512, filter_size=4,
                                 stride=2, scope='hid3/conv',
                                 init=opts['conv_init'])
     if opts['normalization']=='batchnorm':
@@ -328,21 +321,23 @@ def  celebA_conv_decoder(opts, input, output_dim, reuse,
     """
     # batch_size
     batch_size = tf.shape(input)[0]
+    w,h = output_dim[0], output_dim[1]
     layer_x = input
     # Linear layers
+    _out_shape = [int(w/2**4), int(h/2**4), 512]
     layer_x = ops.linear.Linear(opts, layer_x, np.prod(input.get_shape().as_list()[1:]),
-                                8*8*512, scope='hid0/lin')
+                                np.prod(_out_shape), scope='hid0/lin')
     if opts['normalization']=='batchnorm':
         layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
                                 'hid0/bn', is_training, reuse)
     layer_x = ops._ops.non_linear(layer_x,'relu')
-    layer_x = tf.reshape(layer_x, [-1, 8, 8, 512])
+    layer_x = tf.reshape(layer_x, [-1,] + _out_shape)
     # hidden 1
     _out_shape = [batch_size, 2*layer_x.get_shape().as_list()[1],
                                 2*layer_x.get_shape().as_list()[2],
                                 256]
     layer_x = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_shape=_out_shape, filter_size=5,
+                                output_shape=_out_shape, filter_size=4,
                                 stride=2, scope='hid1/deconv',
                                 init= opts['conv_init'])
     if opts['normalization']=='batchnorm':
@@ -354,7 +349,7 @@ def  celebA_conv_decoder(opts, input, output_dim, reuse,
                                 2*layer_x.get_shape().as_list()[2],
                                 128]
     layer_x = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_shape=_out_shape, filter_size=5,
+                                output_shape=_out_shape, filter_size=4,
                                 stride=2, scope='hid2/deconv',
                                 init= opts['conv_init'])
     if opts['normalization']=='batchnorm':
@@ -366,7 +361,7 @@ def  celebA_conv_decoder(opts, input, output_dim, reuse,
                                 2*layer_x.get_shape().as_list()[2],
                                 64]
     layer_x = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_shape=_out_shape, filter_size=5,
+                                output_shape=_out_shape, filter_size=4,
                                 stride=2, scope='hid3/deconv',
                                 init= opts['conv_init'])
     if opts['normalization']=='batchnorm':
@@ -378,10 +373,6 @@ def  celebA_conv_decoder(opts, input, output_dim, reuse,
                                 output_shape=[batch_size,]+output_dim, filter_size=1,
                                 stride=1, scope='hid_final/deconv',
                                 init= opts['conv_init'])
-    # outputs = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
-    #                             output_shape=[batch_size,]+output_dim, filter_size=5,
-    #                             stride=2, scope='hid_final/deconv',
-    #                             init= opts['conv_init'])
 
     return outputs
 
@@ -548,57 +539,7 @@ def conv_v4_critic(opts, inputs, scope=None, is_training=False, reuse=False):
 
     return outputs
 
-######### fullconv #########
-def cifar_fullconv_critic(opts, inputs, scope=None, is_training=False, reuse=False):
-    batch_size, in_shape =  tf.shape(inputs)[0], inputs.get_shape().as_list()[1:]
-    layer_x = inputs
-    with tf.compat.v1.variable_scope(scope, reuse=reuse):
-        # hidden 0
-        layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                    output_dim=64, filter_size=4,
-                                    stride=2, scope='hid0/conv',
-                                    init=opts['conv_init'])
-        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
-        # hidden 1
-        layer_x = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                    output_shape=[batch_size,in_shape[0],in_shape[1],32],
-                                    filter_size=4,
-                                    stride=2, scope='hid1/deconv',
-                                    init=opts['conv_init'])
-        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
-        # final layer
-        outputs = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                    output_shape=[batch_size,]+in_shape, filter_size=1,
-                                    stride=1, scope='hid_final/deconv',
-                                    init= opts['conv_init'])
-
-    return outputs
-
-def cifar_fullconv_v2_critic(opts, inputs, scope=None, is_training=False, reuse=False):
-    batch_size, in_shape =  tf.shape(inputs)[0], inputs.get_shape().as_list()[1:]
-    layer_x = inputs
-    with tf.compat.v1.variable_scope(scope, reuse=reuse):
-        # hidden 0
-        layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                    output_dim=32, filter_size=3,
-                                    stride=2, scope='hid0/conv',
-                                    init=opts['conv_init'])
-        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
-        # hidden 1
-        layer_x = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                    output_shape=[batch_size,in_shape[0],in_shape[1],64],
-                                    filter_size=3,
-                                    stride=2, scope='hid1/deconv',
-                                    init=opts['conv_init'])
-        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
-        # final layer
-        outputs = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                    output_shape=[batch_size,]+in_shape, filter_size=1,
-                                    stride=1, scope='hid_final/deconv',
-                                    init= opts['conv_init'])
-
-    return outputs
-
+######### convdeconv #########
 def convdeconv_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     batch_size, in_shape =  tf.shape(inputs)[0], inputs.get_shape().as_list()[1:]
     layer_x = inputs
@@ -624,8 +565,7 @@ def convdeconv_critic(opts, inputs, scope=None, is_training=False, reuse=False):
 
     return outputs
 
-
-def cifar_fullconv_big_critic(opts, inputs, scope=None, is_training=False, reuse=False):
+def convdeconv_v2_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     batch_size, in_shape =  tf.shape(inputs)[0], inputs.get_shape().as_list()[1:]
     layer_x = inputs
     with tf.compat.v1.variable_scope(scope, reuse=reuse):
@@ -636,26 +576,10 @@ def cifar_fullconv_big_critic(opts, inputs, scope=None, is_training=False, reuse
                                     init=opts['conv_init'])
         layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
         # hidden 1
-        layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                    output_dim=128, filter_size=4,
-                                    stride=2, scope='hid1/conv',
-                                    init=opts['conv_init'])
-        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
-        # hidden 2
-        _out_shape = [batch_size, 2*layer_x.get_shape().as_list()[1],
-                                    2*layer_x.get_shape().as_list()[2],
-                                    64]
-        layer_x = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                    output_shape=_out_shape,
-                                    filter_size=4,
-                                    stride=2, scope='hid2/deconv',
-                                    init=opts['conv_init'])
-        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
-        # hidden 3
         layer_x = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
                                     output_shape=[batch_size,in_shape[0],in_shape[1],32],
                                     filter_size=4,
-                                    stride=2, scope='hid3/deconv',
+                                    stride=2, scope='hid1/deconv',
                                     init=opts['conv_init'])
         layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
         # final layer
@@ -666,40 +590,21 @@ def cifar_fullconv_big_critic(opts, inputs, scope=None, is_training=False, reuse
 
     return outputs
 
-def celeba_fullconv_critic(opts, inputs, scope=None, is_training=False, reuse=False):
+def convdeconv_v3_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     batch_size, in_shape =  tf.shape(inputs)[0], inputs.get_shape().as_list()[1:]
     layer_x = inputs
     with tf.compat.v1.variable_scope(scope, reuse=reuse):
         # hidden 0
         layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                    output_dim=32, filter_size=5,
+                                    output_dim=32, filter_size=3,
                                     stride=2, scope='hid0/conv',
                                     init=opts['conv_init'])
         layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
         # hidden 1
-        layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                    output_dim=64, filter_size=4,
-                                    stride=2, scope='hid1/conv',
-                                    init=opts['conv_init'])
-        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
-        # hidden 2
-        _out_shape = [batch_size, 2*layer_x.get_shape().as_list()[1],
-                                    2*layer_x.get_shape().as_list()[2],
-                                    64]
         layer_x = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                    output_shape=_out_shape,
-                                    filter_size=4,
-                                    stride=2, scope='hid2/deconv',
-                                    init=opts['conv_init'])
-        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
-        # hidden 3
-        _out_shape = [batch_size, 2*layer_x.get_shape().as_list()[1],
-                                    2*layer_x.get_shape().as_list()[2],
-                                    32]
-        layer_x = ops.deconv2d.Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                    output_shape=_out_shape,
-                                    filter_size=5,
-                                    stride=2, scope='hid3/deconv',
+                                    output_shape=[batch_size,in_shape[0],in_shape[1],64],
+                                    filter_size=3,
+                                    stride=2, scope='hid1/deconv',
                                     init=opts['conv_init'])
         layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
         # final layer
@@ -709,7 +614,6 @@ def celeba_fullconv_critic(opts, inputs, scope=None, is_training=False, reuse=Fa
                                     init= opts['conv_init'])
 
     return outputs
-
 
 def resnet_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     layer_x = inputs
@@ -746,8 +650,7 @@ critic_archi = {'mlp': mlp_critic,
             'conv_v3': conv_v3_critic,
             'conv_v4': conv_v4_critic,
             'convdeconv': convdeconv_critic,
-            'fullconv': {'mnist':cifar_fullconv_critic, 'svhn':cifar_fullconv_critic, 'cifar10':cifar_fullconv_critic, 'celebA':cifar_fullconv_critic},
-            'fullconv_v2': {'cifar10':cifar_fullconv_v2_critic, 'celebA':cifar_fullconv_v2_critic},
-            'fullconv_v3': {'cifar10':cifar_fullconv_big_critic, 'celebA':cifar_fullconv_big_critic},
+            'convdeconv_v2': convdeconv_v2_critic,
+            'convdeconv_v3': convdeconv_v3_critic,
             'resnet': resnet_critic
             }
