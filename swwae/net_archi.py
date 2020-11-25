@@ -706,5 +706,6 @@ critic_archi = {'mlp': mlp_critic,
             'convdeconv': convdeconv_critic,
             'convdeconv_v2': convdeconv_v2_critic,
             'convdeconv_v3': convdeconv_v3_critic,
-            'resnet': resnet_critic
+            'resnet': resnet_critic,
+            'resnet_v2': resnet_v2_critic
             }
