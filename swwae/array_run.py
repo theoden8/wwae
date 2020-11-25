@@ -113,9 +113,9 @@ def main():
     # opts['lambda'] = FLAGS.critic_pen
     # critic_archi = ['conv', 'convdeconv', 'resnet']
     critic_archi = ['conv', 'resnet_v2',]
-    lambdas = [0.,]
+    lambdas = [0.,0.1]
     # lambdas = [0.01, 0.1, 1.]
-    critic_it = [1, 5]
+    critic_it = [1, 5, 20]
     # critic_freq = [1, 5, 10]
     exp_config = list(itertools.product(critic_it, lambdas, critic_archi))
     coef_id = (FLAGS.id-1) % len(exp_config)
