@@ -666,6 +666,36 @@ def resnet_critic(opts, inputs, scope=None, is_training=False, reuse=False):
 
     return outputs + inputs
 
+def resnet_v2_critic(opts, inputs, scope=None, is_training=False, reuse=False):
+    layer_x = inputs
+    in_shape = inputs.get_shape().as_list()[1:]
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
+        # hidden 0
+        layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=128, filter_size=4,
+                                    stride=1, scope='hid0/conv',
+                                    init=opts['conv_init'])
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # hidden 1
+        layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=128, filter_size=4,
+                                    stride=1, scope='hid1/conv',
+                                    init=opts['conv_init'])
+        # skip connection
+        shortcut = ops.conv2d.Conv2d(opts, inputs, inputs.get_shape().as_list()[-1],
+                                    output_dim=128, filter_size=4,
+                                    stride=1, scope='skip/conv',
+                                    init=opts['conv_init'])
+        layer_x += shortcut
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # final layer
+        outputs = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=in_shape[-1], filter_size=1,
+                                    stride=1, scope='hid_final',
+                                    init=opts['conv_init'])
+
+    return outputs + inputs
+
 
 critic_archi = {'mlp': mlp_critic,
             'singleconv': singleconv_critic,
