@@ -114,13 +114,10 @@ def main():
     # critic_archi = ['conv', 'convdeconv', 'resnet']
     # lambdas = [0.01, 0.1, 1.]
     critic_archi = ['conv', 'resnet_v2',]
-    lambdas = [0.1,]
-    critic_it = [20,]
+    lambdas = [0.01, 0.1, 1.]
+    critic_it = [1,5]
     # critic_freq = [1, 5, 10]
     exp_config = list(itertools.product(critic_it, lambdas, critic_archi))
-    lambdas = [10,]
-    critic_it = [1,5]
-    exp_config += list(itertools.product(critic_it, lambdas, critic_archi))
     coef_id = (FLAGS.id-1) % len(exp_config)
     opts['lambda'] = exp_config[coef_id][1]
     # opts['d_updt_freq'] = exp_config[coef_id][2]
