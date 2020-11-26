@@ -563,6 +563,37 @@ def conv_v4_critic(opts, inputs, scope=None, is_training=False, reuse=False):
 
     return outputs
 
+def conv_v5_critic(opts, inputs, scope=None, is_training=False, reuse=False):
+    layer_x = inputs
+    in_shape = inputs.get_shape().as_list()[1:]
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
+        # hidden 0
+        layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=128, filter_size=3,
+                                    stride=1, scope='hid0/conv',
+                                    init=opts['conv_init'])
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # hidden 1
+        layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=256, filter_size=3,
+                                    stride=1, scope='hid1/conv',
+                                    init=opts['conv_init'])
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # hidden 2
+        layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=512, filter_size=3,
+                                    stride=1, scope='hid2/conv',
+                                    init=opts['conv_init'])
+        layer_x = ops._ops.non_linear(layer_x,'leaky_relu')
+        # final layer
+        outputs = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                    output_dim=in_shape[-1], filter_size=1,
+                                    stride=1, scope='hid_final',
+                                    init=opts['conv_init'])
+
+    return outputs
+
+
 ######### convdeconv #########
 def convdeconv_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     batch_size, in_shape =  tf.shape(inputs)[0], inputs.get_shape().as_list()[1:]
@@ -702,6 +733,7 @@ critic_archi = {'mlp': mlp_critic,
             'conv': conv_critic,
             'conv_v2': conv_v2_critic,
             'conv_v3': conv_v3_critic,
+            'conv_v4': conv_v4_critic,
             'conv_v4': conv_v4_critic,
             'convdeconv': convdeconv_critic,
             'convdeconv_v2': convdeconv_v2_critic,
