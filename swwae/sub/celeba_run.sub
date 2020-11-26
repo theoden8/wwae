@@ -8,7 +8,7 @@
 #$ -l tmem=26G
 #$ -l h_rt=24:00:00
 
-#$ -t 1-2
+#$ -t 1-6
 
 #$ -N ablacelebA
 
