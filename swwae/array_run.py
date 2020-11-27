@@ -116,8 +116,8 @@ def main():
     # opts['lambda'] = FLAGS.critic_pen
     # critic_archi = ['conv', 'convdeconv', 'resnet']
     # lambdas = [0.01, 0.1, 1.]
-    # critic_archi = ['conv', 'resnet_v2',]
-    critic_archi = ['mlp',]
+    critic_archi = ['conv', 'resnet_v2',]
+    # critic_archi = ['mlp',]
     lambdas = [0.01, 0.1, 1.]
     critic_it = [1,5]
     critic_freq = [1, 5]
