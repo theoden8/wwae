@@ -53,6 +53,8 @@ parser.add_argument("--critic_archi", type=str, default='fullconv',
                     help='archi for the critic')
 parser.add_argument("--critic_pen", type=float, default=1.,
                     help='regularization weight for the critic')
+parser.add_argument("--critic_pretrain", action='store_true', default=False,
+                    help='pretrain cirtic')
 parser.add_argument("--id", type=int, default=0,
                     help='exp. config. id')
 parser.add_argument("--sigma_pen", action='store_true', default=False,
@@ -103,26 +105,28 @@ def main():
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
     opts['gamma'] = FLAGS.gamma
     # wgan ground cost
+    opts['pretrain_critic'] = FLAGS.critic_pretrain
     # critic_net = ['mlp', 'conv', 'fullconv']
     # critic_config = list(itertools.product(critic_net,critic_it))
     # coef_id = (FLAGS.id-1) % len(critic_config)
     # opts['wgan_critic_archi'] = critic_config[coef_id][0]
     # opts['d_updt_it'] = FLAGS.disc_it
-    opts['d_updt_freq'] = FLAGS.disc_freq
+    # opts['d_updt_freq'] = FLAGS.disc_freq
     # opts['wgan_critic_archi'] = FLAGS.critic_archi
     # opts['lambda'] = FLAGS.critic_pen
     # critic_archi = ['conv', 'convdeconv', 'resnet']
     # lambdas = [0.01, 0.1, 1.]
-    critic_archi = ['conv_v5',]
+    # critic_archi = ['conv', 'resnet_v2',]
+    critic_archi = ['mlp',]
     lambdas = [0.01, 0.1, 1.]
-    critic_it = [1,]
-    # critic_freq = [1, 5, 10]
-    exp_config = list(itertools.product(critic_it, lambdas, critic_archi))
+    critic_it = [1,5]
+    critic_freq = [1, 5]
+    exp_config = list(itertools.product(critic_it, critic_freq, lambdas, critic_archi))
     coef_id = (FLAGS.id-1) % len(exp_config)
-    opts['lambda'] = exp_config[coef_id][1]
-    # opts['d_updt_freq'] = exp_config[coef_id][2]
+    opts['lambda'] = exp_config[coef_id][2]
+    opts['d_updt_freq'] = exp_config[coef_id][1]
     opts['d_updt_it'] = exp_config[coef_id][0]
-    opts['wgan_critic_archi'] = exp_config[coef_id][2]
+    opts['wgan_critic_archi'] = exp_config[coef_id][3]
     # sw ground cost
     opts['sw_proj_num'] = FLAGS.L
     opts['sw_proj_type'] = FLAGS.slicing_dist
@@ -177,8 +181,8 @@ def main():
     assert data.train_size >= opts['batch_size'], 'Training set too small'
 
     opts['it_num'] = FLAGS.num_it
-    opts['print_every'] = int(opts['it_num'] / 10.)
-    opts['evaluate_every'] = int(opts['it_num'] / 100.)
+    opts['print_every'] = 100 #int(opts['it_num'] / 10.)
+    opts['evaluate_every'] = 100 #int(opts['it_num'] / 100.)
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
     opts['save_train_data'] = FLAGS.save_data

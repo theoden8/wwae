@@ -41,6 +41,7 @@ config['batch_norm_momentum'] = 0.99
 config['cost'] = 'l2sq' #l2, l2sq, l2sq_norm, l1, xentropy
 config['mmd_kernel'] = 'IMQ' # RBF, IMQ
 config['transform_rgb_img'] = 'none' #[average/wavelength/learned/none]
+config['pretrain_critic_nit'] = 10000
 config['d_updt_freq'] = 1
 config['d_updt_it'] = 5
 config['pen_enc_sigma'] = False

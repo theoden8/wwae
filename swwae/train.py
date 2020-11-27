@@ -13,7 +13,7 @@ from math import ceil
 import utils
 from sampling_functions import sample_pz, linespace
 from plot_functions import save_train, save_test_celeba, save_dimwise_traversals
-from plot_functions import plot_critic_loss, plot_embedded, plot_encSigma, plot_interpolation, plot_projected
+from plot_functions import plot_critic_pretrain_loss, plot_embedded, plot_encSigma, plot_interpolation, plot_projected
 import models
 from networks import theta_discriminator
 from wgan import wgan, wgan_v2
@@ -60,6 +60,8 @@ class Run(object):
         # critic obj
         if self.critic_reg is not None:
             self.critic_objective = -self.loss_rec + opts['lambda']*self.critic_reg
+        else:
+            self.critic_objective = .0
 
         # --- encode & decode pass for testing
         self.z_samples, self.z_mean, self.z_sigma, self.recon_x, _, _ =\
@@ -67,17 +69,13 @@ class Run(object):
                                     is_training=self.is_training,
                                     reuse=True)
 
-        # # --- Critic loss
-        # if self.opts['cost']=='wgan':
-        #     critic_loss, _, _ = wgan(self.opts, self.data.next_element, self.recon_x,
-        #                                 is_training=self.is_training,
-        #                                 reuse=True)
-        #     self.critic_loss = tf.reduce_mean(critic_loss)
-        # if self.opts['cost']=='wgan_v2':
-        #     critic_loss, _, _ = wgan_v2(self.opts, self.data.next_element, self.recon_x,
-        #                                 is_training=self.is_training,
-        #                                 reuse=True)
-        #     self.critic_loss = tf.reduce_mean(critic_loss)
+        # --- Critic loss for pretraining
+        if self.opts['cost']=='wgan' and self.opts['pretrain_critic']:
+            critic_loss, _, critic_reg = wgan(self.opts, self.data.next_element,
+                                        tf.random.shuffle(self.data.next_element),
+                                        is_training=self.is_training,
+                                        reuse=True)
+            self.critic_pretrain_loss = tf.reduce_mean(critic_loss - opts['lambda']*critic_reg)
 
         # --- MSE
         self.mse = self.model.MSE(self.data.next_element, self.recon_x)
@@ -231,6 +229,10 @@ class Run(object):
                 clip_ops.append(tf.assign(var,tf.clip_by_value(var,
                                             clip_bounds[0], clip_bounds[1])))
             self.clip_critic_weights = tf.group(*clip_ops)
+            # pretraining
+            if self.opts['pretrain_critic']:
+                with tf.control_dependencies(self.extra_update_ops):
+                    self.critic_pretrain_opt = critic_opt.minimize(loss=-self.critic_pretrain_loss, var_list=critic_vars)
 
 
     def train(self, MODEL_PATH=None, WEIGHTS_FILE=None):
@@ -284,6 +286,23 @@ class Run(object):
         else:
             self.sess.run(self.initializer)
 
+        # - Critic pretraining
+        if self.opts['cost'][:4]=='wgan' and self.opts['pretrain_critic']:
+            logging.error('Pretraining Critic')
+            pretrain_loss = []
+            for i in range(self.opts['pretrain_critic_nit']):
+                _, critic_pretrain_loss = self.sess.run(
+                                    [self.critic_pretrain_opt,
+                                    self.critic_pretrain_loss],
+                                    feed_dict={self.data.handle: self.train_handle,
+                                               self.is_training: True})
+                if i%int(self.opts['pretrain_critic_nit']/200)==0:
+                    pretrain_loss.append(critic_pretrain_loss)
+            plot_critic_pretrain_loss(self.opts, pretrain_loss,
+                                exp_dir,'critic_pretrain_loss.png')
+            logging.error('Pretraining done.')
+
+
         # - Training
         for it in range(self.opts['it_num']):
             # Saver
@@ -325,6 +344,7 @@ class Run(object):
                                             self.loss_reg,
                                             self.cost,
                                             self.intensities_reg,
+                                            self.critic_objective,
                                             self.mse],
                                             feed_dict=feed_dict)
                 Loss.append(losses[0])
@@ -337,7 +357,7 @@ class Run(object):
                                             feed_dict=feed_dict)
                     enc_Sigmas.append(enc_sigmastats)
 
-                loss, monitoring, mse = 0., np.zeros(4), 0.
+                loss, monitoring, mse = 0., np.zeros(5), 0.
                 for it_ in range(test_it_num):
                     test_feed_dict={self.data.handle: self.test_handle,
                                     self.beta: self.opts['beta'],
@@ -347,6 +367,7 @@ class Run(object):
                                             self.loss_reg,
                                             self.cost,
                                             self.intensities_reg,
+                                            self.critic_objective,
                                             self.mse],
                                             feed_dict=test_feed_dict)
                     loss += losses[0] / test_it_num
@@ -449,10 +470,6 @@ class Run(object):
                     plot_projected(self.opts, self.data.data_vizu, proj,
                                             exp_dir, 'proj_it%07d.png' % (it))
 
-                # # - Critic loss
-                # if self.opts['cost'][:4]=='wgan':
-                #     plot_critic_loss(self.opts, Loss_critic, Loss_critic_test,
-                #                             exp_dir,'critic_loss_it%07d.png' % (it))
 
             # - Update learning rate if necessary and it
             if self.opts['lr_decay']:
@@ -506,6 +523,7 @@ class Run(object):
                                     self.loss_reg,
                                     self.cost,
                                     self.intensities_reg,
+                                    self.critic_objective,
                                     self.mse],
                                     feed_dict=feed_dict)
         Loss.append(losses[0])
@@ -522,6 +540,7 @@ class Run(object):
                                     self.loss_reg,
                                     self.cost,
                                     self.intensities_reg,
+                                    self.critic_objective,
                                     self.mse],
                                     feed_dict=test_feed_dict)
             loss += losses[0] / test_it_num
