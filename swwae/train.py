@@ -61,7 +61,7 @@ class Run(object):
         if self.critic_reg is not None:
             self.critic_objective = -self.loss_rec + opts['lambda']*self.critic_reg
         else:
-            self.critic_objective = .0
+            self.critic_objective = tf.constant(0., tf.float32)
 
         # --- encode & decode pass for testing
         self.z_samples, self.z_mean, self.z_sigma, self.recon_x, _, _ =\

@@ -8,7 +8,6 @@ from ops._ops import logsumexp
 from sw import sw
 from wemd import wemd
 from wgan import wgan, wgan_v2
-from kymatio.scattering2d.filter_bank import filter_bank
 import pdb
 
 ######### latent losses #########
@@ -119,16 +118,7 @@ def wae_ground_cost(opts,  x1, x2, is_training=False, reuse=False):
     elif opts['cost'] == 'sw':
         cost = sw(opts,  x1, x2, reuse=reuse)
     elif opts['cost'] == 'wemd':
-        J = int(np.log2(x1.shape[1]))
-        dict = filter_bank(x1.shape[1], x1.shape[2], J)['psi']
-        waves = np.zeros([J, 8, x1.shape[1], x1.shape[2]])
-        for j in range(J):
-            for theta in range(8):
-                print(j,theta)
-                waves[j,theta,:,:] = dict[8*j+theta][0]
-        waves = tf.cast(waves, tf.complex64)
-        print(waves.shape)
-        cost = wemd(opts, waves, x1, x2)
+        cost, intensities_reg = wemd(opts, x1, x2)
     elif opts['cost'] == 'wgan':
         cost, intensities_reg, critic_reg = wgan(opts, x1, x2, is_training=is_training, reuse=reuse)
         critic_reg = tf.reduce_mean(critic_reg)
