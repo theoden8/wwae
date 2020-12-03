@@ -38,7 +38,7 @@ def wemd(x1,x2):
     mod_mean = tf.reduce_mean(mod, axis=[-5,-3,-2,-1])
 
     coef = [2**(j/2) for j in [4,3,2,1,0]]
-    coef = tf.reshape(coef, [1,5])
+    coef = tf.reshape(coef, [1,-1])
     coef = tf.cast(coef, tf.float32)
 
     wemd = tf.reduce_mean(1*mod_mean, axis=-1)
@@ -64,28 +64,27 @@ def wemd(opts, x1, x2):
     # Difference probability
     d = xs1 - xs2
     d = tf.cast(d, tf.complex64)
+    d = tf.transpose(d, [0,3,1,2])  # (b,c,h,w)
     # Fourrier transform
     fftd = tf.signal.fft2d(d)
     # Get waves filters
-    dict = filter_bank(h, w, J)['psi']
-    waves = np.zeros([J, 8, h, w])
-    for j in range(J):
-        for theta in range(8):
-            # print(j,theta)
-            waves[j,theta,:,:] = dict[8*j+theta][0]
-    waves = tf.cast(waves, tf.complex64)
-    # print(waves.shape)
+     dict = filter_bank(h, w, J)['psi']
+     waves = np.zeros([J, 8, h, w])
+     for j in range(J):
+         for theta in range(8):
+             waves[j,theta,:,:] = dict[8*j+theta][0]
+     waves = tf.cast(waves, tf.complex64)
     # Conv in Fourrier domain
-    hatprod = tf.reshape(waves, [1,J,L,h,w,1])*tf.reshape(fftd, [-1,1,1,h,w,c]) #(b,J,L,h,w,c)
-    prod = tf.signal.ifft2d(hatprod) #(b,J,L,h,w,c)
+    hatprod = tf.reshape(waves, [1,1,J,L,h,w])*tf.reshape(fftd, [-1,c,1,1,h,w]) #(b,c,J,L,h,w)
+    prod = tf.signal.ifft2d(hatprod) #(b,c,J,L,h,w)
     # Module of wave coeffs
-    mod = tf.math.abs(prod) #(b,J,L,h,w,c)
-    mod_mean = tf.reduce_sum(mod, axis=[2,3,4]) #(b,J,c)
+    mod = tf.math.abs(prod) #(b,c,J,L,h,w)
+    mod_mean = tf.reduce_sum(mod, axis=[3,4,5]) #(b,c,J)
     # coef for putting different wieghts to different scales as in the paper
     coef = tf.convert_to_tensor([2**(j/2) for j in range(J-1,-1,-1)],dtype=tf.float32)
-    coef = tf.reshape(coef,[1,-1,1])
+    coef = tf.reshape(coef,[1,1,-1])
     # wemd
-    wemd = tf.reduce_sum(coef*mod_mean, axis=1) #(b,c)
+    wemd = tf.reduce_sum(coef*mod_mean, axis=-1) #(b,c)
     # intensities reg
     diff_m = (1. - tf.reshape(mass2/mass1, [-1,c]))**2 #(b,c)
 
