@@ -157,15 +157,15 @@ def main():
         # critic archi
         exp_name += '_' + opts['wgan_critic_archi']
         # critic training setup
-        exp_name += '_dfreq' + str(opts['d_updt_freq'])
+        exp_name += '_dfreq_' + str(opts['d_updt_freq'])
         # critic reg
-        exp_name += '_dit' + str(opts['d_updt_it'])
+        exp_name += '_dit_' + str(opts['d_updt_it'])
         # critic reg
-        exp_name += '_l' + str(opts['lambda'])
+        exp_name += '_l_' + str(opts['lambda'])
     elif opts['cost']=='wemd':
-        exp_name += '_lrdecay' + str(opts['lr_decay'])
-        exp_name += '_gamma' + str(opts['gamma'])
-        exp_name += '_L' + str(opts['orientation_num'])
+        exp_name += '_lrdecay_' + str(opts['lr_decay'])
+        exp_name += '_gamma_' + str(opts['gamma'])
+        exp_name += '_L_' + str(opts['orientation_num'])
     if FLAGS.res_dir:
         exp_name += '_' + FLAGS.res_dir
     opts['exp_dir'] = os.path.join(out_subdir, exp_name)
