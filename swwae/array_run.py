@@ -99,8 +99,8 @@ def main():
     ## exp conf
     lr_decay = [False,True]
     gammas = [0.5,1.,5.,10.]
-    # orientations = [4,8,16]
-    orientations = [16,]
+    orientations = [4,8,16]
+    # orientations = [16,]
     exp_config = list(itertools.product(lr_decay,gammas, orientations))
     coef_id = (FLAGS.id-1) % len(exp_config)
 
