@@ -54,8 +54,8 @@ def wemd(x1,x2):
 def wemd(opts, x1, x2):
 
     h, w, c = x1.get_shape().as_list()[1:]
-    J = int(np.log2(h))  # number of scales
-    L = 8  # number of orientations
+    J = int(np.log2(h))  #number of scales
+    L = opts['orientation_num'] #number of orientations
     # Normalising inputs
     mass1 = tf.reduce_sum(x1, axis=[1,2], keepdims=True) #[b,1,1,c]
     xs1 = x1 / mass1
@@ -64,16 +64,16 @@ def wemd(opts, x1, x2):
     # Difference probability
     d = xs1 - xs2
     d = tf.cast(d, tf.complex64)
-    d = tf.transpose(d, [0,3,1,2])  # (b,c,h,w)
+    d = tf.transpose(d,[0,3,1,2])  # (b,c,h,w)
     # Fourrier transform
     fftd = tf.signal.fft2d(d)
     # Get waves filters
-     dict = filter_bank(h, w, J)['psi']
-     waves = np.zeros([J, 8, h, w])
-     for j in range(J):
-         for theta in range(8):
-             waves[j,theta,:,:] = dict[8*j+theta][0]
-     waves = tf.cast(waves, tf.complex64)
+    dict = filter_bank(h, w, J, L)['psi']
+    waves = np.zeros([J, L, h, w])
+    for j in range(J):
+        for theta in range(L):
+            waves[j,theta,:,:] = dict[L*j+theta][0]
+    waves = tf.cast(waves, tf.complex64)
     # Conv in Fourrier domain
     hatprod = tf.reshape(waves, [1,1,J,L,h,w])*tf.reshape(fftd, [-1,c,1,1,h,w]) #(b,c,J,L,h,w)
     prod = tf.signal.ifft2d(hatprod) #(b,c,J,L,h,w)

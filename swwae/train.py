@@ -262,8 +262,8 @@ class Run(object):
             enc_Sigmas = []
         # - Init decay lr and beta
         decay = 1.
-        decay_rate = 0.95
-        fix_decay_steps = 10000
+        decay_rate = 0.8
+        fix_decay_steps = 25000
         wait = 0
         batches_num = self.data.train_size//self.opts['batch_size']
         ada_decay_steps = batches_num
