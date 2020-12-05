@@ -8,13 +8,13 @@
 #$ -l tmem=27G
 #$ -l h_rt=4:00:00
 
-#$ -t 1-24
+#$ -t 1-22
 
-#$ -N wemdcifar
+#$ -N l2sqcifar
 
 source /share/apps/examples/source_files/python/python-3.6.4.source
 source /share/apps/examples/source_files/cuda/cuda-10.0.source
 
-python3 array_run.py --num_it 100000 --data_dir ../../data --dataset cifar10 --out_dir cifar10_wemd_abla --model WAE --lr 0.0003 --cost wemd --save_model --id $SGE_TASK_ID
+python3 array_run.py --num_it 100000 --data_dir ../../data --dataset cifar10 --out_dir cifar10_wemd_abla --model WAE --lr 0.0003 --cost l2sq --save_model --id $SGE_TASK_ID
 # python3 beta_array_run.py --num_it 200000 --data_dir ../../data --dataset cifar10 --out_dir cifar10 --model WAE --lr 0.0001 --cost wgan --save_model --id $SGE_TASK_ID --critic_pen 0.1 --critic_archi convdeconv
 # python3 array_run.py --num_it 100000 --data_dir ../../data --dataset cifar10 --out_dir cifar10_test_wemd --model WAE --lr 0.0001 --cost wemd --save_model --id 1 --net_archi mlp
