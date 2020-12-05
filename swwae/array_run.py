@@ -39,22 +39,8 @@ parser.add_argument("--lr", type=float,
                     help='learning rate size')
 parser.add_argument("--beta", type=float, default=0.,
                     help='beta')
-parser.add_argument("--slicing_dist", type=str, default='det',
-                    help='slicing distribution')
-parser.add_argument("--L", type=int, default=32,
-                    help='Number of slices')
 parser.add_argument("--gamma", type=float, default=1.,
                     help='weight for mass reg. in ground cost')
-parser.add_argument("--disc_freq", type=int, default=1,
-                    help='discriminator update frequency for aversarial sw')
-parser.add_argument("--disc_it", type=int, default=10,
-                    help='it. num. when updating discriminator for aversarial sw')
-parser.add_argument("--critic_archi", type=str, default='fullconv',
-                    help='archi for the critic')
-parser.add_argument("--critic_pen", type=float, default=1.,
-                    help='regularization weight for the critic')
-parser.add_argument("--critic_pretrain", action='store_true', default=False,
-                    help='pretrain cirtic')
 parser.add_argument("--id", type=int, default=0,
                     help='exp. config. id')
 parser.add_argument("--sigma_pen", action='store_true', default=False,
@@ -68,7 +54,25 @@ parser.add_argument('--save_model', action='store_false', default=True,
 parser.add_argument("--save_data", action='store_false', default=True,
                     help='save training data')
 parser.add_argument("--weights_file")
-
+## wgan cost
+parser.add_argument("--disc_freq", type=int, default=1,
+                    help='discriminator update frequency for aversarial sw')
+parser.add_argument("--disc_it", type=int, default=10,
+                    help='it. num. when updating discriminator for aversarial sw')
+parser.add_argument("--critic_archi", type=str, default='fullconv',
+                    help='archi for the critic')
+parser.add_argument("--critic_pen", type=float, default=1.,
+                    help='regularization weight for the critic')
+parser.add_argument("--critic_pretrain", action='store_true', default=False,
+                    help='pretrain cirtic')
+## wemd cost
+parser.add_argument("--orientation_num", type=int, default=8,
+                    help='oritenations number for waves base')
+## sw cost
+parser.add_argument("--slicing_dist", type=str, default='det',
+                    help='slicing distribution')
+parser.add_argument("--L", type=int, default=32,
+                    help='Number of slices')
 
 FLAGS = parser.parse_args()
 
@@ -98,11 +102,10 @@ def main():
 
     ## exp conf
     lr_decay = [False,True]
-    gammas = [0.5,1.,5.,10.]
-    orientations = [4,8,16]
-    # orientations = [16,]
-    exp_config = list(itertools.product(lr_decay,gammas, orientations))
-    coef_id = (FLAGS.id-1) % len(exp_config)
+    # gammas = [0.5,1.,5.,10.]
+    # orientations = [4,8,16]
+    # exp_config = list(itertools.product(lr_decay,gammas, orientations))
+    # coef_id = (FLAGS.id-1) % len(exp_config)
 
     ## Set method param
     opts['pen_enc_sigma'] = FLAGS.sigma_pen
@@ -118,13 +121,13 @@ def main():
         opts['batch_size'] = FLAGS.batch_size
     if FLAGS.lr:
         opts['lr'] = FLAGS.lr
-    opts['lr_decay'] = exp_config[coef_id][0]
+    opts['lr_decay'] = lr_decay[FLAGS.id-1]
     opts['beta'] = FLAGS.beta
 
     ## ground cost config
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
-    # opts['gamma'] = FLAGS.gamma
-    opts['gamma'] = exp_config[coef_id][1]
+    opts['gamma'] = FLAGS.gamma
+    # opts['gamma'] = exp_config[coef_id][1]
     ## wgan ground cost
     opts['pretrain_critic'] = FLAGS.critic_pretrain
     opts['d_updt_it'] = FLAGS.disc_it
@@ -132,8 +135,8 @@ def main():
     opts['wgan_critic_archi'] = FLAGS.critic_archi
     opts['lambda'] = FLAGS.critic_pen
     ## wemd ground cost
-    # opts['orientation_num'] =FLAGS.orientation_num
-    opts['orientation_num'] = exp_config[coef_id][2]
+    opts['orientation_num'] =FLAGS.orientation_num
+    # opts['orientation_num'] = exp_config[coef_id][2]
     ## sw ground cost
     opts['sw_proj_num'] = FLAGS.L
     opts['sw_proj_type'] = FLAGS.slicing_dist
