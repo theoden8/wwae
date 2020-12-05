@@ -530,7 +530,7 @@ class Run(object):
         Losses_monit.append(losses[1:-1])
         MSE.append(losses[-1])
         # Test losses
-        loss, monitoring, mse = 0., np.zeros(4), 0.
+        loss, monitoring, mse = 0., np.zeros(5), 0.
         for it_ in range(test_it_num):
             test_feed_dict={self.data.handle: self.test_handle,
                             self.beta: self.opts['beta'],
