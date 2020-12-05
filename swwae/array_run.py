@@ -102,10 +102,10 @@ def main():
 
     ## exp conf
     lr_decay = [False,True]
-    # gammas = [0.5,1.,5.,10.]
-    # orientations = [4,8,16]
-    # exp_config = list(itertools.product(lr_decay,gammas, orientations))
-    # coef_id = (FLAGS.id-1) % len(exp_config)
+    gammas = [1.,5.,10.,50.,100.]
+    orientations = [4,8,16]
+    exp_config = list(itertools.product(lr_decay,gammas, orientations))
+    coef_id = (FLAGS.id-1) % len(exp_config)
 
     ## Set method param
     opts['pen_enc_sigma'] = FLAGS.sigma_pen
@@ -121,13 +121,13 @@ def main():
         opts['batch_size'] = FLAGS.batch_size
     if FLAGS.lr:
         opts['lr'] = FLAGS.lr
-    opts['lr_decay'] = lr_decay[FLAGS.id-1]
+    opts['lr_decay'] = exp_config[coef_id][0]
     opts['beta'] = FLAGS.beta
 
     ## ground cost config
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
-    opts['gamma'] = FLAGS.gamma
-    # opts['gamma'] = exp_config[coef_id][1]
+    # opts['gamma'] = FLAGS.gamma
+    opts['gamma'] = exp_config[coef_id][1]
     ## wgan ground cost
     opts['pretrain_critic'] = FLAGS.critic_pretrain
     opts['d_updt_it'] = FLAGS.disc_it
@@ -135,8 +135,8 @@ def main():
     opts['wgan_critic_archi'] = FLAGS.critic_archi
     opts['lambda'] = FLAGS.critic_pen
     ## wemd ground cost
-    opts['orientation_num'] =FLAGS.orientation_num
-    # opts['orientation_num'] = exp_config[coef_id][2]
+    # opts['orientation_num'] = FLAGS.orientation_num
+    opts['orientation_num'] = exp_config[coef_id][2]
     ## sw ground cost
     opts['sw_proj_num'] = FLAGS.L
     opts['sw_proj_type'] = FLAGS.slicing_dist
@@ -169,6 +169,8 @@ def main():
         exp_name += '_lrdecay_' + str(opts['lr_decay'])
         exp_name += '_gamma_' + str(opts['gamma'])
         exp_name += '_L_' + str(opts['orientation_num'])
+    elif opts['cost']=='l2sq':
+        exp_name += '_lrdecay_' + str(opts['lr_decay'])        
     if FLAGS.res_dir:
         exp_name += '_' + FLAGS.res_dir
     opts['exp_dir'] = os.path.join(out_subdir, exp_name)
