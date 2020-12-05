@@ -79,12 +79,13 @@ def wemd(opts, x1, x2):
     prod = tf.signal.ifft2d(hatprod) #(b,c,J,L,h,w)
     # Module of wave coeffs
     mod = tf.math.abs(prod) #(b,c,J,L,h,w)
-    mod_mean = tf.reduce_sum(mod, axis=[3,4,5]) #(b,c,J)
-    # coef for putting different wieghts to different scales as in the paper
-    coef = tf.convert_to_tensor([2**(j/2) for j in range(J-1,-1,-1)],dtype=tf.float32)
-    coef = tf.reshape(coef,[1,1,-1])
+    mod = tf.reduce_sum(mod, axis=[-3,-2,-1]) #(b,c,J)
+    # coef for putting different weights to different scales as in the paper
+    # coef = tf.convert_to_tensor([2**(j/2) for j in range(J-1,-1,-1)],dtype=tf.float32)
+    coef = tf.convert_to_tensor([2**(-j*(1+0.5*(h*w))) for j in range(J)],dtype=tf.float32)
+    coef = tf.reshape(coef,[1,1,J])
     # wemd
-    wemd = tf.reduce_sum(coef*mod_mean, axis=-1) #(b,c)
+    wemd = tf.reduce_sum(coef*mod, axis=-1) #(b,c)
     # intensities reg
     diff_m = (1. - tf.reshape(mass2/mass1, [-1,c]))**2 #(b,c)
 
