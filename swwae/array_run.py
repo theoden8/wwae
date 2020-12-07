@@ -101,8 +101,9 @@ def main():
         raise Exception('You must provide a data_dir')
 
     ## exp conf
-    lr_decay = [False,True]
-    gammas = [1.,5.,10.,50.,100.]
+    # lr_decay = [False,True]
+    lr_decay = [False,]
+    gammas = [1.,5.,10.,50.,100., 250, 500.,1000.]
     orientations = [4,8,16]
     exp_config = list(itertools.product(lr_decay,gammas, orientations))
     coef_id = (FLAGS.id-1) % len(exp_config)
@@ -170,7 +171,7 @@ def main():
         exp_name += '_gamma_' + str(opts['gamma'])
         exp_name += '_L_' + str(opts['orientation_num'])
     elif opts['cost']=='l2sq':
-        exp_name += '_lrdecay_' + str(opts['lr_decay'])        
+        exp_name += '_lrdecay_' + str(opts['lr_decay'])
     if FLAGS.res_dir:
         exp_name += '_' + FLAGS.res_dir
     opts['exp_dir'] = os.path.join(out_subdir, exp_name)
