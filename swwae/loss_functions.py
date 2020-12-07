@@ -120,16 +120,16 @@ def wae_ground_cost(opts,  x1, x2, is_training=False, reuse=False):
     elif opts['cost'] == 'sw':
         cost = sw(opts,  x1, x2, reuse=reuse)
     elif opts['cost'] == 'wemd':
-#        h,w,c = x1.get_shape().as_list()[1:]
-#        J = int(np.log2(h))
+        h,w,c = x1.get_shape().as_list()[1:]
+        J = int(np.log2(h))
         # Get waves filters
-#        dict = filter_bank(h, w, J)['psi']
-#        waves = np.zeros([J, 8, h, w])
-#        for j in range(J):
-#            for theta in range(8):
-#                waves[j,theta,:,:] = dict[8*j+theta][0]
-#        waves = tf.cast(waves, tf.complex64)
-        cost, intensities_reg = wemd(opts,x1, x2)
+        dict = filter_bank(h, w, J)['psi']
+        waves = np.zeros([J, 8, h, w])
+        for j in range(J):
+            for theta in range(8):
+                waves[j,theta,:,:] = dict[8*j+theta][0]
+        waves = tf.cast(waves, tf.complex64)
+        cost, intensities_reg = wemd(opts, x1, x2)
     elif opts['cost'] == 'wgan':
         cost, intensities_reg, critic_reg = wgan(opts, x1, x2, is_training=is_training, reuse=reuse)
         critic_reg = tf.reduce_mean(critic_reg)
