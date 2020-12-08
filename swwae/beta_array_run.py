@@ -101,7 +101,7 @@ def main():
         raise Exception('You must provide a data_dir')
 
     ## exp conf
-    betas = [1,5,10,50,100,250,500,1000]
+    betas = [1,10,25,50,75,100,150,250]
     coef_id = (FLAGS.id-1) % len(betas)
     # coef_id = (FLAGS.id-1) % len(exp_config)
     # exp_config = list(itertools.product(lr_decay,gammas, orientations))
@@ -189,7 +189,8 @@ def main():
 
     opts['it_num'] = FLAGS.num_it
     opts['print_every'] = int(opts['it_num'] / 10.)
-    opts['evaluate_every'] = int(opts['it_num'] / 50.)
+    opts['evaluate_every'] = int(opts['it_num'] / 10.)
+    # opts['evaluate_every'] = int(opts['it_num'] / 50.)
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
     opts['save_train_data'] = FLAGS.save_data
