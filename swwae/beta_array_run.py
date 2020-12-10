@@ -101,7 +101,8 @@ def main():
         raise Exception('You must provide a data_dir')
 
     ## exp conf
-    betas = [1,10,25,50,75,100,150,250,500,750,1000]
+    # betas = [1,10,25,50,75,100,150,250,500,750,1000]
+    betas = [1,5,10,20,50,75,100]
     coef_id = (FLAGS.id-1) % len(betas)
     # coef_id = (FLAGS.id-1) % len(exp_config)
     # exp_config = list(itertools.product(lr_decay,gammas, orientations))
@@ -152,12 +153,13 @@ def main():
     out_subsubdir = os.path.join(out_subdir, opts['cost']) # + '_' + str(int((FLAGS.id-1) / len(betas))))
     if not tf.io.gfile.isdir(out_subsubdir):
         utils.create_dir(out_subsubdir)
-    exp_name = 'beta_' + str(opts['beta']) + '_' + opts['cost']
+    exp_name = 'beta_' + str(opts['beta'])
     if opts['cost']=='sw':
         exp_name += '_' + opts['sw_proj_type'] + '_L' + str(opts['sw_proj_num'])
         if opts['sw_proj_type']=='max-sw' or opts['sw_proj_type']=='max-gsw':
             exp_name += '_dfreq' + str(opts['d_updt_freq']) + '_dit' + str(opts['d_updt_it'])
     elif opts['cost'][:4]=='wgan':
+        exp_name += '_gamma_' + str(opts['gamma'])
         # critic archi
         exp_name += '_' + opts['wgan_critic_archi']
         # critic training setup
@@ -167,7 +169,6 @@ def main():
         # critic reg
         exp_name += '_l_' + str(opts['lambda'])
     elif opts['cost']=='wemd':
-        exp_name += '_beta' + str(opts['beta'])
         exp_name += '_gamma_' + str(opts['gamma'])
         exp_name += '_L_' + str(opts['orientation_num'])
     elif opts['cost']=='l2sq':
