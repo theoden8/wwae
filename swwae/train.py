@@ -556,20 +556,20 @@ class Run(object):
         debug_str = 'TRAIN LOSS=%.3f, TEST LOSS=%.3f' % (Loss[-1], Loss_test[-1])
         logging.error(debug_str)
         debug_str = 'REC=%.3f, TEST REC=%.3f, MSE=%10.3e, TEST MSE=%10.3e'  % (
-                                    Losses_monit[0][-1] + self.opts['gamma']*Losses_monit[3][-1],
-                                    Losses_monit_test[0][-1]+ self.opts['gamma']*Losses_monit_test[3][-1],
+                                    Losses_monit[-1][0] + self.opts['gamma']*Losses_monit[-1][3],
+                                    Losses_monit_test[-1][0]+ self.opts['gamma']*Losses_monit_test[-1][3],
                                     MSE[-1],
                                     MSE_test[-1])
         logging.error(debug_str)
         if self.opts['model'] == 'BetaVAE':
             debug_str = 'beta*KL=%10.3e, beta*TEST KL=%10.3e'  % (
-                                    self.opts['beta']*Losses_monit[1][-1],
-                                    self.opts['beta']*Losses_monit_test[1][-1])
+                                    self.opts['beta']*Losses_monit[-1][1],
+                                    self.opts['beta']*Losses_monit_test[-1][1])
             logging.error(debug_str)
         elif self.opts['model'] == 'WAE':
             debug_str = 'beta*MMD=%10.3e, beta*TEST MMD=%10.3e' % (
-                                    self.opts['beta']*Losses_monit[1][-1],
-                                    self.opts['beta']*Losses_monit_test[1][-1])
+                                    self.opts['beta']*Losses_monit[-1][1],
+                                    self.opts['beta']*Losses_monit_test[-1][1])
             logging.error(debug_str)
         else:
             raise NotImplementedError('Model type not recognised')
