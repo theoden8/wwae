@@ -11,12 +11,13 @@ import tensorflow as tf
 from math import ceil
 
 import utils
-from sampling_functions import sample_pz, linespace
-from plot_functions import save_train, save_test_celeba, save_dimwise_traversals
-from plot_functions import plot_critic_pretrain_loss, plot_embedded, plot_encSigma, plot_interpolation, plot_projected
+from sampling_functions import sample_pz, traversals, interpolations, shift
+from plot_functions import save_train, save_test
+from plot_functions import plot_critic_pretrain_loss, plot_interpolation, plot_cost_shift, plot_rec_shift
 import models
 from networks import theta_discriminator
 from wgan import wgan, wgan_v2
+from loss_functions import wae_ground_cost
 from datahandler import datashapes
 from fid.fid import calculate_frechet_distance
 
@@ -63,12 +64,6 @@ class Run(object):
         else:
             self.critic_objective = tf.constant(0., tf.float32)
 
-        # --- encode & decode pass for testing
-        self.z_samples, self.z_mean, self.z_sigma, self.recon_x, _, _ =\
-            self.model.forward_pass(inputs=self.data.next_element,
-                                    is_training=self.is_training,
-                                    reuse=True)
-
         # --- Critic loss for pretraining
         if self.opts['cost']=='wgan' and self.opts['pretrain_critic']:
             critic_loss, _, critic_reg = wgan(self.opts, self.data.next_element,
@@ -77,8 +72,12 @@ class Run(object):
                                         reuse=True)
             self.critic_pretrain_loss = tf.reduce_mean(critic_loss - opts['lambda']*critic_reg)
 
-        # --- MSE
-        self.mse = self.model.MSE(self.data.next_element, self.recon_x)
+
+        # --- encode & decode pass
+        self.z_samples, self.z_mean, self.z_sigma, self.recon_x, _, _ =\
+            self.model.forward_pass(inputs=self.data.next_element,
+                                    is_training=self.is_training,
+                                    reuse=True)
 
         # --- Pen Encoded Sigma &  stats
         Sigma_tr = tf.reduce_mean(self.z_sigma, axis=-1)
@@ -89,24 +88,8 @@ class Run(object):
                 tf.reduce_sum(tf.abs(tf.math.log(self.z_sigma)), axis=-1))
             self.objective+= pen_enc_sigma
 
-        # --- Get batchnorm ops for training only
-        self.extra_update_ops = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)
-
-        # --- encode & decode pass for vizu
-        self.encoded, self.encoded_mean, _, self.decoded, _, _ =\
-            self.model.forward_pass(inputs=self.inputs_img,
-                                    is_training=self.is_training,
-                                    reuse=True)
-
-        # --- Sampling
-        self.generated = self.model.sample_x_from_prior(noise=self.pz_samples)
-
-        # --- Get non-linear proj of gsw
-        if self.opts['cost']=='sw' and self.opts['sw_proj_type']=='max-gsw':
-            self.projections = theta_discriminator(self.opts, inputs=self.inputs_img,
-                                    output_dim=np.prod(self.data.data_shape[:-1]),
-                                    scope='theta_discriminator',
-                                    reuse=True)
+        # --- MSE
+        self.mse = self.model.MSE(self.data.next_element, self.recon_x)
 
         # --- FID score
         if self.opts['fid']:
@@ -115,6 +98,36 @@ class Run(object):
             with self.inception_graph.as_default():
                 self.create_inception_graph()
             self.inception_layer = self._get_inception_layer()
+
+        # --- Get batchnorm ops for training only
+        self.extra_update_ops = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)
+
+        # --- encode & decode pass for vizu
+        self.encoded, self.encoded_mean, _, self.decoded, _, _ =\
+            self.model.forward_pass(inputs=self.inputs_img1,
+                                    is_training=self.is_training,
+                                    reuse=True)
+
+        # --- Sampling
+        self.generated = self.model.sample_x_from_prior(noise=self.pz_samples)
+
+        # --- Rec cost obs vs reconstruction
+        cost, _, intensities_reg, _ = self.model.loss(self.inputs_img1,
+                                    is_training=self.is_training,
+                                    reuse=True)
+        # rec loss
+        self.rec_cost = cost + opts['gamma'] * intensities_reg
+        # MSE
+        self.rec_mse = self.model.MSE(self.inputs_img1, self.decoded)
+
+        # --- Rec cost for given obs
+        cost, intensities_reg, _ = wae_ground_cost(self.opts,
+                                    self.inputs_img2,
+                                    self.inputs_img1,
+                                    is_training=self.is_training,
+                                    reuse=True)
+        self.ground_cost = tf.reduce_mean(cost + opts['gamma']*intensities_reg)
+        self.ground_mse = self.model.MSE(self.inputs_img2, self.inputs_img1)
 
         # --- Optimizers, savers, etc
         self.add_optimizers()
@@ -133,9 +146,12 @@ class Run(object):
         self.pz_samples = tf.compat.v1.placeholder(tf.float32,
                                          [None] + [self.opts['zdim'],],
                                          name='noise_ph')
-        self.inputs_img = tf.compat.v1.placeholder(tf.float32,
+        self.inputs_img1 = tf.compat.v1.placeholder(tf.float32,
                                          [None] + self.data.data_shape,
-                                         name='point_ph')
+                                         name='point1_ph')
+        self.inputs_img2 = tf.compat.v1.placeholder(tf.float32,
+                                         [None] + self.data.data_shape,
+                                         name='point2_ph')
         self.beta = tf.compat.v1.placeholder(tf.float32, name='beta_ph')
 
     def compute_blurriness(self):
@@ -235,7 +251,7 @@ class Run(object):
                     self.critic_pretrain_opt = critic_opt.minimize(loss=-self.critic_pretrain_loss, var_list=critic_vars)
 
 
-    def train(self, MODEL_PATH=None, WEIGHTS_FILE=None):
+    def train(self, WEIGHTS_FILE=None):
         """
         Train top-down model with chosen method
         """
@@ -274,12 +290,12 @@ class Run(object):
 
         # - Load trained model or init variables
         if self.opts['use_trained']:
-            if MODEL_PATH is None or WEIGHTS_FILE is None:
+            if WEIGHTS_FILE is None:
                     raise Exception("No model/weights provided")
             else:
-                if not tf.gfile.IsDirectory(MODEL_PATH):
+                if not tf.gfile.IsDirectory(opts['exp_dir']):
                     raise Exception("model doesn't exist")
-                WEIGHTS_PATH = os.path.join(MODEL_PATH,'checkpoints', WEIGHTS_FILE)
+                WEIGHTS_PATH = os.path.join(opts['exp_dir'],'checkpoints', WEIGHTS_FILE)
                 if not tf.gfile.Exists(WEIGHTS_FILE+".meta"):
                     raise Exception("weights file doesn't exist")
                 self.saver.restore(self.sess, WEIGHTS_FILE)
@@ -412,7 +428,7 @@ class Run(object):
                 # Auto-encoding test images & samples generated by the model
                 [reconstructions_vizu, latents_vizu, generations] = self.sess.run(
                                             [self.decoded, self.encoded, self.generated],
-                                            feed_dict={self.inputs_img: self.data.data_vizu,
+                                            feed_dict={self.inputs_img1: self.data.data_vizu,
                                                        self.pz_samples: fixed_noise,
                                                        self.is_training: False})
                 # Auto-encoding training images
@@ -422,7 +438,7 @@ class Run(object):
                     inputs_tr.append(self.sess.run(self.data.next_element, feed_dict={self.data.handle: self.train_handle}))
                 inputs_tr = np.concatenate(inputs_tr,axis=0)[:npics]
                 reconstructions_train = self.sess.run(self.decoded,
-                                            feed_dict={self.inputs_img: inputs_tr,
+                                            feed_dict={self.inputs_img1: inputs_tr,
                                                        self.is_training: False})
                 # Saving plots
                 save_train(self.opts,
@@ -465,7 +481,7 @@ class Run(object):
                 # - Non linear proj is gsw
                 if self.opts['cost']=='sw' and self.opts['sw_proj_type']=='max-gsw':
                     proj = self.sess.run(self.projections,
-                                            feed_dict={self.inputs_img: self.data.data_vizu})
+                                            feed_dict={self.inputs_img1: self.data.data_vizu})
                     proj = np.reshape(proj, (-1, self.data.data_shape[0], self.data.data_shape[1], self.opts['sw_proj_num']))
                     plot_projected(self.opts, self.data.data_vizu, proj,
                                             exp_dir, 'proj_it%07d.png' % (it))
@@ -596,7 +612,7 @@ class Run(object):
             np.savez(os.path.join(save_path, name),
                     fid_rec=np.array(FID_rec), fid_gen=np.array(FID_gen))
 
-    def test(self, data, WEIGHTS_PATH, verbose):
+    def test(self, MODEL_PATH=None, WEIGHTS_FILE=None):
         """
         Test model and save different metrics
         """
@@ -773,91 +789,150 @@ class Run(object):
                 blurr=np.array(blurr),
                 fid=np.array(fid_scores))
 
-    def plot(self, data, WEIGHTS_PATH):
+    def plot(self, WEIGHTS_FILE=None):
         """
         Plots reconstructions, latent transversals and model samples
         """
 
         opts = self.opts
 
-        # - Load trained weights
-        if not tf.gfile.Exists(WEIGHTS_PATH+".meta"):
-            raise Exception("weights file doesn't exist")
-        self.saver.restore(self.sess, WEIGHTS_PATH)
+        # - Load trained model
+        if WEIGHTS_FILE is None:
+                raise Exception("No model/weights provided")
+        else:
+            if not tf.gfile.IsDirectory(opts['exp_dir']):
+                raise Exception("model doesn't exist")
+            WEIGHTS_PATH = os.path.join(opts['exp_dir'],'checkpoints', WEIGHTS_FILE)
+            if not tf.gfile.Exists(WEIGHTS_PATH+".meta"):
+                raise Exception("weights file doesn't exist")
+            self.saver.restore(self.sess, WEIGHTS_PATH)
 
         # - Set up
         im_shape = datashapes[opts['dataset']]
-        if opts['dataset']=='celebA' or opts['dataset']=='3Dchairs':
-            num_pics = 100
-            num_steps = 7
-        else:
-            num_pics = 20
-            num_steps = 10
+        num_pics = 100
+        num_steps = 10
         fixed_noise = sample_pz(opts, self.pz_params, num_pics)
-
+        # anchors_ids = [0, 4, 6, 12, 24, 39, 53, 60, 73, 89]
+        anchors_ids = list(np.arange(0,100,5))
 
         # - Auto-encoding test images & samples generated by the model
-        [reconstructions, latents, generations] = self.sess.run(
-                                    [self.recon_x,
-                                     self.z_samples,
-                                     self.generated_x],
-                                    feed_dict={self.batch: data.data[self.plot_data_idx],
-                                               self.samples_pz: fixed_noise,
+        [reconstructions_vizu, latents_vizu, generations] = self.sess.run(
+                                    [self.decoded, self.encoded, self.generated],
+                                    feed_dict={self.inputs_img1: self.data.data_vizu,
+                                               self.pz_samples: fixed_noise,
                                                self.is_training: False})
-        # - get kl(q(z_i),p(z_i)) on test data to plot latent traversals
-        test_size = self.test_size
-        batch_size_te = min(test_size,1000)
-        batches_num_te = int(test_size / batch_size_te)+1
-        kl_to_prior = np.zeros(opts['zdim'])
-        for it_ in range(batches_num_te):
-            data_ids = np.random.choice(test_size, batch_size_te, replace=True)
-            batch_images_test = data.get_batch_img(data_ids, 'test').astype(np.float32)
-            kl = self.sess.run(self.kl_to_prior, feed_dict={
-                                                self.batch: batch_images_test,
-                                                self.is_training: False})
-            kl_to_prior += kl / batches_num_te
 
-        # - Latent transversals
+        # - Rec and samples
+        save_test(opts, self.data.data_vizu, reconstructions_vizu,
+                                    generations,
+                                    opts['exp_dir'])
+
+        # - Latent traversal
         enc_var = np.ones(opts['zdim'])
-        # create latent linespacel
-        if opts['dataset']=='celebA' :
-            idx = [0,3,20,26,40,49]
-            latent_transversal = linespace(opts, num_steps,  # shape: [nanchors, zdim, nsteps, zdim]
-                                    anchors=latents[idx],
+        # create linespace
+        enc_interpolation = traversals(latents_vizu[anchors_ids[:10]],  # shape: [nanchors, nsteps, zdim]
+                                    nsteps=num_steps,
                                     std=enc_var)
-            # latent_transversal = latent_transversal[:,:,::-1]
-        elif opts['dataset']=='3Dchairs':
-            idx = [48,4,21,44,1]
-            latent_transversal = linespace(opts, num_steps,  # shape: [nanchors, zdim, nsteps, zdim]
-                                    anchors=latents[idx],
-                                    std=enc_var)
-            latent_transversal = latent_transversal[:,:,::-1]
-        else:
-            latent_transversal = linespace(opts, num_steps,  # shape: [nanchors, zdim, nsteps, zdim]
-                                    anchors=latents[::2],
-                                    std=enc_var)
-        # - Reconstructing latent transversals
-        obs_transversal = self.sess.run(self.generated_x,
-                                    feed_dict={self.samples_pz: np.reshape(latent_transversal,[-1, opts['zdim']]),
+        enc_interpolation = np.reshape(enc_interpolation, [-1, opts['zdim']])
+        # reconstructing
+        dec_interpolation = self.sess.run(self.generated,
+                                    feed_dict={self.pz_samples: enc_interpolation,
                                                self.is_training: False})
-        obs_transversal = np.reshape(obs_transversal, [-1, opts['zdim'], num_steps]+im_shape)
-        kl_to_prior_sorted = np.argsort(kl_to_prior)[::-1]
-        obs_transversal = obs_transversal[:,kl_to_prior_sorted]
+        inter_anchors = np.reshape(dec_interpolation, [-1, num_steps]+self.data.data_shape)
+        plot_interpolation(self.opts, inter_anchors, opts['exp_dir'],
+                                    'latent_traversal.png',
+                                    train=False)
+        # - Obs interpolation
+        anchors = latents_vizu[anchors_ids].reshape((-1,2,opts['zdim']))
+        enc_interpolation = interpolations(anchors,    # shape: [nanchors, nsteps, zdim]
+                                    nsteps=num_steps-2,
+                                    std=enc_var)
+        enc_interpolation = np.reshape(enc_interpolation, [-1,opts['zdim']])
+        # reconstructing
+        dec_interpolation = self.sess.run(self.generated,
+                                    feed_dict={self.pz_samples: enc_interpolation,
+                                               self.is_training: False})
+        inter_anchors = np.reshape(dec_interpolation, [-1, num_steps-2]+self.data.data_shape)
+        obs = self.data.data_vizu[anchors_ids].reshape([-1,2]+self.data.data_shape)
+        sobs = obs[:,0].reshape([-1,1]+self.data.data_shape)
+        eobs = obs[:,1].reshape([-1,1]+self.data.data_shape)
+        inter_anchors = np.concatenate((sobs,inter_anchors,eobs),axis=1)
+        plot_interpolation(opts, inter_anchors, opts['exp_dir'],
+                                    'interpolations.png',
+                                    train=False)
 
-        # - ploting and saving
-        if opts['dataset']=='celebA' or opts['dataset']=='3Dchairs':
-            save_test_celeba(opts, data.data[self.plot_data_idx],
-                                        reconstructions,
-                                        obs_transversal,
-                                        generations,
-                                        opts['exp_dir'])
-            save_dimwise_traversals(opts, obs_transversal, opts['exp_dir'])
+    def perturbation_test(self, WEIGHTS_FILE=None):
+
+        opts = self.opts
+
+        # - Set up
+        npics = opts['plot_num_pics']
+        batches_num = 2 #self.data.test_size//opts['batch_size']
+        fixed_noise = sample_pz(opts, self.pz_params, npics)
+        # anchors_ids = np.random.choice(npics, 5, replace=True)
+        anchors_ids = [0, 4, 6, 12, 39]
+        # nshifts = int(self.data.data_shape[0]/4)
+        nshifts = 10
+
+        # - Load trained model
+        if WEIGHTS_FILE is None:
+                raise Exception("No model/weights provided")
         else:
-            save_test_smallnorb(opts, data.data[self.plot_data_idx],
-                                        reconstructions,
-                                        obs_transversal,
-                                        generations,
-                                        opts['exp_dir'])
+            if not tf.gfile.IsDirectory(opts['exp_dir']):
+                raise Exception("model doesn't exist")
+            WEIGHTS_PATH = os.path.join(opts['exp_dir'],'checkpoints', WEIGHTS_FILE)
+            if not tf.gfile.Exists(WEIGHTS_PATH+".meta"):
+                raise Exception("weights file doesn't exist")
+            self.saver.restore(self.sess, WEIGHTS_PATH)
+
+        # - Rec cost vs shifts
+        rec_cost, mse_cost, ground_cost, ground_mse = [], [], [], []
+        # To add check removing (0,0) dir
+        shift_dir = np.random.randint(-1,2,(opts['batch_size'],2))
+        for n in range(opts['batch_size']):
+            while shift_dir[n][0]==0 and shift_dir[n][1]==0:
+                shift_dir[n] = np.random.randint(-1,2,2)
+        for s in range(nshifts):
+            rc, rm, gc, gm = 0., 0., 0., 0.
+            for _ in range(batches_num):
+                batch_obs = self.sess.run(self.data.next_element,
+                                    feed_dict={self.data.handle: self.test_handle})
+                batch_shifted = shift(opts, batch_obs, shift_dir, s)
+                test_feed_dict={self.inputs_img2: batch_obs,
+                                self.inputs_img1: batch_shifted,
+                                self.is_training: False}
+                rec_cst, rec_mse, grd_cst, grd_mse = self.sess.run([self.rec_cost,
+                                    self.rec_mse,
+                                    self.ground_cost,
+                                    self.ground_mse],
+                                    feed_dict=test_feed_dict)
+                rc += rec_cst / batches_num
+                rm += rec_mse / batches_num
+                gc += grd_cst / batches_num
+                gm += grd_mse / batches_num
+            rec_cost.append(rc)
+            mse_cost.append(rm)
+            ground_cost.append(gc)
+            ground_mse.append(gm)
+        plot_cost_shift(rec_cost, mse_cost, ground_cost, ground_mse,
+                                    opts['exp_dir'])
+
+        # - vizu rec shift
+        shift_dir = np.random.randint(-1,2,(len(anchors_ids),2))
+        for n in range(len(anchors_ids)):
+            while shift_dir[n][0]==0 and shift_dir[n][1]==0:
+                shift_dir[n] = np.random.randint(-1,2,2)
+        shifted_obs, shifted_rec = [], []
+        for s in range(0,nshifts,max(int(nshifts/16),1)):
+        # for s in range(0,nshifts,int(nshifts/16)):
+            shifted = shift(opts, self.data.data_vizu[anchors_ids], shift_dir, s)
+            rec = self.sess.run(self.decoded, feed_dict={self.inputs_img1: shifted,
+                                    self.is_training: False})
+            shifted_obs.append(shifted)
+            shifted_rec.append(rec)
+        shifted_obs = np.stack(shifted_obs,axis=1)
+        shifted_rec = np.stack(shifted_rec,axis=1)
+        plot_rec_shift(opts, shifted_obs, shifted_rec, opts['exp_dir']) #TODO
 
     def fid_score(self, load_trained_model=False, MODEL_PATH=None,
                                         WEIGHTS_FILE=None,

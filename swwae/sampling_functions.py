@@ -62,73 +62,60 @@ def sample_bernoulli(params):
     return bernoulli_dist.sample()
     """
 
-def linespace(opts, n, anchors, std=1.0):
+def traversals(anchors, nsteps, std=1.0):
     """
     Genereate linear grid space
-        - n:  Num of steps in the interpolation
         - anchors[nanchors,zdim]: encoding
+        - nsteps:  Num of steps in the interpolation
     Return:
-    linespce[nanchors,n,zdim]: list of linear interpolations for each latent dim
+    linespce[nanchors,nsteps,zdim]: list of linear interpolations for each latent dim
     """
     nanchors = np.shape(anchors)[0]
-    zdim = np.shape(anchors)[-1]
-    identity = np.eye(zdim)
     linespce = []
-    if opts['dataset'] == 'celebA':
-        if opts['model'] == 'TCWAE_MWS' or opts['model'] == 'BetaTCVAE':
-            std_range = 6*std
+    std_range = std
+    start = anchors-std_range
+    stop = anchors+std_range
+    for n in range(nanchors):
+        int_m = np.linspace(start[n],anchors[n],int(nsteps/2.),endpoint=False)
+        if nsteps%2==0:
+            int_p = np.linspace(anchors[n],stop[n],int(nsteps/2.),endpoint=True)
         else:
-            std_range = 4*std
-    else:
-        std_range = 2*std
-    for i in range(zdim):
-        start = anchors-std_range*identity[i]
-        stop = anchors+std_range*identity[i]
-        inter = []
-        for j in range(nanchors):
-            int_m = np.linspace(start[j],anchors[j],int(n/2.),endpoint=False)
-            if n%2==0:
-                int_p = np.linspace(anchors[j],stop[j],int(n/2.),endpoint=True)
-            else:
-                int_p = np.linspace(anchors[j],stop[j],int(n/2.)+1,endpoint=True)
-            inter.append(np.concatenate((int_m,int_p),axis=0))
-        linespce.append(np.array(inter))
-    linespce = np.stack(linespce,axis=1)
+            int_p = np.linspace(anchors[n],stop[n],int(nsteps/2.)+1,endpoint=True)
+        linespce.append(np.concatenate((int_m,int_p)))
+    linespce = np.vstack(linespce)
 
     return linespce
 
-def generate_linespace(opts, n, mode, anchors):
+def interpolations(anchors, nsteps, std=1.0):
     """
-    Genereate latent linear grid space
+    Genereate linear grid space
+        - anchors[nanchors,2,zdim]: encoding
+        - nsteps:  Num of steps in the interpolation
+    Return:
+    linespce[nanchors,nsteps,zdim]: list of linear interpolations for each latent dim
     """
     nanchors = np.shape(anchors)[0]
-    dim_to_interpolate = min(opts['nmixtures'],opts['zdim'])
-    if mode=='transformation':
-        assert np.shape(anchors)[1]==0, 'Zdim needs to be 2 to plot transformation'
-        ymin, xmin = np.amin(anchors,axis=0)
-        ymax, xmax = np.amax(anchors,axis=0)
-        x = np.linspace(1.1*xmin,1.1*xmax,n)
-        y = np.linspace(1.1*ymin,1.1*ymax,n)
-        linespce = np.stack(np.meshgrid(y,x)).T
-    elif mode=='points_interpolation':
-        assert np.shape(anchors)[0]%2==0, 'Need an ode number of anchors points'
-        axs = [[np.linspace(anchors[2*k,d],anchors[2*k+1,d],n) for d in range(dim_to_interpolate)] for k in range(int(nanchors/2))]
-        linespce = []
-        for i in range(len(axs)):
-            crd = np.stack([np.asarray(axs[i][j]) for j in range(dim_to_interpolate)],axis=0).T
-            coord = np.zeros((crd.shape[0],opts['zdim']))
-            coord[:,:crd.shape[1]] = crd
-            linespce.append(coord)
-        linespace = np.asarray(linespce)
-    elif mode=='priors_interpolation':
-        axs = [[np.linspace(anchors[0,d],anchors[k,d],n) for d in range(dim_to_interpolate)] for k in range(1,nanchors)]
-        linespce = []
-        for i in range(len(axs)):
-            crd = np.stack([np.asarray(axs[i][j]) for j in range(dim_to_interpolate)],axis=0).T
-            coord = np.zeros((crd.shape[0],opts['zdim']))
-            coord[:,:crd.shape[1]] = crd
-            linespce.append(coord)
-        linespace = np.asarray(linespce)
-    else:
-        assert False, 'Unknown mode %s for vizualisation' % opts['mode']
-    return linespace
+    linespce = []
+    start = anchors[:,0]
+    stop = anchors[:,1]
+    for n in range(nanchors):
+        inter = np.linspace(start[n],stop[n], nsteps, endpoint=True)
+        linespce.append(inter)
+    linespce = np.vstack(linespce)
+
+    return linespce
+
+def shift(opts, inputs, shift_dir, shift):
+    ninputs = inputs.shape[0]
+    in_shape = np.array(inputs.shape[1:-1])
+    # padded = np.pad(inputs, ((0,0),(shift,shift),(shift,shift),(0,0)), mode='edge')
+    padded = np.pad(inputs, ((0,0),(shift,shift),(shift,shift),(0,0)), mode='linear_ramp',end_values=0)
+    # padded = np.pad(inputs, ((0,0),(shift,shift),(shift,shift),(0,0)), mode='mean')
+    start = shift_dir*shift + shift
+    end = in_shape.reshape(-1,2) + shift_dir*shift + shift
+    # idx_w = np.linspace(start[:,0],end[:,0], in_shape[0],dtype=np.int32).transpose()
+    # idx_h = np.linspace(start[:,1],end[:,1], in_shape[1],dtype=np.int32).transpose()
+    shifted = []
+    for n in range(ninputs):
+        shifted.append(padded[n,start[n,0]:end[n,0],start[n,1]:end[n,1]])
+    return np.stack(shifted,axis=0)
