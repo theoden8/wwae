@@ -400,12 +400,369 @@ def  celebA_conv_decoder(opts, input, output_dim, reuse,
 
     return outputs
 
+
+
+
+
+# CelebA restnet encoder-decoder
+
+def celebA_resnet_encoder(opts, input, output_dim, reuse=False,
+                                            is_training=False):
+    # batch_size
+    layer_x = input
+
+    # first conv layer
+    layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=64, filter_size=3,
+                                stride=1, scope='hid0/conv',
+                                init=opts['conv_init'])
+
+    # residual block 1
+    layer_res1 = tf.identity(layer_x)
+
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
+                                'rb1/bn1', is_training, reuse)
+
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+
+    layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=64, filter_size=3,
+                                stride=1, scope='rb1/conv1',
+                                init=opts['conv_init'])
+
+    layer_x = tf.nn.avg_pool2d(layer_x, 2, 2, 'VALID')
+
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
+                                'rb1/bn2', is_training, reuse)
+
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+
+    layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=64, filter_size=3,
+                                stride=1, scope='rb1/conv2',
+                                init=opts['conv_init'])
+
+    layer_res1 = tf.nn.avg_pool2d(layer_res1, 2, 2, 'VALID')
+
+    layer_res1 = ops.conv2d.Conv2d(opts, layer_res1, layer_res1.get_shape().as_list()[-1],
+                                output_dim=64, filter_size=3,
+                                stride=1, scope='rb1/convres',
+                                init=opts['conv_init'])
+
+    layer_x = layer_x + layer_res1
+
+    # residual block 2
+    layer_res2 = tf.identity(layer_x)
+
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
+                                'rb2/bn1', is_training, reuse)
+
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+
+    layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=128, filter_size=3,
+                                stride=1, scope='rb2/conv1',
+                                init=opts['conv_init'])
+
+    layer_x = tf.nn.avg_pool2d(layer_x, 2, 2, 'VALID')
+
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
+                                'rb2/bn2', is_training, reuse)
+
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+
+    layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=128, filter_size=3,
+                                stride=1, scope='rb2/conv2',
+                                init=opts['conv_init'])
+
+    layer_res2 = tf.nn.avg_pool2d(layer_res2, 2, 2, 'VALID')
+
+    layer_res2 = ops.conv2d.Conv2d(opts, layer_res2, layer_res2.get_shape().as_list()[-1],
+                                output_dim=128, filter_size=3,
+                                stride=1, scope='rb2/convres',
+                                init=opts['conv_init'])
+
+    layer_x = layer_x + layer_res2
+
+    # residual block 3
+    layer_res3 = tf.identity(layer_x)
+
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
+                                'rb3/bn1', is_training, reuse)
+
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+
+    layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=256, filter_size=3,
+                                stride=1, scope='rb3/conv1',
+                                init=opts['conv_init'])
+
+    layer_x = tf.nn.avg_pool2d(layer_x, 2, 2, 'VALID')
+
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
+                                'rb3/bn2', is_training, reuse)
+
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+
+    layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=256, filter_size=3,
+                                stride=1, scope='rb3/conv2',
+                                init=opts['conv_init'])
+
+    layer_res3 = tf.nn.avg_pool2d(layer_res3, 2, 2, 'VALID')
+
+    layer_res3 = ops.conv2d.Conv2d(opts, layer_res3, layer_res3.get_shape().as_list()[-1],
+                                output_dim=256, filter_size=3,
+                                stride=1, scope='rb3/convres',
+                                init=opts['conv_init'])
+
+    layer_x = layer_x + layer_res3
+
+    # residual block 4
+    layer_res4 = tf.identity(layer_x)
+
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
+                                'rb4/bn1', is_training, reuse)
+
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+
+    layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=256, filter_size=3,
+                                stride=1, scope='rb4/conv1',
+                                init=opts['conv_init'])
+
+    layer_x = tf.nn.avg_pool2d(layer_x, 2, 2, 'VALID')
+
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
+                                'rb4/bn2', is_training, reuse)
+
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+
+    layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=256, filter_size=3,
+                                stride=1, scope='rb4/conv2',
+                                init=opts['conv_init'])
+
+    layer_res4 = tf.nn.avg_pool2d(layer_res4, 2, 2, 'VALID')
+
+    layer_res4 = ops.conv2d.Conv2d(opts, layer_res4, layer_res4.get_shape().as_list()[-1],
+                                output_dim=256, filter_size=3,
+                                stride=1, scope='rb4/convres',
+                                init=opts['conv_init'])
+
+    layer_x = layer_x + layer_res4
+
+    # final layer
+    layer_x = tf.reshape(layer_x, [-1,np.prod(layer_x.get_shape().as_list()[1:])])
+    outputs = ops.linear.Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                output_dim, scope='hid_final')
+
+    return outputs
+
+
+
+
+
+
+def celebA_resnet_decoder(opts, input, output_dim, reuse,
+                                            is_training):
+    # batch_size
+    batch_size = tf.shape(input)[0]
+    w,h = output_dim[0], output_dim[1]
+    layer_x = input
+
+    # Linear layer
+    _out_shape = [int(w/2**4), int(h/2**4), 512]
+    layer_x = ops.linear.Linear(opts, layer_x, np.prod(input.get_shape().as_list()[1:]),
+                                np.prod(_out_shape), scope='hid0/lin')
+
+    layer_x = tf.reshape(layer_x, [-1,] + _out_shape)
+
+    # Residual block 1: chanel size 512 to 512
+
+    layer_res1 = tf.identity(layer_x)
+
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
+                                'rb1/bn1', is_training, reuse)
+
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+
+
+    layer_x = tf.keras.layers.UpSampling2D(2)(layer_x)
+
+    layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=512, filter_size=3,
+                                stride=1, scope='rb1/conv1',
+                                init=opts['conv_init'])
+
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
+                                'rb1/bn2', is_training, reuse)
+
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+
+    layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=512, filter_size=3,
+                                stride=1, scope='rb1/conv2',
+                                init=opts['conv_init'])
+
+    layer_res1 = tf.keras.layers.UpSampling2D(2)(layer_res1)
+
+    layer_res1 = ops.conv2d.Conv2d(opts, layer_res1, layer_res1.get_shape().as_list()[-1],
+                                output_dim=512, filter_size=3,
+                                stride=1, scope='rb1/convres',
+                                init=opts['conv_init'])
+
+    layer_x = layer_x + layer_res1
+
+    # Residual block 2: chanel size 512 to 256
+
+    layer_res2 = tf.identity(layer_x)
+
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
+                                'rb2/bn1', is_training, reuse)
+
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+
+    layer_x = tf.keras.layers.UpSampling2D(2)(layer_x)
+
+    layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=256, filter_size=3,
+                                stride=1, scope='rb2/conv1',
+                                init=opts['conv_init'])
+
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
+                                'rb2/bn2', is_training, reuse)
+
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+
+    layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=256, filter_size=3,
+                                stride=1, scope='rb2/conv2',
+                                init=opts['conv_init'])
+
+    layer_res2 = tf.keras.layers.UpSampling2D(2)(layer_res2)
+
+    layer_res2 = ops.conv2d.Conv2d(opts, layer_res2, layer_res2.get_shape().as_list()[-1],
+                                output_dim=256, filter_size=3,
+                                stride=1, scope='rb2/convres',
+                                init=opts['conv_init'])
+
+    layer_x = layer_x + layer_res2
+
+    # Residual block 3: channel size 256 to 128
+
+    layer_res3 = tf.identity(layer_x)
+
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
+                                'rb3/bn1', is_training, reuse)
+
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+
+    layer_x = tf.keras.layers.UpSampling2D(2)(layer_x)
+
+    layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=128, filter_size=3,
+                                stride=1, scope='rb3/conv1',
+                                init=opts['conv_init'])
+
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
+                                'rb3/bn2', is_training, reuse)
+
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+
+    layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=128, filter_size=3,
+                                stride=1, scope='rb3/conv2',
+                                init=opts['conv_init'])
+
+    layer_res3 = tf.keras.layers.UpSampling2D(2)(layer_res3)
+
+    layer_res3 = ops.conv2d.Conv2d(opts, layer_res3, layer_res3.get_shape().as_list()[-1],
+                                output_dim=128, filter_size=3,
+                                stride=1, scope='rb3/convres',
+                                init=opts['conv_init'])
+
+    layer_x = layer_x + layer_res3
+
+    # Residual block 4: chanel size 128 to 64
+
+    layer_res4 = tf.identity(layer_x)
+
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
+                                'rb4/bn1', is_training, reuse)
+
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+
+    layer_x = tf.keras.layers.UpSampling2D(2)(layer_x)
+
+    layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=64, filter_size=3,
+                                stride=1, scope='rb4/conv1',
+                                init=opts['conv_init'])
+
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
+                                'rb4/bn2', is_training, reuse)
+
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+
+    layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=64, filter_size=3,
+                                stride=1, scope='rb4/conv2',
+                                init=opts['conv_init'])
+
+    layer_res4 = tf.keras.layers.UpSampling2D(2)(layer_res4)
+
+    layer_res4 = ops.conv2d.Conv2d(opts, layer_res4, layer_res4.get_shape().as_list()[-1],
+                                output_dim=64, filter_size=3,
+                                stride=1, scope='rb4/convres',
+                                init=opts['conv_init'])
+
+    layer_x = layer_x + layer_res4
+
+    # final layers
+
+    if opts['normalization']=='batchnorm':
+        layer_x = ops.batchnorm.Batchnorm_layers(opts, layer_x,
+                                'fin/bn', is_training, reuse)
+
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+
+    output = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=output_dim[-1], filter_size=3,
+                                stride=1, scope='convf',
+                                init=opts['conv_init'])
+
+    return output
+
+
+
+
+
 net_archi = {'mlp': {'encoder': mlp_encoder, 'decoder': mlp_decoder},
             'mnist':{'encoder': mnist_conv_encoder, 'decoder': mnist_conv_decoder},
             'svhn':{'encoder': cifar10_conv_encoder, 'decoder': cifar10_conv_decoder},
             'cifar10':{'encoder': cifar10_conv_encoder, 'decoder': cifar10_conv_decoder},
-            'celebA':{'encoder': celebA_conv_encoder, 'decoder': celebA_conv_decoder},
+            'celebA':{'encoder': celebA_resnet_encoder, 'decoder': celebA_resnet_decoder},
             }
+
+
 
 #################################### Critic ####################################
 
