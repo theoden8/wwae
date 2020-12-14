@@ -427,7 +427,7 @@ def celebA_resnet_encoder(opts, input, output_dim, reuse=False,
     layer_x = ops._ops.non_linear(layer_x,'relu')
 
     layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=64, filter_size=3,
+                                output_dim=128, filter_size=3,
                                 stride=1, scope='rb1/conv1',
                                 init=opts['conv_init'])
 
@@ -440,14 +440,14 @@ def celebA_resnet_encoder(opts, input, output_dim, reuse=False,
     layer_x = ops._ops.non_linear(layer_x,'relu')
 
     layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=64, filter_size=3,
+                                output_dim=128, filter_size=3,
                                 stride=1, scope='rb1/conv2',
                                 init=opts['conv_init'])
 
     layer_res1 = tf.nn.avg_pool2d(layer_res1, 2, 2, 'VALID')
 
     layer_res1 = ops.conv2d.Conv2d(opts, layer_res1, layer_res1.get_shape().as_list()[-1],
-                                output_dim=64, filter_size=3,
+                                output_dim=128, filter_size=3,
                                 stride=1, scope='rb1/convres',
                                 init=opts['conv_init'])
 
@@ -463,7 +463,7 @@ def celebA_resnet_encoder(opts, input, output_dim, reuse=False,
     layer_x = ops._ops.non_linear(layer_x,'relu')
 
     layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=128, filter_size=3,
+                                output_dim=256, filter_size=3,
                                 stride=1, scope='rb2/conv1',
                                 init=opts['conv_init'])
 
@@ -476,14 +476,14 @@ def celebA_resnet_encoder(opts, input, output_dim, reuse=False,
     layer_x = ops._ops.non_linear(layer_x,'relu')
 
     layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=128, filter_size=3,
+                                output_dim=256, filter_size=3,
                                 stride=1, scope='rb2/conv2',
                                 init=opts['conv_init'])
 
     layer_res2 = tf.nn.avg_pool2d(layer_res2, 2, 2, 'VALID')
 
     layer_res2 = ops.conv2d.Conv2d(opts, layer_res2, layer_res2.get_shape().as_list()[-1],
-                                output_dim=128, filter_size=3,
+                                output_dim=256, filter_size=3,
                                 stride=1, scope='rb2/convres',
                                 init=opts['conv_init'])
 
@@ -499,7 +499,7 @@ def celebA_resnet_encoder(opts, input, output_dim, reuse=False,
     layer_x = ops._ops.non_linear(layer_x,'relu')
 
     layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=256, filter_size=3,
+                                output_dim=512, filter_size=3,
                                 stride=1, scope='rb3/conv1',
                                 init=opts['conv_init'])
 
@@ -512,14 +512,14 @@ def celebA_resnet_encoder(opts, input, output_dim, reuse=False,
     layer_x = ops._ops.non_linear(layer_x,'relu')
 
     layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=256, filter_size=3,
+                                output_dim=512, filter_size=3,
                                 stride=1, scope='rb3/conv2',
                                 init=opts['conv_init'])
 
     layer_res3 = tf.nn.avg_pool2d(layer_res3, 2, 2, 'VALID')
 
     layer_res3 = ops.conv2d.Conv2d(opts, layer_res3, layer_res3.get_shape().as_list()[-1],
-                                output_dim=256, filter_size=3,
+                                output_dim=512, filter_size=3,
                                 stride=1, scope='rb3/convres',
                                 init=opts['conv_init'])
 
@@ -535,7 +535,7 @@ def celebA_resnet_encoder(opts, input, output_dim, reuse=False,
     layer_x = ops._ops.non_linear(layer_x,'relu')
 
     layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=256, filter_size=3,
+                                output_dim=512, filter_size=3,
                                 stride=1, scope='rb4/conv1',
                                 init=opts['conv_init'])
 
@@ -548,14 +548,14 @@ def celebA_resnet_encoder(opts, input, output_dim, reuse=False,
     layer_x = ops._ops.non_linear(layer_x,'relu')
 
     layer_x = ops.conv2d.Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=256, filter_size=3,
+                                output_dim=512, filter_size=3,
                                 stride=1, scope='rb4/conv2',
                                 init=opts['conv_init'])
 
     layer_res4 = tf.nn.avg_pool2d(layer_res4, 2, 2, 'VALID')
 
     layer_res4 = ops.conv2d.Conv2d(opts, layer_res4, layer_res4.get_shape().as_list()[-1],
-                                output_dim=256, filter_size=3,
+                                output_dim=512, filter_size=3,
                                 stride=1, scope='rb4/convres',
                                 init=opts['conv_init'])
 
