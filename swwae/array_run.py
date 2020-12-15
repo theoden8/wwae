@@ -37,6 +37,8 @@ parser.add_argument("--batch_size", type=int,
                     help='batch size')
 parser.add_argument("--lr", type=float,
                     help='learning rate size')
+parser.add_argument("--lr_decay", action='store_true', default=False,
+                    help='learning rate decay')
 parser.add_argument("--beta", type=float, default=0.,
                     help='beta')
 parser.add_argument("--gamma", type=int, default=1,
@@ -101,11 +103,9 @@ def main():
         raise Exception('You must provide a data_dir')
 
     ## exp conf
-    # lr_decay = [False,True]
-    lr_decay = [False,]
-    gammas = [1,5,10,50,100,250,500,1000,5000,10000]
-    orientations = [4,8,16]
-    exp_config = list(itertools.product(lr_decay,gammas, orientations))
+    gammas = [50,100,200]
+    orientations = [8,16]
+    exp_config = list(itertools.product(gammas, orientations))
     coef_id = (FLAGS.id-1) % len(exp_config)
 
     ## Set method param
@@ -122,13 +122,13 @@ def main():
         opts['batch_size'] = FLAGS.batch_size
     if FLAGS.lr:
         opts['lr'] = FLAGS.lr
-    opts['lr_decay'] = exp_config[coef_id][0]
+    opts['lr_decay'] = FLAGS.lr_decay
     opts['beta'] = FLAGS.beta
 
     ## ground cost config
     opts['cost'] = FLAGS.cost #l2, l2sq, l2sq_norm, l1, xentropy
     # opts['gamma'] = FLAGS.gamma
-    opts['gamma'] = exp_config[coef_id][1]
+    opts['gamma'] = exp_config[coef_id][0]
     ## wgan ground cost
     opts['pretrain_critic'] = FLAGS.critic_pretrain
     opts['d_updt_it'] = FLAGS.disc_it
@@ -137,7 +137,7 @@ def main():
     opts['lambda'] = FLAGS.critic_pen
     ## wemd ground cost
     # opts['orientation_num'] = FLAGS.orientation_num
-    opts['orientation_num'] = exp_config[coef_id][2]
+    opts['orientation_num'] = exp_config[coef_id][1]
     ## sw ground cost
     opts['sw_proj_num'] = FLAGS.L
     opts['sw_proj_type'] = FLAGS.slicing_dist
@@ -167,11 +167,8 @@ def main():
         # critic reg
         exp_name += '_l_' + str(opts['lambda'])
     elif opts['cost']=='wemd':
-        exp_name += '_lrdecay_' + str(opts['lr_decay'])
         exp_name += '_gamma_' + str(opts['gamma'])
         exp_name += '_L_' + str(opts['orientation_num'])
-    elif opts['cost']=='l2sq':
-        exp_name += '_lrdecay_' + str(opts['lr_decay'])
     if FLAGS.res_dir:
         exp_name += '_' + FLAGS.res_dir
     opts['exp_dir'] = os.path.join(out_subdir, exp_name)
@@ -189,7 +186,7 @@ def main():
 
     opts['it_num'] = FLAGS.num_it
     opts['print_every'] = int(opts['it_num'] / 10.)
-    opts['evaluate_every'] = int(opts['it_num'] / 100.)
+    opts['evaluate_every'] = int(opts['it_num'] / 40.)
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
     opts['save_train_data'] = FLAGS.save_data

@@ -15,7 +15,7 @@ from sampling_functions import sample_pz, traversals, interpolations, shift
 from plot_functions import save_train, save_test
 from plot_functions import plot_critic_pretrain_loss, plot_interpolation, plot_cost_shift, plot_rec_shift
 import models
-from networks import theta_discriminator
+# from networks import theta_discriminator
 from wgan import wgan, wgan_v2
 from loss_functions import wae_ground_cost
 from datahandler import datashapes
@@ -223,12 +223,12 @@ class Run(object):
                                             scope='decoder')
         with tf.control_dependencies(self.extra_update_ops):
             self.opt = opt.minimize(loss=self.objective, var_list=encoder_vars + decoder_vars)
-        # max-sw/max-gsw theta discriminator optimizer
-        if self.opts['cost']=='sw' and (self.opts['sw_proj_type']=='max-sw' or self.opts['sw_proj_type']=='max-gsw'):
-            theta_discr_opt = self.adam_discr_optimizer()
-            theta_discr_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                            scope='theta_discriminator')
-            self.theta_discr_opt = theta_discr_opt.minimize(loss=-self.loss_rec, var_list=theta_discr_vars)
+        # # max-sw/max-gsw theta discriminator optimizer
+        # if self.opts['cost']=='sw' and (self.opts['sw_proj_type']=='max-sw' or self.opts['sw_proj_type']=='max-gsw'):
+        #     theta_discr_opt = self.adam_discr_optimizer()
+        #     theta_discr_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+        #                                     scope='theta_discriminator')
+        #     self.theta_discr_opt = theta_discr_opt.minimize(loss=-self.loss_rec, var_list=theta_discr_vars)
         # wgan/wgan-gp critic optimizer
         if self.opts['cost'][:4]=='wgan':
             # critic_opt = self.RMSProp_discr_optimizer()
@@ -328,13 +328,13 @@ class Run(object):
                                 global_step=it)
             #####  TRAINING LOOP #####
             it += 1
-            # training theta_discriminator if needed
-            if self.opts['cost']=='sw' and (self.opts['sw_proj_type']=='max-sw' or self.opts['sw_proj_type']=='max-gsw'):
-                if (it-1)%self.opts['d_updt_freq']==0:
-                    for i in range(self.opts['d_updt_it']):
-                        _ = self.sess.run(self.theta_discr_opt, feed_dict={
-                                            self.data.handle: self.train_handle,
-                                            self.is_training: True})
+            # # training theta_discriminator if needed
+            # if self.opts['cost']=='sw' and (self.opts['sw_proj_type']=='max-sw' or self.opts['sw_proj_type']=='max-gsw'):
+            #     if (it-1)%self.opts['d_updt_freq']==0:
+            #         for i in range(self.opts['d_updt_it']):
+            #             _ = self.sess.run(self.theta_discr_opt, feed_dict={
+            #                                 self.data.handle: self.train_handle,
+            #                                 self.is_training: True})
             # training w1 critic if needed
             if self.opts['cost'][:4]=='wgan':
                 if (it-1)%self.opts['d_updt_freq']==0:

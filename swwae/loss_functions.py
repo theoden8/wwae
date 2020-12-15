@@ -5,7 +5,7 @@ import math as m
 
 from utils import get_batch_size
 from ops._ops import logsumexp
-from sw import sw
+# from sw import sw
 from kymatio.scattering2d.filter_bank import filter_bank
 from wemd import wemd
 from wgan import wgan, wgan_v2
@@ -117,8 +117,8 @@ def wae_ground_cost(opts,  x1, x2, is_training=False, reuse=False):
         cost = l2sq_norm_cost(x1, x2)
     elif opts['cost'] == 'l1':
         cost = l1_cost(x1, x2)
-    elif opts['cost'] == 'sw':
-        cost = sw(opts,  x1, x2, reuse=reuse)
+    # elif opts['cost'] == 'sw':
+    #     cost = sw(opts,  x1, x2, reuse=reuse)
     elif opts['cost'] == 'wemd':
         h,w,c = x1.get_shape().as_list()[1:]
         J = int(np.log2(h))

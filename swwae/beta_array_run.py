@@ -37,6 +37,8 @@ parser.add_argument("--batch_size", type=int,
                     help='batch size')
 parser.add_argument("--lr", type=float,
                     help='learning rate size')
+parser.add_argument("--lr_decay", action='store_true', default=False,
+                    help='learning rate decay')
 parser.add_argument("--beta", type=float, default=0.,
                     help='beta')
 parser.add_argument("--gamma", type=float, default=1.,
@@ -101,7 +103,7 @@ def main():
         raise Exception('You must provide a data_dir')
 
     ## exp conf
-    betas = [1,10,25,50,75,100,150,250,500,750,1000]
+    betas = [1,10,25,50,75,100,150,250]
     # betas = [1,5,10,20,50,75,100]
     coef_id = (FLAGS.id-1) % len(betas)
     # coef_id = (FLAGS.id-1) % len(exp_config)
@@ -121,7 +123,7 @@ def main():
         opts['batch_size'] = FLAGS.batch_size
     if FLAGS.lr:
         opts['lr'] = FLAGS.lr
-    opts['lr_decay'] = False
+    opts['lr_decay'] = FLAGS.lr_decay
     opts['beta'] = betas[coef_id]
     # opts['beta'] = FLAGS.beta
 
@@ -171,8 +173,6 @@ def main():
     elif opts['cost']=='wemd':
         exp_name += '_gamma_' + str(opts['gamma'])
         exp_name += '_L_' + str(opts['orientation_num'])
-    elif opts['cost']=='l2sq':
-        exp_name += '_lrdecay_' + str(opts['lr_decay'])
     if FLAGS.res_dir:
         exp_name += '_' + FLAGS.res_dir
     opts['exp_dir'] = os.path.join(out_subsubdir, exp_name)
@@ -190,8 +190,7 @@ def main():
 
     opts['it_num'] = FLAGS.num_it
     opts['print_every'] = int(opts['it_num'] / 10.)
-    opts['evaluate_every'] = int(opts['it_num'] / 10.)
-    # opts['evaluate_every'] = int(opts['it_num'] / 50.)
+    opts['evaluate_every'] = int(opts['it_num'] / 40.)
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
     opts['save_train_data'] = FLAGS.save_data

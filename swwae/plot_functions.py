@@ -265,45 +265,6 @@ def save_train(opts, data_train, data_test,
     plt.close()
 
 
-def plot_encSigma(opts, enc_Sigmas, exp_dir, filename):
-    fig = plt.figure()
-    enc_Sigmas = np.array(enc_Sigmas)
-    shape = np.shape(enc_Sigmas)
-    total_num = shape[0]
-    x_step = max(int(total_num / 200), 1)
-    x = np.arange(1, total_num + 1, x_step)
-    mean, var = enc_Sigmas[::x_step,0], enc_Sigmas[::x_step,1]
-    y = np.log(mean)
-    plt.plot(x, y, linewidth=1, color='blue', label=r'$\Sigma$')
-    plt.grid(axis='y')
-    plt.legend(loc='lower left')
-    plt.title(r'log norm_Tr$(\Sigma)$ curves')
-    ### Saving plot
-    plots_dir = 'train_plots'
-    save_path = os.path.join(exp_dir,plots_dir)
-    utils.create_dir(save_path)
-    fig.savefig(utils.o_gfile((save_path, filename), 'wb'),cformat='png')
-    plt.close()
-
-
-def plot_sinkhorn(opts, sinkhorn_it, exp_dir, filename):
-    fig = plt.figure()
-    total_num = len(sinkhorn_it)
-    x = np.arange(total_num)
-    # y = np.log(mean)
-    y = sinkhorn_it
-    plt.plot(x, y, linewidth=1, color='blue', label='sinkhorn')
-    plt.grid(axis='y')
-    plt.legend(loc='lower left')
-    plt.title('Sinkhorn distance')
-    ### Saving plot
-    plots_dir = 'train_plots'
-    save_path = os.path.join(exp_dir,plots_dir)
-    utils.create_dir(save_path)
-    fig.savefig(utils.o_gfile((save_path, filename), 'wb'),cformat='png')
-    plt.close()
-
-
 def plot_critic_pretrain_loss(opts, loss, exp_dir,filename):
     fig, ax = plt.subplots()
     total_num = len(loss)
@@ -399,40 +360,32 @@ def plot_interpolation(opts, interpolations, exp_dir, filename, train=True):
     if opts['input_normalize_sym']:
         interpolations = interpolations / 2. + 0.5
     white_pix = 4
-    num_rows = np.shape(interpolations)[1]
-    num_cols = np.shape(interpolations)[2]
-    images = []
-    for i in range(np.shape(interpolations)[0]):
-        pics = np.concatenate(np.split(interpolations[i],num_cols,axis=1),axis=3)
-        pics = pics[:,0]
-        pics = np.concatenate(np.split(pics,num_rows),axis=1)
-        pics = pics[0]
-        if greyscale:
-            image = 1. - pics
-        else:
-            image = pics
-        images.append(image)
+    num_rows = np.shape(interpolations)[0]
+    num_cols = np.shape(interpolations)[1]
+    images = np.concatenate(np.split(interpolations,num_cols,axis=1),axis=3)
+    images = images[:,0]
+    images = np.concatenate(np.split(images,num_rows,axis=0),axis=1)
+    images = images[0]
+    if greyscale:
+        images = 1. - images
     ### Creating plot
     dpi = 100
-    height_pic = images[0].shape[0]
-    width_pic = images[0].shape[1]
-    fig_height = height_pic / float(dpi)
-    fig_width = len(images)*width_pic / float(dpi)
+    height_pic = images.shape[0]
+    width_pic = images.shape[1]
+    fig_height = 10*height_pic / float(dpi)
+    fig_width = 10*width_pic / float(dpi)
     fig = plt.figure(figsize=(fig_width, fig_height))
-    gs = matplotlib.gridspec.GridSpec(1, len(images))
-    for (i,img) in enumerate(images):
-        ax=plt.subplot(gs[0, i])
-        if greyscale:
-            image = img[:, :, 0]
-            # in Greys higher values correspond to darker colors
-            plt.imshow(image, cmap='Greys',
-                            interpolation='none', vmin=0., vmax=1.)
-        else:
-            plt.imshow(img, interpolation='none', vmin=0., vmax=1.)
-        # Removing ticks
-        ax.axes.get_xaxis().set_ticks([])
-        ax.axes.get_yaxis().set_ticks([])
-        ax.axes.set_aspect(1)
+    if greyscale:
+        images = images[:, :, 0]
+        # in Greys higher values correspond to darker colors
+        plt.imshow(images, interpolation='none', vmin=0., vmax=1., cmap='Greys')
+    else:
+        plt.imshow(images, interpolation='none', vmin=0., vmax=1.)
+    # Removing axes, ticks
+    plt.axis('off')
+    # # placing subplot
+    plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0,
+            hspace = 0, wspace = 0)
     ### Saving plot
     if train:
         plots_dir = 'train_plots'
@@ -444,82 +397,24 @@ def plot_interpolation(opts, interpolations, exp_dir, filename, train=True):
     plt.close()
 
 
-def plot_projected(opts, data, trans, exp_dir, filename):
+def save_test(opts, data, reconstructions, samples, exp_dir):
+
     num_pics = opts['plot_num_pics']
     num_cols = opts['plot_num_cols']
     assert num_pics % num_cols == 0
     assert num_pics % 2 == 0
-    trans = trans / 2. + 0.5
-    images = []
-    for img in [data, trans]:
-        greyscale = img.shape[-1] == 1
-        pics=[]
-        for i in range(img.shape[0]):
-            if greyscale:
-                pics.append(1. - img[i, :, :, :])
-            else:
-                pics.append(img[i, :, :, :])
-        # Figuring out a layout
-        pics = np.array(pics)
-        image = np.concatenate(np.split(pics, num_cols), axis=2)
-        image = np.concatenate(image, axis=0)
-        images.append(image)
-    img1, img2 = images
-    # Creating a pyplot fig
-    dpi = 100
-    height_pic = images[0].shape[0]
-    width_pic = images[0].shape[1]
-    fig_height = 2*height_pic / float(dpi)
-    fig_width = 4*width_pic / float(dpi)
-    fig = plt.figure(figsize=(fig_width, fig_height))
-    gs = matplotlib.gridspec.GridSpec(1, 2)
-    for im, (gi, gj, title) in zip([img1, img2],
-                             [(0, 0, 'Inputs'),
-                              (0, 1, 'Transformed')]):
-        plt.subplot(gs[gi, gj])
-        if im.shape[-1] == 1:
-            image = im[:, :, 0]
-            # in Greys higher values correspond to darker colors
-            ax = plt.imshow(image, cmap='Greys',
-                            interpolation='none', vmin=0., vmax=1.)
-        else:
-            ax = plt.imshow(im, interpolation='none', vmin=0., vmax=1.)
-        ax = plt.subplot(gs[gi, gj])
-        plt.text(0.47, 1., title,
-                 ha="center", va="bottom", size=20, transform=ax.transAxes)
-        # Removing ticks
-        ax.axes.get_xaxis().set_ticks([])
-        ax.axes.get_yaxis().set_ticks([])
-        ax.axes.set_xlim([0, width_pic])
-        ax.axes.set_ylim([height_pic, 0])
-        ax.axes.set_aspect(1)
-
-    ### Saving plots
-    # Plot
-    plots_dir = 'train_plots'
-    save_path = os.path.join(exp_dir,plots_dir)
-    utils.create_dir(save_path)
-    fig.savefig(utils.o_gfile((save_path, filename), 'wb'),
-                dpi=dpi, format='png')
-    plt.close()
-
-
-def save_test_celeba(opts, data, reconstructions, transversals, samples, exp_dir):
-
-    """ Generates and saves rec and samples plots"""
-
     greyscale = data.shape[-1] == 1
 
     if opts['input_normalize_sym']:
         data = data / 2. + 0.5
         reconstructions = reconstructions / 2. + 0.5
         samples = samples / 2. + 0.5
-        transversals = transversals / 2. + 0.5
 
     ### Reconstruction plots
-    num_pics = 100
-    num_cols = 10
-    rec = []
+    # Arrange pics and reconstructions in a proper way
+    assert len(data) == num_pics
+    assert len(data) == len(reconstructions)
+    pics = []
     merged = np.vstack([reconstructions, data])
     r_ptr = 0
     w_ptr = 0
@@ -530,15 +425,16 @@ def save_test_celeba(opts, data, reconstructions, transversals, samples, exp_dir
         w_ptr += 2
     for idx in range(num_pics):
         if greyscale:
-            rec.append(1. - merged[idx, :, :, :])
+            pics.append(1. - merged[idx, :, :, :])
         else:
-            rec.append(merged[idx, :, :, :])
+            pics.append(merged[idx, :, :, :])
     # Figuring out a layout
-    rec = np.array(rec)
-    rec = np.concatenate(np.split(rec, num_cols), axis=2)
+    pics = np.array(pics)
+    rec = np.concatenate(np.split(pics, num_cols), axis=2)
     rec = np.concatenate(rec, axis=0)
-    ### Samples
-    num_cols = 10
+
+    ### Samples plots
+    # num_cols = samples.shape[0]
     gen = []
     for idx in range(samples.shape[0]):
         if greyscale:
@@ -548,108 +444,121 @@ def save_test_celeba(opts, data, reconstructions, transversals, samples, exp_dir
     gen = np.array(gen)
     gen = np.concatenate(np.split(gen, num_cols), axis=2)
     gen = np.concatenate(gen, axis=0)
-    ### Latent transversal
-    num_rows = transversals.shape[1]
-    num_cols = transversals.shape[2]
-    images = []
-    names = []
-    for i in range(np.shape(transversals)[0]):
-        pics = np.concatenate(np.split(transversals[i],num_cols,axis=1),axis=3)
-        pics = pics[:,0]
-        pics = np.concatenate(np.split(pics,num_rows),axis=1)
-        pics = pics[0]
-        if greyscale:
-            image = 1. - pics
-        else:
-            image = pics
-        images.append(image)
-        names.append(opts['model'] + '_latent_transversal_' + str(i))
-    ### Creating a pyplot fig
-    to_plot_list = zip([rec, gen] + images,
-                         [opts['model'] + '_reconstruction',
-                         opts['model'] + '_sample',]
-                         + names)
-    dpi = 100
-    for img, filename in to_plot_list:
+
+    ### Creating plot
+    for img, title in zip([rec, gen],
+                        ['reconstructions.png',
+                        'samples.png']):
+        dpi = 100
         height_pic = img.shape[0]
         width_pic = img.shape[1]
-        fig_height = height_pic / 20
-        fig_width = width_pic / 20
+        fig_height = 10*height_pic / float(dpi)
+        fig_width = 10*width_pic / float(dpi)
         fig = plt.figure(figsize=(fig_width, fig_height))
         if greyscale:
-            image = img[:, :, 0]
+            img = img[:, :, 0]
             # in Greys higher values correspond to darker colors
-            plt.imshow(image, cmap='Greys',
+            plt.imshow(img, cmap='Greys',
                             interpolation='none', vmin=0., vmax=1.)
         else:
             plt.imshow(img, interpolation='none', vmin=0., vmax=1.)
-        # Removing axes, ticks, labels
+        # Removing axes, ticks
         plt.axis('off')
         # # placing subplot
         plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0,
                 hspace = 0, wspace = 0)
-        # Saving
+        ### Saving plot
         save_path = os.path.join(exp_dir,'test_plots')
         utils.create_dir(save_path)
-        filename = filename + '.png'
-        plt.savefig(utils.o_gfile((save_path, filename), 'wb'),
-                    dpi=dpi, format='png', box_inches='tight', pad_inches=0.0)
+        fig.savefig(utils.o_gfile((save_path, title), 'wb'),dpi=dpi,cformat='png')
         plt.close()
 
 
-def save_dimwise_traversals(opts, transversals, exp_dir):
+def plot_cost_shift(rec_sr, mse_sr, ground_os, mse_os,exp_dir):
+        nshift = len(rec_sr)
+        dpi = 100
+        fig_height = 500 / float(dpi)
+        fig_width = 2*500 / float(dpi)
+        fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(fig_width, fig_height))
+        # obs vs shifted
+        for y, (label,color) in zip([ground_os, mse_os],
+                            [('ground','b'),
+                            ('MSE','r')]):
+            axes[0].plot(list(range(nshift)),y,label=label,color=color,)
+        xticks = np.arange(nshift)
+        axes[0].set_xticks(xticks[::4])
+        axes[0].set_xticklabels(xticks[::4])
+        axes[0].set_xlabel('pixels shifted')
+        axes[0].grid(True, which='major', axis='y')
+        axes[0].legend(loc='best')
+        axes[0].set_ylabel('cost(obs,shifted)')
+        axes[0].set_title('cost vs pixel shift')
+        # shift vs reconstructions
+        for y, (label,color) in zip([rec_sr, mse_sr],
+                            [('rec','b'),
+                            ('MSE','r')]):
+            axes[1].plot(list(range(nshift)),y,label=label,color=color,)
+        xticks = np.arange(nshift)
+        axes[1].set_xticks(xticks[::4])
+        axes[1].set_xticklabels(xticks[::4])
+        axes[1].set_xlabel('pixels shifted')
+        axes[1].grid(True, which='major', axis='y')
+        axes[1].legend(loc='best')
+        axes[1].set_ylabel('cost(shifted,reconstruction)')
+        axes[1].set_title('cost vs pixel shift')
 
-    """ Dimwise latent traversals"""
+        ### Saving plot
+        save_path = os.path.join(exp_dir,'test_plots')
+        utils.create_dir(save_path)
+        fig.savefig(os.path.join(save_path, 'perurbation_stab.png'),
+                    dpi=dpi,format='png', bbox_inches='tight')
+        plt.close()
 
-    assert transversals.shape[1]==opts['zdim']
-    greyscale = transversals.shape[-1] == 1
+
+def plot_rec_shift(opts, shifted_obs, shifted_rec, exp_dir):
+
+    greyscale = shifted_obs.shape[-1] == 1
+
     if opts['input_normalize_sym']:
-        transversals = transversals / 2. + 0.5
-    num_rows = transversals.shape[0]
-    num_cols = transversals.shape[2]
-    num_im = transversals.shape[1]
-    images, names = [], []
-    for i in range(num_im):
-        pics = np.concatenate(np.split(transversals[:,i],num_cols,axis=1),axis=3)
-        pics = pics[:,0]
-        pics = np.concatenate(np.split(pics,num_rows),axis=1)
-        pics = pics[0]
-        if greyscale:
-            image = 1. - pics
+        shifted_obs = shifted_obs / 2. + 0.5
+        shifted_rec = shifted_rec / 2. + 0.5
+
+    ncol = shifted_obs.shape[1]
+    nrow = shifted_obs.shape[0]
+    pics = []
+    for r in range(2*nrow):
+        if r%2==0:
+            pics.append(shifted_obs[int(r/2)])
         else:
-            image = pics
-        images.append(image)
-        names.append(opts['model'] + '_z' + str(i))
-    ### Creating a pyplot fig
-    to_plot_list = zip(images,names)
+            pics.append(shifted_rec[int(r/2)])
+    pics = np.array(pics)
+    pics = np.concatenate(np.split(pics,ncol,axis=1),axis=3)
+    pics = pics[:,0]
+    pics = np.concatenate(np.split(pics,2*nrow,axis=0),axis=1)
+    img = pics[0]
     dpi = 100
-    for img, filename in to_plot_list:
-        height_pic = img.shape[0]
-        width_pic = img.shape[1]
-        fig_height = height_pic / 20
-        fig_width = width_pic / 20
-        fig = plt.figure(figsize=(fig_width, fig_height))
-        if greyscale:
-            image = img[:, :, 0]
-            # in Greys higher values correspond to darker colors
-            plt.imshow(image, cmap='Greys',
-                            interpolation='none', vmin=0., vmax=1.)
-        else:
-            plt.imshow(img, interpolation='none', vmin=0., vmax=1.)
-        # Removing axes, ticks, labels
-        plt.axis('off')
-        # # placing subplot
-        plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0,
-                hspace = 0, wspace = 0)
-        # Saving
-        save_path = os.path.join(exp_dir,'test_plots')
-        utils.create_dir(save_path)
-        save_path = os.path.join(save_path,'dimwise_traversals')
-        utils.create_dir(save_path)
-        filename = filename + '.png'
-        plt.savefig(utils.o_gfile((save_path, filename), 'wb'),
-                    dpi=dpi, format='png', box_inches='tight', pad_inches=0.0)
-        plt.close()
+    height_pic = img.shape[0]
+    width_pic = img.shape[1]
+    fig_height = 10*height_pic / float(dpi)
+    fig_width = 10*width_pic / float(dpi)
+    fig = plt.figure(figsize=(fig_width, fig_height))
+    if greyscale:
+        img = img[:, :, 0]
+        # in Greys higher values correspond to darker colors
+        plt.imshow(img, cmap='Greys',
+                        interpolation='none', vmin=0., vmax=1.)
+    else:
+        plt.imshow(img, interpolation='none', vmin=0., vmax=1.)
+    # Removing axes, ticks
+    plt.axis('off')
+    # # placing subplot
+    plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0,
+            hspace = 0, wspace = 0)
+    ### Saving plot
+    save_path = os.path.join(exp_dir,'test_plots')
+    utils.create_dir(save_path)
+    fig.savefig(utils.o_gfile((save_path, 'reconstructions_shifted.png'), 'wb'),dpi=dpi,cformat='png')
+    plt.close()
 
 
 def discrete_cmap(N, base_cmap=None):
