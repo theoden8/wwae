@@ -190,7 +190,7 @@ def main():
 
     opts['it_num'] = FLAGS.num_it
     opts['print_every'] = int(opts['it_num'] / 10.)
-    opts['evaluate_every'] = int(opts['it_num'] / 40.)
+    opts['evaluate_every'] = int(opts['it_num'] / 20.)
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
     opts['save_train_data'] = FLAGS.save_data
