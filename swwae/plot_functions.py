@@ -288,69 +288,57 @@ def plot_critic_pretrain_loss(opts, loss, exp_dir,filename):
     plt.close()
 
 
-def plot_embedded(opts, encoded, decoded, labels, exp_dir, filename, train=True):
-    num_pics = np.shape(encoded[0])[0]
-    embeds = []
-    for i in range(len(encoded)):
-        encods = np.concatenate([encoded[i],decoded[i]],axis=0)
-        # encods = encoded[i]
-        if np.shape(encods)[-1]==2:
-            embedding = encods
+def plot_embedded_shift(opts, encoded, exp_dir):
+    nobs, nshift = np.shape(encoded)[:2]
+    codes = encoded.reshape([nobs*nshift,-1])
+    labels = np.repeat(np.arange(nobs),nshift)
+    if np.shape(codes)[-1]==2:
+        embedding = codes
+    else:
+        if opts['embedding']=='pca':
+            embedding = PCA(n_components=2).fit_transform(codes)
+        elif opts['embedding']=='umap':
+            embedding = umap.UMAP(n_neighbors=15,
+                                    min_dist=0.2,
+                                    metric='correlation').fit_transform(codes)
         else:
-            if opts['embedding']=='pca':
-                embedding = PCA(n_components=2).fit_transform(encods)
-            elif opts['embedding']=='umap':
-                embedding = umap.UMAP(n_neighbors=15,
-                                        min_dist=0.2,
-                                        metric='correlation').fit_transform(encods)
-            else:
-                assert False, 'Unknown %s method for embedgins vizu' % opts['embedding']
-        embeds.append(embedding)
+            assert False, 'Unknown %s method for embedgins vizu' % opts['embedding']
     # Creating a pyplot fig
     dpi = 100
-    height_pic = 300
-    width_pic = 300
-    fig_height = 4*height_pic / float(dpi)
-    fig_width = 4*len(embeds) * height_pic  / float(dpi)
+    height_pic = 500
+    width_pic = 500
+    fig_height =  height_pic / float(dpi)
+    fig_width =  width_pic / float(dpi)
     fig = plt.figure(figsize=(fig_width, fig_height))
-    #fig = plt.figure()
-    gs = matplotlib.gridspec.GridSpec(1, len(embeds))
-    for i in range(len(embeds)):
-        ax = plt.subplot(gs[0, i])
-        plt.scatter(embeds[i][:num_pics, 0], embeds[i][:num_pics, 1], alpha=0.7,
-                    c=labels, s=40, label='Qz test',cmap=discrete_cmap(10, base_cmap='tab10'))
-        if i==len(embeds)-1:
-            plt.colorbar()
-        plt.scatter(embeds[i][num_pics:, 0], embeds[i][num_pics:, 1],
-                                color='black', s=80, marker='*',label='Pz')
-        xmin = np.amin(embeds[i][:,0])
-        xmax = np.amax(embeds[i][:,0])
-        magnify = 0.01
-        width = abs(xmax - xmin)
-        xmin = xmin - width * magnify
-        xmax = xmax + width * magnify
-        ymin = np.amin(embeds[i][:,1])
-        ymax = np.amax(embeds[i][:,1])
-        width = abs(ymin - ymax)
-        ymin = ymin - width * magnify
-        ymax = ymax + width * magnify
-        plt.xlim(xmin, xmax)
-        plt.ylim(ymin, ymax)
-        plt.legend(loc='best')
-        plt.text(0.47, 1., 'UMAP latent %d' % (i+1), ha="center", va="bottom",
-                                                size=20, transform=ax.transAxes)
-        # Removing ticks
-        ax.axes.get_xaxis().set_ticks([])
-        ax.axes.get_yaxis().set_ticks([])
-        ax.axes.set_aspect(1)
+    plt.scatter(embedding[:, 0], embedding[:, 1], alpha=0.8, linewidths=0.,
+                c=labels, s=40, cmap=discrete_cmap(10, base_cmap='tab10'))
+    xmin = np.amin(embedding[:,0])
+    xmax = np.amax(embedding[:,0])
+    magnify = 0.05
+    width = abs(xmax - xmin)
+    xmin = xmin - width * magnify
+    xmax = xmax + width * magnify
+    ymin = np.amin(embedding[:,1])
+    ymax = np.amax(embedding[:,1])
+    width = abs(ymin - ymax)
+    ymin = ymin - width * magnify
+    ymax = ymax + width * magnify
+    plt.xlim(xmin, xmax)
+    plt.ylim(ymin, ymax)
+    # plt.legend(loc='best')
+    # plt.text(0.47, 1., 'UMAP vizu', ha="center", va="bottom",
+    #                                         size=20, transform=ax.transAxes)
+    plt.title('UMAP vizualisation of the shifted latent codes')
+    # Removing ticks
+    # plt.tick_params(axis='both',which='both',bottom=False,top=False,left=False,right=False)
+    plt.xticks([])
+    plt.yticks([])
     ### Saving plot
-    if train:
-        plots_dir = 'train_plots'
-    else:
-        plots_dir = 'test_plots'
-    save_path = os.path.join(exp_dir,plots_dir)
+    save_path = os.path.join(exp_dir,'test_plots')
     utils.create_dir(save_path)
-    fig.savefig(utils.o_gfile((save_path, filename), 'wb'),dpi=dpi,cformat='png')
+    filename = opts['cost'] + '_embedded_shifted.png'
+    fig.savefig(utils.o_gfile((save_path, 'embedded_shifted.png'),'wb'),
+                dpi=dpi, cformat='png',bbox_inches='tight',pad_inches=0.05)
     plt.close()
 
 
@@ -474,7 +462,7 @@ def save_test(opts, data, reconstructions, samples, exp_dir):
         plt.close()
 
 
-def plot_cost_shift(rec_sr, mse_sr, ground_os, mse_os,exp_dir):
+def plot_cost_shift(rec_sr, mse_sr, ground_os, mse_os, exp_dir):
         nshift = len(rec_sr)
         dpi = 100
         fig_height = 500 / float(dpi)

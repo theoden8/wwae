@@ -13,7 +13,8 @@ from math import ceil
 import utils
 from sampling_functions import sample_pz, traversals, interpolations, shift
 from plot_functions import save_train, save_test
-from plot_functions import plot_critic_pretrain_loss, plot_interpolation, plot_cost_shift, plot_rec_shift
+from plot_functions import plot_critic_pretrain_loss
+from plot_functions import plot_interpolation, plot_cost_shift, plot_rec_shift, plot_embedded_shift
 import models
 # from networks import theta_discriminator
 from wgan import wgan, wgan_v2
@@ -871,8 +872,8 @@ class Run(object):
         fixed_noise = sample_pz(opts, self.pz_params, npics)
         # anchors_ids = np.random.choice(npics, 5, replace=True)
         anchors_ids = [0, 4, 6, 12, 39]
-        # nshifts = int(self.data.data_shape[0]/4)
-        nshifts = 10
+        nshifts = int(self.data.data_shape[0]/4)
+        # nshifts = 10
 
         # - Load trained model
         if WEIGHTS_FILE is None:
@@ -885,6 +886,7 @@ class Run(object):
                 raise Exception("weights file doesn't exist")
             self.saver.restore(self.sess, WEIGHTS_PATH)
 
+        """
         # - Rec cost vs shifts
         rec_cost, mse_cost, ground_cost, ground_mse = [], [], [], []
         # To add check removing (0,0) dir
@@ -916,23 +918,28 @@ class Run(object):
             ground_mse.append(gm)
         plot_cost_shift(rec_cost, mse_cost, ground_cost, ground_mse,
                                     opts['exp_dir'])
+        """
 
         # - vizu rec shift
         shift_dir = np.random.randint(-1,2,(len(anchors_ids),2))
         for n in range(len(anchors_ids)):
             while shift_dir[n][0]==0 and shift_dir[n][1]==0:
                 shift_dir[n] = np.random.randint(-1,2,2)
-        shifted_obs, shifted_rec = [], []
-        for s in range(0,nshifts,max(int(nshifts/16),1)):
-        # for s in range(0,nshifts,int(nshifts/16)):
+        shifted_obs, shifted_rec, shifted_enc = [], [], []
+        # for s in range(0,nshifts,max(int(nshifts/8),1)):
+        for s in range(0,nshifts,max(int(nshifts/8),1)):
             shifted = shift(opts, self.data.data_vizu[anchors_ids], shift_dir, s)
-            rec = self.sess.run(self.decoded, feed_dict={self.inputs_img1: shifted,
-                                    self.is_training: False})
+            [rec,enc] = self.sess.run([self.decoded,self.encoded],
+                                    feed_dict={self.inputs_img1: shifted,
+                                               self.is_training: False})
             shifted_obs.append(shifted)
             shifted_rec.append(rec)
+            shifted_enc.append(enc)
         shifted_obs = np.stack(shifted_obs,axis=1)
         shifted_rec = np.stack(shifted_rec,axis=1)
+        shifted_enc = np.stack(shifted_enc,axis=1)
         plot_rec_shift(opts, shifted_obs, shifted_rec, opts['exp_dir']) #TODO
+        plot_embedded_shift(opts, shifted_enc, opts['exp_dir'])
 
     def fid_score(self, load_trained_model=False, MODEL_PATH=None,
                                         WEIGHTS_FILE=None,
@@ -1007,7 +1014,7 @@ class Run(object):
                 batch_id = np.random.randint(full_size, size=batch_size)
                 batch = self.data._sample_observations(batch_id)
                 recons = self.sess.run(self.decoded, feed_dict={
-                                        self.inputs_img: batch,
+                                        self.inputs_img1: batch,
                                         self.is_training: False})
                 # rescale recons in [0,255]
                 if self.opts['input_normalize_sym']:
