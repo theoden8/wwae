@@ -8,7 +8,7 @@
 #$ -l tmem=26G
 #$ -l h_rt=8:00:00
 
-#$ -t 1-7
+#$ -t 1-8
 
 #$ -N gendcifar
 
