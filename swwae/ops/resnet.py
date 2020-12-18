@@ -83,9 +83,30 @@ def ResidualBlock(opts, input, input_dim, output_dim, filter_size, scope=None, i
     output = input
     output = Batchnorm_layers(opts, output, scope=scope+'/bn0', is_training=is_training, reuse=reuse)
     output = ops._ops.non_linear(output,'relu')
-    output = conv_1(opts,input=output,scope=scope+'/conv1', filter_size=filter_size)
+    output = conv_1(opts, input=output, scope=scope+'/conv1', filter_size=filter_size)
     output = Batchnorm_layers(opts, output, scope=scope+'/bn1', is_training=is_training, reuse=reuse)
     output = ops._ops.non_linear(output,'relu')
-    output = conv_2(opts,input=output,scope=scope+'/conv2', filter_size=filter_size)
+    output = conv_2(opts, input=output, scope=scope+'/conv2', filter_size=filter_size)
 
+    return shortcut + output
+
+def OptimizedResBlockEnc1(opts, input, input_dim, output_dim, filter_size, scope=None, init='he'):
+    conv_1  = functools.partial(Conv2d, input_dim=input_dim,
+                                        output_dim=output_dim,
+                                        filter_size=filter_size,
+                                        scope=scope,
+                                        init=init)
+    conv_2 = functools.partial(ConvMeanPool, input_dim=output_dim,
+                                        output_dim=output_dim,
+                                        filter_size=filter_size,
+                                        scope=scope,
+                                        init=init)
+
+    conv_shortcut = MeanPoolConv
+    shortcut = conv_shortcut(opts, input=input, input_dim=input_dim, output_dim=output_dim, filter_size=1, scope=scope+'/shortcut',init=init)
+
+    output = input
+    output = conv_1(opts, input=output, scope=scope+'/conv1', filter_size=filter_size)
+    output = ops._ops.non_linear(output,'relu')
+    output = conv_2(opts, input=output, scope=scope+'/conv2', filter_size=filter_size)
     return shortcut + output

@@ -5,7 +5,7 @@ from ops.linear import Linear
 from ops.batchnorm import Batchnorm_layers
 from ops.conv2d import Conv2d
 from ops.deconv2d import Deconv2D
-from ops.resnet import ResidualBlock
+from ops.resnet import ResidualBlock, OptimizedResBlockEnc1
 import ops._ops
 
 
@@ -267,6 +267,82 @@ def  cifar10_conv_decoder(opts, input, output_dim, reuse, is_training):
 
     return outputs
 
+def cifar10_resnet_encoder(opts, input, output_dim, reuse=False, is_training=False):
+
+    layer_x = input
+    # optimized resblock
+    layer_x = OptimizedResBlockEnc1(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=opts['zdim'],
+                                filter_size=3, scope='optrb',
+                                init=opts['conv_init'])
+    # resblock 1
+    layer_x = ResidualBlock(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=opts['zdim'], filter_size=3,
+                                scope='rb1', init=opts['conv_init'],
+                                resample='down', is_training=is_training,
+                                reuse=reuse)
+    # resblock 2
+    layer_x = ResidualBlock(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=opts['zdim'], filter_size=3,
+                                scope='rb2', init=opts['conv_init'],
+                                resample=None, is_training=is_training,
+                                reuse=reuse)
+    # resblock 3
+    layer_x = ResidualBlock(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=opts['zdim'], filter_size=3,
+                                scope='rb3', init=opts['conv_init'],
+                                resample=None, is_training=is_training,
+                                reuse=reuse)
+    # final layer
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+    layer_x = tf.reduce_mean(layer_x, axis=[1,2])
+    layer_x = tf.reshape(layer_x, [-1,np.prod(layer_x.get_shape().as_list()[1:])])
+    outputs = Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                output_dim, scope='hid_final')
+
+    return outputs
+
+def cifar10_resnet_decoder(opts, input, output_dim, reuse=False, is_training=False):
+
+    w,h = output_dim[0], output_dim[1]
+    layer_x = input
+
+    # Linear layer
+    _out_shape = [int(w/2**3), int(h/2**3), opts['zdim']]
+    layer_x = Linear(opts, layer_x, np.prod(input.get_shape().as_list()[1:]),
+                                np.prod(_out_shape), scope='hid0/lin')
+    layer_x = tf.reshape(layer_x, [-1,] + _out_shape)
+    # resblock 1
+    layer_x = ResidualBlock(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=opts['zdim'], filter_size=3,
+                                scope='rb1', init=opts['conv_init'],
+                                resample='up', is_training=is_training,
+                                reuse=reuse)
+    # resblock 2
+    layer_x = ResidualBlock(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=opts['zdim'], filter_size=3,
+                                scope='rb2', init=opts['conv_init'],
+                                resample='up', is_training=is_training,
+                                reuse=reuse)
+    # resblock 3
+    layer_x = ResidualBlock(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=opts['zdim'], filter_size=3,
+                                scope='rb3', init=opts['conv_init'],
+                                resample='up', is_training=is_training,
+                                reuse=reuse)
+    # final layers
+    if opts['normalization']=='batchnorm':
+        layer_x = Batchnorm_layers(opts, layer_x,
+                                'hid_final/bn', is_training, reuse)
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+    output = Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=output_dim[-1], filter_size=3,
+                                stride=1, scope='hid_final/conv',
+                                init=opts['conv_init'])
+
+    return output
+
+
 ######### celebA #########
 def celebA_conv_encoder(opts, input, output_dim, reuse=False, is_training=False):
     """
@@ -394,30 +470,30 @@ def celebA_resnet_encoder(opts, input, output_dim, reuse=False, is_training=Fals
     layer_x = input
     # first conv layer
     layer_x = Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=64, filter_size=3,
+                                output_dim=opts['zdim'], filter_size=3,
                                 stride=1, scope='hid0/conv',
                                 init=opts['conv_init'])
     # resblock 1
     layer_x = ResidualBlock(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=128, filter_size=3,
+                                output_dim=2*opts['zdim'], filter_size=3,
                                 scope='rb1', init=opts['conv_init'],
                                 resample='down', is_training=is_training,
                                 reuse=reuse)
     # resblock 2
     layer_x = ResidualBlock(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=256, filter_size=3,
+                                output_dim=4*opts['zdim'], filter_size=3,
                                 scope='rb2', init=opts['conv_init'],
                                 resample='down', is_training=is_training,
                                 reuse=reuse)
     # resblock 3
     layer_x = ResidualBlock(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=512, filter_size=3,
+                                output_dim=8*opts['zdim'], filter_size=3,
                                 scope='rb3', init=opts['conv_init'],
                                 resample='down', is_training=is_training,
                                 reuse=reuse)
     # resblock 4
     layer_x = ResidualBlock(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=512, filter_size=3,
+                                output_dim=8*opts['zdim'], filter_size=3,
                                 scope='rb4', init=opts['conv_init'],
                                 resample='down', is_training=is_training,
                                 reuse=reuse)
@@ -434,31 +510,31 @@ def celebA_resnet_decoder(opts, input, output_dim, reuse=False, is_training=Fals
     layer_x = input
 
     # Linear layer
-    _out_shape = [int(w/2**4), int(h/2**4), 512]
+    _out_shape = [int(w/2**4), int(h/2**4), 8*opts['zdim']]
     layer_x = Linear(opts, layer_x, np.prod(input.get_shape().as_list()[1:]),
                                 np.prod(_out_shape), scope='hid0/lin')
     layer_x = tf.reshape(layer_x, [-1,] + _out_shape)
     # resblock 1
     layer_x = ResidualBlock(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=512, filter_size=3,
+                                output_dim=8*opts['zdim'], filter_size=3,
                                 scope='rb1', init=opts['conv_init'],
                                 resample='up', is_training=is_training,
                                 reuse=reuse)
     # resblock 2
     layer_x = ResidualBlock(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=256, filter_size=3,
+                                output_dim=4*opts['zdim'], filter_size=3,
                                 scope='rb2', init=opts['conv_init'],
                                 resample='up', is_training=is_training,
                                 reuse=reuse)
     # resblock 3
     layer_x = ResidualBlock(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=128, filter_size=3,
+                                output_dim=2*opts['zdim'], filter_size=3,
                                 scope='rb3', init=opts['conv_init'],
                                 resample='up', is_training=is_training,
                                 reuse=reuse)
     # resblock 4
     layer_x = ResidualBlock(opts, layer_x, layer_x.get_shape().as_list()[-1],
-                                output_dim=64, filter_size=3,
+                                output_dim=opts['zdim'], filter_size=3,
                                 scope='rb4', init=opts['conv_init'],
                                 resample='up', is_training=is_training,
                                 reuse=reuse)
@@ -480,7 +556,8 @@ net_archi = {'mlp': {'encoder': mlp_encoder, 'decoder': mlp_decoder},
                     'svhn':{'encoder': cifar10_conv_encoder, 'decoder': cifar10_conv_decoder},
                     'cifar10':{'encoder': cifar10_conv_encoder, 'decoder': cifar10_conv_decoder},
                     'celebA':{'encoder': celebA_conv_encoder, 'decoder': celebA_conv_decoder}},
-            'resnet': {'celebA':{'encoder': celebA_resnet_encoder, 'decoder': celebA_resnet_decoder}},
+            'resnet': {'celebA':{'encoder': celebA_resnet_encoder, 'decoder': celebA_resnet_decoder},
+                    'cifar10':{'encoder': cifar10_resnet_encoder, 'decoder': cifar10_resnet_decoder}}
             }
 
 
