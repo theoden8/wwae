@@ -279,7 +279,7 @@ class Run(object):
             enc_Sigmas = []
         # - Init decay lr and beta
         decay = 1.
-        decay_rate = 0.8
+        decay_rate = 0.9
         fix_decay_steps = 25000
         wait = 0
         batches_num = self.data.train_size//self.opts['batch_size']
@@ -927,7 +927,7 @@ class Run(object):
                 shift_dir[n] = np.random.randint(-1,2,2)
         shifted_obs, shifted_rec, shifted_enc = [], [], []
         # for s in range(0,nshifts,max(int(nshifts/8),1)):
-        for s in range(0,nshifts,max(int(nshifts/8),1)):
+        for s in range(nshifts):
             shifted = shift(opts, self.data.data_vizu[anchors_ids], shift_dir, s)
             [rec,enc] = self.sess.run([self.decoded,self.encoded],
                                     feed_dict={self.inputs_img1: shifted,

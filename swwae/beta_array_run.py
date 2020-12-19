@@ -104,7 +104,7 @@ def main():
 
     ## exp conf
     # betas = [1,10,25,50,75,100,150,250]
-    betas = [0.1,1,5,10,20,50,75,100]
+    betas = [0.01,0.1,1,5,10,25,50,75,100]
     coef_id = (FLAGS.id-1) % len(betas)
     # coef_id = (FLAGS.id-1) % len(exp_config)
     # exp_config = list(itertools.product(lr_decay,gammas, orientations))

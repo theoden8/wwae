@@ -295,7 +295,7 @@ def cifar10_resnet_encoder(opts, input, output_dim, reuse=False, is_training=Fal
                                 reuse=reuse)
     # final layer
     layer_x = ops._ops.non_linear(layer_x,'relu')
-    layer_x = tf.reduce_mean(layer_x, axis=[1,2])
+    # layer_x = tf.reduce_mean(layer_x, axis=[1,2])
     layer_x = tf.reshape(layer_x, [-1,np.prod(layer_x.get_shape().as_list()[1:])])
     outputs = Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
                                 output_dim, scope='hid_final')

@@ -328,16 +328,17 @@ def plot_embedded_shift(opts, encoded, exp_dir):
     # plt.legend(loc='best')
     # plt.text(0.47, 1., 'UMAP vizu', ha="center", va="bottom",
     #                                         size=20, transform=ax.transAxes)
-    plt.title('UMAP vizualisation of the shifted latent codes')
-    # Removing ticks
-    # plt.tick_params(axis='both',which='both',bottom=False,top=False,left=False,right=False)
-    plt.xticks([])
-    plt.yticks([])
+    plt.title(opts['embedding'] + ' vizualisation of the shifted latent codes')
+    # Removing ticks if needed
+    if opts['embedding']=='umap':
+        # plt.tick_params(axis='both',which='both',bottom=False,top=False,left=False,right=False)
+        plt.xticks([])
+        plt.yticks([])
     ### Saving plot
     save_path = os.path.join(exp_dir,'test_plots')
     utils.create_dir(save_path)
     filename = opts['cost'] + '_embedded_shifted.png'
-    fig.savefig(utils.o_gfile((save_path, 'embedded_shifted.png'),'wb'),
+    fig.savefig(utils.o_gfile((save_path, filename),'wb'),
                 dpi=dpi, cformat='png',bbox_inches='tight',pad_inches=0.05)
     plt.close()
 
