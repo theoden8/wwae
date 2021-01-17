@@ -39,8 +39,6 @@ parser.add_argument("--lr", type=float,
                     help='learning rate size')
 parser.add_argument("--lr_decay", action='store_true', default=False,
                     help='learning rate decay')
-parser.add_argument("--beta", type=float, default=0.,
-                    help='beta')
 parser.add_argument("--gamma", type=float, default=1.,
                     help='weight for mass reg. in ground cost')
 parser.add_argument("--id", type=int, default=0,
@@ -55,6 +53,8 @@ parser.add_argument('--save_model', action='store_false', default=True,
                     help='save final model weights [True/False]')
 parser.add_argument("--save_data", action='store_false', default=True,
                     help='save training data')
+parser.add_argument("--fid", action='store_false', default=True,
+                    help='compute fid')
 parser.add_argument("--weights_file")
 ## wgan cost
 parser.add_argument("--disc_freq", type=int, default=1,
@@ -84,7 +84,8 @@ def main():
     # Select dataset to use
     if FLAGS.dataset == 'mnist':
         opts = configs.config_mnist
-        opts['zdim'] = 16
+        # opts['zdim'] = 16
+        opts['zdim'] = 2
     elif FLAGS.dataset == 'svhn':
         opts = configs.config_svhn
         opts['zdim'] = 16
@@ -124,7 +125,6 @@ def main():
         opts['lr'] = FLAGS.lr
     opts['lr_decay'] = FLAGS.lr_decay
     opts['beta'] = betas[coef_id]
-    # opts['beta'] = FLAGS.beta
 
     ## ground cost config
     opts['cost'] = FLAGS.cost
@@ -194,7 +194,7 @@ def main():
     opts['save_final'] = FLAGS.save_model
     opts['save_train_data'] = FLAGS.save_data
     opts['vizu_encSigma'] = False
-    opts['fid'] = True
+    opts['fid'] = FLAGS.fid
 
     #Reset tf graph
     tf.compat.v1.reset_default_graph()

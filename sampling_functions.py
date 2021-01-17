@@ -82,7 +82,7 @@ def traversals(anchors, nsteps, std=1.0):
         else:
             int_p = np.linspace(anchors[n],stop[n],int(nsteps/2.)+1,endpoint=True)
         linespce.append(np.concatenate((int_m,int_p)))
-    linespce = np.vstack(linespce)
+    linespce = np.stack(linespce)
 
     return linespce
 
@@ -101,7 +101,7 @@ def interpolations(anchors, nsteps, std=1.0):
     for n in range(nanchors):
         inter = np.linspace(start[n],stop[n], nsteps, endpoint=True)
         linespce.append(inter)
-    linespce = np.vstack(linespce)
+    linespce = np.stack(linespce)
 
     return linespce
 
