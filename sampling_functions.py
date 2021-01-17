@@ -105,6 +105,18 @@ def interpolations(anchors, nsteps, std=1.0):
 
     return linespce
 
+def grid(nsteps, zdim):
+    """
+    Generate a 2D grid of nsteps x nsteps in [-2,2]**2
+    return grid: [nsteps,nsteps,zdim]
+    """
+    assert zdim==2, "latent dimension must be equal to 2"
+    linespace = np.linspace(-2., 2., nsteps)
+    xv, yv = np.meshgrid(linespace,linespace)
+    grid = np.stack((xv,yv),axis=-1)
+
+    return grid
+
 def shift(opts, inputs, shift_dir, shift):
     ninputs = inputs.shape[0]
     in_shape = np.array(inputs.shape[1:-1])

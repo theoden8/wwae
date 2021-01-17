@@ -11,7 +11,7 @@ import tensorflow as tf
 from math import ceil
 
 import utils
-from sampling_functions import sample_pz, traversals, interpolations, shift
+from sampling_functions import sample_pz, traversals, interpolations, grid, shift
 from plot_functions import save_train, save_test
 from plot_functions import plot_critic_pretrain_loss
 from plot_functions import plot_interpolation, plot_cost_shift, plot_rec_shift, plot_embedded_shift
@@ -844,6 +844,20 @@ class Run(object):
         plot_interpolation(self.opts, inter_anchors, opts['exp_dir'],
                                     'latent_traversal.png',
                                     train=False)
+
+        # - latent grid interpolation
+        num_interpolation = 20
+        grid_interpolation = grid(num_interpolation, opts['zdim'])
+        grid_interpolation = np.reshape(grid_interpolation, [-1, opts['zdim']])
+        # reconstructing
+        obs_interpolation = self.sess.run(self.generated,
+                                    feed_dict={self.pz_samples: grid_interpolation,
+                                               self.is_training: False})
+        obs_interpolation = np.reshape(obs_interpolation, [num_interpolation, num_interpolation]+self.data.data_shape)
+        plot_interpolation(self.opts, obs_interpolation, opts['exp_dir'],
+                                    'latent_grid.png',
+                                    train=False)
+
         # - Obs interpolation
         anchors = latents_vizu[anchors_ids].reshape((-1,2,opts['zdim']))
         enc_interpolation = interpolations(anchors,    # shape: [nanchors, nsteps, zdim]
