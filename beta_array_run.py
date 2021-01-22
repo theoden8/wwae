@@ -17,6 +17,8 @@ parser = argparse.ArgumentParser()
 # Args for experiment
 parser.add_argument("--model", default='WAE',
                     help='model to train [WAE/BetaVAE/...]')
+parser.add_argument('--zdim', type=int,
+                    help='latent dimension')
 parser.add_argument("--decoder", default='det',
                     help='decoder typ [det/gauss]')
 parser.add_argument("--mode", default='train',
@@ -84,17 +86,14 @@ def main():
     # Select dataset to use
     if FLAGS.dataset == 'mnist':
         opts = configs.config_mnist
-        # opts['zdim'] = 16
-        opts['zdim'] = 2
+    elif FLAGS.dataset == 'transformed_mnist':
+        opts = configs.config_trans_mnist
     elif FLAGS.dataset == 'svhn':
         opts = configs.config_svhn
-        opts['zdim'] = 16
     elif FLAGS.dataset == 'cifar10':
         opts = configs.config_cifar10
-        opts['zdim'] = 128
     elif FLAGS.dataset == 'celebA':
         opts = configs.config_celeba
-        opts['zdim'] = 64
     else:
         assert False, 'Unknown dataset'
     # set data_dir
@@ -115,6 +114,8 @@ def main():
 
     ## Model set up
     opts['model'] = FLAGS.model
+    if FLAGS.zdim:
+        opts['zdim'] = FLAGS.zdim
     opts['decoder'] = FLAGS.decoder
     opts['net_archi'] = FLAGS.net_archi
     if opts['model'][-3:]=='VAE':

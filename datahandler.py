@@ -36,6 +36,7 @@ import pdb
 
 datashapes = {}
 datashapes['mnist'] = [32, 32, 1]
+datashapes['transformed_mnist'] = [64, 64, 1]
 datashapes['svhn'] = [32, 32, 3]
 datashapes['cifar10'] = [32, 32, 3]
 datashapes['celebA'] = [64, 64, 3]
@@ -45,6 +46,8 @@ def _data_dir(opts):
     _data_dir = os.path.join(opts['data_dir'], opts['dataset'])
     if opts['dataset']=='mnist':
         data_path = _data_dir
+    elif opts['dataset']=='transformed_mnist':
+        data_path = os.path.join(opts['data_dir'],'mnist')
     elif opts['dataset']=='svhn':
         data_path = _data_dir
     elif opts['dataset']=='cifar10':
@@ -81,6 +84,33 @@ def _load_cifar_batch(fpath):
     data = data.reshape(data.shape[0], 3, 32, 32).astype(dtype=np.float32)
     return data
 
+def _transform_mnist_tf(x):
+    # padding mnist img
+    paddings = [[2,2], [2,2], [0,0]]
+    x_pad = tf.pad(x, paddings, mode='CONSTANT', constant_values=0.)
+    shape = x_pad.shape.as_list()
+    # sample pos
+    i = np.random.binomial(1, 0.5)
+    # create img
+    paddings = [[i*shape[0],(1-i)*shape[0]], [i*shape[1],(1-i)*shape[1]], [0,0]]
+    img = tf.pad(x_pad, paddings, mode='CONSTANT', constant_values=0.)
+
+    return img
+
+def _transform_mnist_np(x):
+    # padding mnist img
+    paddings = [[2,2], [2,2], [0,0]]
+    x_pad = np.pad(x, paddings, mode='constant', constant_values=0.)
+    shape = x_pad.shape
+    # create img
+    img = np.zeros(datashapes['transformed_mnist'])
+    # sample pos
+    i = np.random.binomial(1, 0.5)
+    # get image and label
+    img[i*shape[0]:(i+1)*shape[0], i*shape[1]:(i+1)*shape[1]] = x_pad
+
+    return img
+
 
 class DataHandler(object):
     """A class storing and manipulating the dataset.
@@ -106,6 +136,8 @@ class DataHandler(object):
         """
         if self.dataset == 'mnist':
             self._load_mnist(opts)
+        if self.dataset == 'transformed_mnist':
+            self._load_trans_mnist(opts)
         elif self.dataset == 'svhn':
             self._load_svhn(opts)
         elif self.dataset == 'cifar10':
@@ -136,6 +168,11 @@ class DataHandler(object):
         # plot set
         idx = np.random.randint(self.all_data.shape[0],size=opts['evaluate_num_pics'])
         self.data_plot = self._sample_observations(idx)
+        # data for vizualisation
+        seed = 123
+        np.random.seed(seed)
+        idx = np.random.randint(self.test_size, size=opts['plot_num_pics'])
+        self.data_vizu = self._sample_observations(idx)
         # shuffling data
         np.random.seed()
         idx_random = np.random.permutation(num_data)
@@ -148,11 +185,6 @@ class DataHandler(object):
         # dataset size
         self.train_size = data_train.shape[0]
         self.test_size = data_test.shape[0]
-        # data for vizualisation
-        seed = 123
-        np.random.seed(seed)
-        idx = np.random.randint(self.test_size, size=opts['plot_num_pics'])
-        self.data_vizu = self._sample_observations(idx)
         # datashape
         self.data_shape = datashapes[self.dataset]
         # Create tf.dataset
@@ -174,6 +206,91 @@ class DataHandler(object):
                                     num_parallel_calls=tf.data.experimental.AUTOTUNE)
             self.data_vizu = (self.data_vizu - 0.5) * 2.
             self.data_plot = (self.data_plot - 0.5) * 2.
+        # Shuffle dataset
+        dataset_train = dataset_train.shuffle(buffer_size=50*opts['batch_size'])
+        dataset_test = dataset_test.shuffle(buffer_size=50*opts['batch_size'])
+        # repeat for multiple epochs
+        dataset_train = dataset_train.repeat()
+        dataset_test = dataset_test.repeat()
+        # Random batching
+        dataset_train = dataset_train.batch(batch_size=opts['batch_size'])
+        dataset_test = dataset_test.batch(batch_size=opts['batch_size'])
+        # Prefetch
+        self.dataset_train = dataset_train.prefetch(buffer_size=4*opts['batch_size'])
+        self.dataset_test = dataset_test.prefetch(buffer_size=4*opts['batch_size'])
+        # Iterator for each split
+        self.iterator_train = tf.compat.v1.data.make_initializable_iterator(dataset_train)
+        self.iterator_test = tf.compat.v1.data.make_initializable_iterator(dataset_test)
+
+        # Global iterator
+        self.handle = tf.compat.v1.placeholder(tf.string, shape=[])
+        self.next_element = tf.compat.v1.data.Iterator.from_string_handle(
+            self.handle, tf.compat.v1.data.get_output_types(dataset_train), tf.compat.v1.data.get_output_shapes(dataset_train)).get_next()
+
+    def _load_trans_mnist(self, opts):
+        """Load data from MNIST.
+
+        """
+        self.data_dir = _data_dir(opts)
+        # loading label
+        tr_Y, te_Y = None, None
+        with gzip.open(os.path.join(self.data_dir, 'train-labels-idx1-ubyte.gz')) as fd:
+            fd.read(8)
+            loaded = np.frombuffer(fd.read(60000*1), dtype=np.uint8)
+            tr_Y = loaded.reshape((60000,)).astype(np.int64)
+        with gzip.open(os.path.join(self.data_dir, 't10k-labels-idx1-ubyte.gz')) as fd:
+            fd.read(8)
+            loaded = np.frombuffer(fd.read(10000*1), dtype=np.uint8)
+            te_Y = loaded.reshape((10000,)).astype(np.int64)
+        Y = np.concatenate((tr_Y, te_Y), axis=0)
+        zeros_idx = np.where(Y==0, 1, 0)
+        ones_idx = np.where(Y==1, 1, 0)
+        zeros_ones_idx = zeros_idx + ones_idx
+        Y = Y[zeros_ones_idx==1]
+        # loading images
+        tr_X, te_X = None, None
+        with gzip.open(os.path.join(self.data_dir, 'train-images-idx3-ubyte.gz')) as fd:
+            fd.read(16)
+            loaded = np.frombuffer(fd.read(60000*28*28*1), dtype=np.uint8)
+            tr_X = loaded.reshape((60000, 28, 28, 1)).astype(np.float32)
+        with gzip.open(os.path.join(self.data_dir, 't10k-images-idx3-ubyte.gz')) as fd:
+            fd.read(16)
+            loaded = np.frombuffer(fd.read(10000*28*28*1), dtype=np.uint8)
+            te_X = loaded.reshape((10000, 28, 28, 1)).astype(np.float32)
+        X = np.concatenate((tr_X, te_X), axis=0)
+        X = X[zeros_ones_idx==1]
+        self.all_data = X / 255.
+        num_data = len(Y)
+        # plot set
+        idx = np.random.randint(num_data,size=opts['evaluate_num_pics'])
+        self.data_plot = self._sample_observations(idx)
+        # shuffling data
+        np.random.seed()
+        idx_random = np.random.permutation(num_data)
+        if opts['train_dataset_size']==-1 or opts['train_dataset_size']>num_data-1000:
+            tr_stop = num_data - 1000
+        else:
+            tr_stop = opts['train_dataset_size']
+        data_train = self.all_data[idx_random[:tr_stop]]
+        data_test = self.all_data[idx_random[-1000:]]
+        # dataset size
+        self.train_size = len(data_train)
+        self.test_size = len(data_test)
+        # data for vizualisation
+        seed = 123
+        np.random.seed(seed)
+        idx = np.random.randint(self.test_size, size=opts['plot_num_pics'])
+        self.data_vizu = self._sample_observations(idx)
+        # datashape
+        self.data_shape = datashapes[self.dataset]
+        # Create tf.dataset
+        dataset_train = tf.data.Dataset.from_tensor_slices(data_train)
+        dataset_test = tf.data.Dataset.from_tensor_slices(data_test)
+        # transform mnist
+        dataset_train = dataset_train.map(_transform_mnist_tf,
+                                num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        dataset_test = dataset_test.map(_transform_mnist_tf,
+                                num_parallel_calls=tf.data.experimental.AUTOTUNE)
         # Shuffle dataset
         dataset_train = dataset_train.shuffle(buffer_size=50*opts['batch_size'])
         dataset_test = dataset_test.shuffle(buffer_size=50*opts['batch_size'])
@@ -479,6 +596,12 @@ class DataHandler(object):
                 obs = self.all_data[keys]
                 paddings = ((0,0),(2,2), (2,2), (0,0))
                 obs = np.pad(obs, paddings, mode='constant', constant_values=0.)
+            elif self.dataset=='transformed_mnist':
+                obs = []
+                keys = list(keys)
+                for key in keys:
+                    obs.append(_transform_mnist_np(self.all_data[key]))
+                obs = np.stack(obs)
             else:
                 obs = self.all_data[keys]
             return obs

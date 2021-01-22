@@ -106,7 +106,7 @@ def mnist_conv_encoder(opts, input, output_dim, reuse=False, is_training=False):
     # hidden 3
     layer_x = Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
                                 output_dim=256, filter_size=4,
-                                stride=3, scope='hid3/conv',
+                                stride=2, scope='hid3/conv',
                                 init=opts['conv_init'])
     if opts['normalization']=='batchnorm':
         layer_x = Batchnorm_layers(opts, layer_x,
@@ -119,7 +119,7 @@ def mnist_conv_encoder(opts, input, output_dim, reuse=False, is_training=False):
 
     return outputs
 
-def  mnist_conv_decoder(opts, input, output_dim, reuse, is_training):
+def mnist_conv_decoder(opts, input, output_dim, reuse, is_training):
     """
     Archi used by Ghosh & al.
     """
@@ -134,6 +134,102 @@ def  mnist_conv_decoder(opts, input, output_dim, reuse, is_training):
                                 'hid0/bn', is_training, reuse)
     layer_x = ops._ops.non_linear(layer_x,'relu')
     layer_x = tf.reshape(layer_x, [-1, 8, 8, 128])
+    # hidden 1
+    _out_shape = [batch_size, 2*layer_x.get_shape().as_list()[1],
+                                2*layer_x.get_shape().as_list()[2],
+                                64]
+    layer_x = Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_shape=_out_shape, filter_size=4,
+                                stride=2, scope='hid1/deconv',
+                                init= opts['conv_init'])
+    if opts['normalization']=='batchnorm':
+        layer_x = Batchnorm_layers( opts, layer_x,
+                                'hid1/bn', is_training, reuse)
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+    # hidden 2
+    _out_shape = [batch_size, 2*layer_x.get_shape().as_list()[1],
+                                2*layer_x.get_shape().as_list()[2],
+                                32]
+    layer_x = Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_shape=_out_shape, filter_size=4,
+                                stride=2, scope='hid2/deconv',
+                                init= opts['conv_init'])
+    if opts['normalization']=='batchnorm':
+        layer_x = Batchnorm_layers( opts, layer_x,
+                                'hid2/bn', is_training, reuse)
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+    # output layer
+    outputs = Deconv2D(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_shape=[batch_size,]+output_dim, filter_size=1,
+                                stride=1, scope='hid_final/deconv',
+                                init= opts['conv_init'])
+
+    return outputs
+
+######### 64x64 transformed mnist #########
+def mnist_64_conv_encoder(opts, input, output_dim, reuse=False, is_training=False):
+    """
+    Archi used by Ghosh & al.
+    """
+    layer_x = input
+    # hidden 0
+    layer_x = Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=32, filter_size=4,
+                                stride=2, scope='hid0/conv',
+                                init=opts['conv_init'])
+    if opts['normalization']=='batchnorm':
+        layer_x = Batchnorm_layers(opts, layer_x,
+                                'hid0/bn', is_training, reuse)
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+    # hidden 1
+    layer_x = Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=64, filter_size=4,
+                                stride=2, scope='hid1/conv',
+                                init=opts['conv_init'])
+    if opts['normalization']=='batchnorm':
+        layer_x = Batchnorm_layers(opts, layer_x,
+                                'hid1/bn', is_training, reuse)
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+    # hidden 2
+    layer_x = Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=128, filter_size=4,
+                                stride=2, scope='hid2/conv',
+                                init=opts['conv_init'])
+    if opts['normalization']=='batchnorm':
+        layer_x = Batchnorm_layers(opts, layer_x,
+                                'hid2/bn', is_training, reuse)
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+    # hidden 3
+    layer_x = Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
+                                output_dim=256, filter_size=4,
+                                stride=2, scope='hid3/conv',
+                                init=opts['conv_init'])
+    if opts['normalization']=='batchnorm':
+        layer_x = Batchnorm_layers(opts, layer_x,
+                                'hid3/bn', is_training, reuse)
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+    # output layer
+    layer_x = tf.reshape(layer_x, [-1,np.prod(layer_x.get_shape().as_list()[1:])])
+    outputs = Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
+                                output_dim, scope='hid_final')
+
+    return outputs
+
+def mnist_64_conv_decoder(opts, input, output_dim, reuse, is_training):
+    """
+    Archi used by Ghosh & al.
+    """
+    # batch_size
+    batch_size = tf.shape(input)[0]
+    layer_x = input
+    # Linear layers
+    layer_x = Linear(opts, layer_x, np.prod(input.get_shape().as_list()[1:]),
+                                16*16*128, scope='hid0/lin')
+    if opts['normalization']=='batchnorm':
+        layer_x = Batchnorm_layers(opts, layer_x,
+                                'hid0/bn', is_training, reuse)
+    layer_x = ops._ops.non_linear(layer_x,'relu')
+    layer_x = tf.reshape(layer_x, [-1, 16, 16, 128])
     # hidden 1
     _out_shape = [batch_size, 2*layer_x.get_shape().as_list()[1],
                                 2*layer_x.get_shape().as_list()[2],
@@ -206,7 +302,7 @@ def cifar10_conv_encoder(opts, input, output_dim, reuse=False, is_training=False
 
     return outputs
 
-def  cifar10_conv_decoder(opts, input, output_dim, reuse, is_training):
+def cifar10_conv_decoder(opts, input, output_dim, reuse, is_training):
     """
     Archi used by Ghosh & al.
     """
@@ -342,7 +438,6 @@ def cifar10_resnet_decoder(opts, input, output_dim, reuse=False, is_training=Fal
 
     return output
 
-
 ######### celebA #########
 def celebA_conv_encoder(opts, input, output_dim, reuse=False, is_training=False):
     """
@@ -392,7 +487,7 @@ def celebA_conv_encoder(opts, input, output_dim, reuse=False, is_training=False)
 
     return outputs
 
-def  celebA_conv_decoder(opts, input, output_dim, reuse, is_training):
+def celebA_conv_decoder(opts, input, output_dim, reuse, is_training):
     """
     Archi used by Ghosh & al.
     """
@@ -553,6 +648,7 @@ def celebA_resnet_decoder(opts, input, output_dim, reuse=False, is_training=Fals
 
 net_archi = {'mlp': {'encoder': mlp_encoder, 'decoder': mlp_decoder},
             'conv': {'mnist':{'encoder': mnist_conv_encoder, 'decoder': mnist_conv_decoder},
+                    'transformed_mnist':{'encoder': mnist_64_conv_encoder, 'decoder': mnist_64_conv_decoder},
                     'svhn':{'encoder': cifar10_conv_encoder, 'decoder': cifar10_conv_decoder},
                     'cifar10':{'encoder': cifar10_conv_encoder, 'decoder': cifar10_conv_decoder},
                     'celebA':{'encoder': celebA_conv_encoder, 'decoder': celebA_conv_decoder}},

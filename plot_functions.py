@@ -521,6 +521,8 @@ def plot_rec_shift(opts, shifted_obs, shifted_rec, exp_dir):
         else:
             pics.append(shifted_rec[int(r/2)])
     pics = np.array(pics)
+    if greyscale:
+        pics = 1.0 - pics
     pics = np.concatenate(np.split(pics,ncol,axis=1),axis=3)
     pics = pics[:,0]
     pics = np.concatenate(np.split(pics,2*nrow,axis=0),axis=1)

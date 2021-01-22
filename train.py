@@ -811,7 +811,8 @@ class Run(object):
         # - Set up
         im_shape = datashapes[opts['dataset']]
         num_pics = opts['plot_num_pics']
-        num_steps = 8
+        num_steps = 20
+        enc_var = np.ones(opts['zdim'])
         fixed_noise = sample_pz(opts, self.pz_params, num_pics)
         anchors_ids = np.arange(0,num_pics,int(num_pics/12))
         # anchors_ids = [0, 4, 6, 12, 24, 35] # 39, 53, 60, 73, 89]
@@ -829,8 +830,8 @@ class Run(object):
                                     generations,
                                     opts['exp_dir'])
 
+        """
         # - Latent traversal
-        enc_var = np.ones(opts['zdim'])
         # create linespace
         enc_interpolation = traversals(latents_vizu[anchors_ids],  # shape: [nanchors, nsteps, zdim]
                                     nsteps=num_steps,
@@ -844,6 +845,7 @@ class Run(object):
         plot_interpolation(self.opts, inter_anchors, opts['exp_dir'],
                                     'latent_traversal.png',
                                     train=False)
+        """
 
         # - latent grid interpolation
         num_interpolation = 20
@@ -884,10 +886,9 @@ class Run(object):
         # - Set up
         npics = opts['plot_num_pics']
         batches_num = 2 #self.data.test_size//opts['batch_size']
-        fixed_noise = sample_pz(opts, self.pz_params, npics)
         # anchors_ids = np.random.choice(npics, 5, replace=True)
-        anchors_ids = [0, 12, 24]
-        nshifts = int(self.data.data_shape[0]/4)
+        anchors_ids = [0, 12, 24, 36, 58, 71]
+        nshifts = int(self.data.data_shape[0]/2)
         # if opts['dataset']=='celebA':
         #     nshifts = int(self.data.data_shape[0]/4)
         # else:
@@ -945,8 +946,8 @@ class Run(object):
             while shift_dir[n][0]==0 and shift_dir[n][1]==0:
                 shift_dir[n] = np.random.randint(-1,2,2)
         shifted_obs, shifted_rec, shifted_enc = [], [], []
-        # for s in range(0,nshifts,max(int(nshifts/8),1)):
-        for s in range(0,nshifts,int(nshifts/8)):
+        # for s in range(0,nshifts,int(nshifts/8)):
+        for s in range(0,nshifts,max(int(nshifts/16),1)):
             shifted = shift(opts, self.data.data_vizu[anchors_ids], shift_dir, s)
             [rec,enc] = self.sess.run([self.decoded,self.encoded],
                                     feed_dict={self.inputs_img1: shifted,
