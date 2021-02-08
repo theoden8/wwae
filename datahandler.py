@@ -114,10 +114,16 @@ def _transform_mnist_np(x):
     shape = x_pad.shape
     # create img
     img = np.zeros(datashapes['transformed_mnist'])
-    # sample pos
+    # sample cluster pos
     i = np.random.binomial(1, 0.5)
-    # get image and label
-    img[i*shape[0]:(i+1)*shape[0], i*shape[1]:(i+1)*shape[1]] = x_pad
+    pos_x = i*int(3*shape[0]/8)
+    pos_y = i*int(3*shape[1]/8)
+    # sample shift
+    shift_x = np.random.randint(0, int(shape[0]/8))
+    shift_y = np.random.randint(0, int(shape[1]/8))
+    # place digit
+
+    img[pos_x+shift_x:shape[0]+pos_x+shift_x, pos_y+shift_y:shape[1]+pos_y+shift_y] = x_pad
 
     return img
 
