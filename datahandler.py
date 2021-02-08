@@ -89,13 +89,23 @@ def _transform_mnist_tf(x):
     paddings = [[2,2], [2,2], [0,0]]
     x_pad = tf.pad(x, paddings, mode='CONSTANT', constant_values=0.)
     shape = x_pad.shape.as_list()
-    # sample pos
-    i = np.random.binomial(1, 0.5)
+    img = tf.zeros(datashapes['transformed_mnist'],tf.float32)
+
+    # sample cluster pos
+    i = tf.random.uniform([], 0, 2, tf.int32)
+    pos_x = i*int(3*shape[0]/8)
+    pos_y = i*int(3*shape[1]/8)
+    # sample shift
+    shift_x = tf.random.uniform([], 0, int(shape[0]/8), tf.int32)
+    shift_y = tf.random.uniform([], 0, int(shape[1]/8), tf.int32)
     # create img
-    paddings = [[i*shape[0],(1-i)*shape[0]], [i*shape[1],(1-i)*shape[1]], [0,0]]
+    paddings = [[pos_x+shift_x, shape[0]-pos_x-shift_x],
+                [pos_y+shift_y, shape[1]-pos_y-shift_y],
+                [tf.zeros([],tf.int32), tf.zeros([],tf.int32)]]
+    paddings = tf.stack([tf.stack(t,0) for t in paddings], 0)
     img = tf.pad(x_pad, paddings, mode='CONSTANT', constant_values=0.)
 
-    return img
+    return tf.reshape(img, datashapes['transformed_mnist'])
 
 def _transform_mnist_np(x):
     # padding mnist img
