@@ -386,7 +386,7 @@ def plot_interpolation(opts, interpolations, exp_dir, filename, train=True):
     plt.close()
 
 
-def save_test(opts, data, reconstructions, samples, exp_dir):
+def save_test(opts, data, reconstructions, samples, encoded, labels=None, exp_dir=None):
 
     num_pics = opts['plot_num_pics']
     num_cols = opts['plot_num_cols']
@@ -433,6 +433,71 @@ def save_test(opts, data, reconstructions, samples, exp_dir):
     gen = np.array(gen)
     gen = np.concatenate(np.split(gen, num_cols), axis=2)
     gen = np.concatenate(gen, axis=0)
+
+    ### Embedding plots
+    if np.shape(encoded)[-1]==2:
+        embedding = encoded
+    else:
+        if opts['embedding']=='pca':
+            embedding = PCA(n_components=2).fit_transform(encoded)
+        elif opts['embedding']=='umap':
+            embedding = umap.UMAP(n_neighbors=15,
+                                    min_dist=0.2,
+                                    metric='correlation').fit_transform(encoded)
+        else:
+            assert False, 'Unknown %s method for embedgins vizu' % opts['embedding']
+    # Creating a pyplot fig
+    dpi = 100
+    height_pic = 600
+    width_pic = 600
+    colors = {0:'b', 1:'r', 2:'c', 3:'m'}
+    labels_names = {0:'top-right 0', 1:'top-right 1', 2:'bottom-left 0', 3:'bottom-left 1'}
+    fig_height =  height_pic / float(dpi)
+    fig_width =  width_pic / float(dpi)
+    fig = plt.figure(figsize=(fig_width, fig_height))
+    if labels is not None:
+        classes = np.unique(labels)
+        classes = [classes[i] for i in range(len(classes))]
+        for c in classes:
+            idx = np.where(labels==c)
+            plt.scatter(embedding[idx, 0], embedding[idx, 1], alpha=0.8, linewidths=0.,
+                        c=colors[c], label=labels_names[c] , s=40)
+    else:
+        plt.scatter(embedding[:, 0], embedding[:, 1], alpha=0.8, linewidths=0., s=40)
+    xmin = np.amin(embedding[:,0])
+    xmax = np.amax(embedding[:,0])
+    magnify = 0.05
+    width = abs(xmax - xmin)
+    xmin = xmin - width * magnify
+    xmax = xmax + width * magnify
+    ymin = np.amin(embedding[:,1])
+    ymax = np.amax(embedding[:,1])
+    width = abs(ymin - ymax)
+    ymin = ymin - width * magnify
+    ymax = ymax + width * magnify
+    plt.xlim(xmin, xmax)
+    plt.ylim(ymin, ymax)
+    if labels is not None:
+        plt.legend(loc='best')
+    # plt.text(0.47, 1., 'UMAP vizu', ha="center", va="bottom",
+    #                                         size=20, transform=ax.transAxes)
+    if np.shape(encoded)[-1]==2:
+        plt.title('latent codes')
+    else:
+        plt.title(opts['embedding'] + ' vizualisation of latent codes')
+    # Removing ticks if needed
+    if opts['embedding']=='umap':
+        # plt.tick_params(axis='both',which='both',bottom=False,top=False,left=False,right=False)
+        plt.xticks([])
+        plt.yticks([])
+    ### Saving plot
+    save_path = os.path.join(exp_dir,'test_plots')
+    utils.create_dir(save_path)
+    filename = opts['cost'] + '_embedded.png'
+    fig.savefig(utils.o_gfile((save_path, filename),'wb'),
+                dpi=dpi, cformat='png',bbox_inches='tight',pad_inches=0.05)
+    plt.close()
+
 
     ### Creating plot
     for img, title in zip([rec, gen],

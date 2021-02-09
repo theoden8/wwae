@@ -825,9 +825,41 @@ class Run(object):
                                                self.pz_samples: fixed_noise,
                                                self.is_training: False})
 
-        # - Rec and samples
+        # - Visualization of embeddedings
+        num_encoded = 200
+        idx = np.random.choice(np.arange(len(self.data.all_labels)), size=num_encoded, replace=False)
+        data_mnist = self.data.all_data[idx]
+        label_mnist = self.data.all_labels[idx]
+        # transform data
+        batch = np.zeros([num_encoded,] + self.data.data_shape)
+        labels = np.zeros(label_mnist.shape, dtype=int)
+        for n, obs in enumerate(data_mnist):
+            # padding mnist img
+            paddings = [[2,2], [2,2], [0,0]]
+            obs = np.pad(obs, paddings, mode='constant', constant_values=0.)
+            shape = obs.shape
+            # create img
+            img = np.zeros(self.data.data_shape)
+            # sample cluster pos
+            i = np.random.binomial(1, 0.5)
+            pos_x = i*int(3*shape[0]/8)
+            pos_y = i*int(3*shape[1]/8)
+            # sample shift
+            shift_x = np.random.randint(0, int(shape[0]/8))
+            shift_y = np.random.randint(0, int(shape[1]/8))
+            # place digit
+            img[pos_x+shift_x:shape[0]+pos_x+shift_x, pos_y+shift_y:shape[1]+pos_y+shift_y] = obs
+            batch[n] = img
+            labels[n] = label_mnist[n] + 2*i
+        # encode
+        encoded = self.sess.run(self.encoded, feed_dict={
+                                    self.inputs_img1: batch,
+                                    self.is_training: False})
+
+        # - Rec, samples, embeddded
         save_test(opts, self.data.data_vizu, reconstructions_vizu,
                                     generations,
+                                    encoded, labels,
                                     opts['exp_dir'])
 
         """
@@ -941,10 +973,16 @@ class Run(object):
         """
 
         # - vizu rec shift
-        shift_dir = np.random.randint(-1,2,(len(anchors_ids),2))
+        # shift_dir = np.random.randint(-1,2,(len(anchors_ids),2))
+        # for n in range(len(anchors_ids)):
+        #     while shift_dir[n][0]==0 and shift_dir[n][1]==0:
+        #         shift_dir[n] = np.random.randint(-1,2,2)
+        shift_dir = np.random.randint(-1,2,(len(anchors_ids),1))
         for n in range(len(anchors_ids)):
-            while shift_dir[n][0]==0 and shift_dir[n][1]==0:
-                shift_dir[n] = np.random.randint(-1,2,2)
+            while shift_dir[n][0]==0:
+                shift_dir[n] = np.random.randint(-1,2,1)
+        shift_dir = np.concatenate([shift_dir,shift_dir], axis=-1)
+
         shifted_obs, shifted_rec, shifted_enc = [], [], []
         # for s in range(0,nshifts,int(nshifts/8)):
         for s in range(0,nshifts,max(int(nshifts/16),1)):
@@ -959,7 +997,7 @@ class Run(object):
         shifted_rec = np.stack(shifted_rec,axis=1)
         shifted_enc = np.stack(shifted_enc,axis=1)
         plot_rec_shift(opts, shifted_obs, shifted_rec, opts['exp_dir']) #TODO
-        plot_embedded_shift(opts, shifted_enc, opts['exp_dir'])
+        # plot_embedded_shift(opts, shifted_enc, opts['exp_dir'])
 
     def fid_score(self, load_trained_model=False, MODEL_PATH=None,
                                         WEIGHTS_FILE=None,
