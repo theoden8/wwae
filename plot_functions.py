@@ -58,7 +58,6 @@ def save_train(opts, data_train, data_test,
         sample, recon = pair
         assert len(sample) == num_pics
         assert len(sample) == len(recon)
-        pics = []
         merged = np.vstack([recon, sample])
         r_ptr = 0
         w_ptr = 0
@@ -67,29 +66,30 @@ def save_train(opts, data_train, data_test,
             merged[w_ptr + 1] = recon[r_ptr]
             r_ptr += 1
             w_ptr += 2
-        for idx in range(num_pics):
-            if greyscale:
-                pics.append(1. - merged[idx, :, :, :])
-            else:
-                pics.append(merged[idx, :, :, :])
         # Figuring out a layout
-        pics = np.array(pics)
-        image = np.concatenate(np.split(pics, num_cols), axis=2)
-        image = np.concatenate(image, axis=0)
+        image = np.split(merged[:num_pics], num_cols)
+        image = [np.pad(img, ((0,0),(0,0),(0,1),(0,0)), mode='constant', constant_values=1.0) for img in image]
+        image = np.concatenate(image, axis=2)
+        image = np.split(image,image.shape[0],axis=0)
+        image = [np.pad(img, ((0,0),(0,1),(0,0),(0,0)), mode='constant', constant_values=1.0) for img in image]
+        image = np.concatenate(image, axis=1)
+        image = image[0]
+        if greyscale:
+            image = 1. - image
         images.append(image)
 
     ### Sample plots
     assert len(samples) == num_pics
-    pics = []
-    for idx in range(num_pics):
-        if greyscale:
-            pics.append(1. - samples[idx, :, :, :])
-        else:
-            pics.append(samples[idx, :, :, :])
     # Figuring out a layout
-    pics = np.array(pics)
-    image = np.concatenate(np.split(pics, num_cols), axis=2)
-    image = np.concatenate(image, axis=0)
+    image = np.split(samples, num_cols)
+    image = [np.pad(img, ((0,0),(0,0),(0,1),(0,0)), mode='constant', constant_values=1.0) for img in image]
+    image = np.concatenate(image, axis=2)
+    image = np.split(image,image.shape[0],axis=0)
+    image = [np.pad(img, ((0,0),(0,1),(0,0),(0,0)), mode='constant', constant_values=1.0) for img in image]
+    image = np.concatenate(image, axis=1)
+    image = image[0]
+    if greyscale:
+        image = 1. - image
     images.append(image)
 
     img1, img2, img3 = images
@@ -351,9 +351,19 @@ def plot_interpolation(opts, interpolations, exp_dir, filename, train=True):
     white_pix = 4
     num_rows = np.shape(interpolations)[0]
     num_cols = np.shape(interpolations)[1]
-    images = np.concatenate(np.split(interpolations,num_cols,axis=1),axis=3)
+    # images = np.concatenate(np.split(interpolations,num_cols,axis=1),axis=3)
+    # images = images[:,0]
+    # images = np.concatenate(np.split(images,num_rows,axis=0),axis=1)
+    # images = images[0]
+    # if greyscale:
+    #     images = 1. - images
+    images = np.split(interpolations,num_cols,axis=1)
+    images = [np.pad(img, ((0,0),(0,0),(0,0),(0,1),(0,0)), mode='constant', constant_values=1.0) for img in images]
+    images = np.concatenate(images,axis=3)
     images = images[:,0]
-    images = np.concatenate(np.split(images,num_rows,axis=0),axis=1)
+    images = np.split(images,num_rows,axis=0)
+    images = [np.pad(img, ((0,0),(0,1),(0,0),(0,0)), mode='constant', constant_values=1.0) for img in images]
+    images = np.concatenate(images,axis=1)
     images = images[0]
     if greyscale:
         images = 1. - images

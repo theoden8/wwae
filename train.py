@@ -826,7 +826,7 @@ class Run(object):
                                                self.is_training: False})
 
         # - Visualization of embeddedings
-        num_encoded = 200
+        num_encoded = 500
         idx = np.random.choice(np.arange(len(self.data.all_labels)), size=num_encoded, replace=False)
         data_mnist = self.data.all_data[idx]
         label_mnist = self.data.all_labels[idx]
