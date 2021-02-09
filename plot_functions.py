@@ -422,27 +422,28 @@ def save_test(opts, data, reconstructions, samples, encoded, labels=None, exp_di
         merged[w_ptr + 1] = reconstructions[r_ptr]
         r_ptr += 1
         w_ptr += 2
-    for idx in range(num_pics):
-        if greyscale:
-            pics.append(1. - merged[idx, :, :, :])
-        else:
-            pics.append(merged[idx, :, :, :])
     # Figuring out a layout
-    pics = np.array(pics)
-    rec = np.concatenate(np.split(pics, num_cols), axis=2)
-    rec = np.concatenate(rec, axis=0)
+    image = np.split(merged[:num_pics], num_cols)
+    image = [np.pad(img, ((0,0),(0,0),(0,1),(0,0)), mode='constant', constant_values=1.0) for img in image]
+    image = np.concatenate(image, axis=2)
+    image = np.split(image,image.shape[0],axis=0)
+    image = [np.pad(img, ((0,0),(0,1),(0,0),(0,0)), mode='constant', constant_values=1.0) for img in image]
+    image = np.concatenate(image, axis=1)
+    rec = image[0]
+    if greyscale:
+        rec = 1. - rec
 
     ### Samples plots
-    # num_cols = samples.shape[0]
-    gen = []
-    for idx in range(samples.shape[0]):
-        if greyscale:
-            gen.append(1. - samples[idx, :, :, :])
-        else:
-            gen.append(samples[idx, :, :, :])
-    gen = np.array(gen)
-    gen = np.concatenate(np.split(gen, num_cols), axis=2)
-    gen = np.concatenate(gen, axis=0)
+    # Figuring out a layout
+    image = np.split(samples, num_cols)
+    image = [np.pad(img, ((0,0),(0,0),(0,1),(0,0)), mode='constant', constant_values=1.0) for img in image]
+    image = np.concatenate(image, axis=2)
+    image = np.split(image,image.shape[0],axis=0)
+    image = [np.pad(img, ((0,0),(0,1),(0,0),(0,0)), mode='constant', constant_values=1.0) for img in image]
+    image = np.concatenate(image, axis=1)
+    gen = image[0]
+    if greyscale:
+        gen = 1. - gen
 
     ### Embedding plots
     if np.shape(encoded)[-1]==2:
