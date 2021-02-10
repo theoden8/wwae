@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser()
 # Args for experiment
 parser.add_argument("--model", default='WAE',
                     help='model to train [WAE/BetaVAE/...]')
-parser.add_argument('--zdim', type=int,
+parser.add_argument('--zdim', type=int, default=2,
                     help='latent dimension')
 parser.add_argument("--decoder", default='det',
                     help='decoder typ [det/gauss]')
@@ -86,8 +86,12 @@ def main():
     # Select dataset to use
     if FLAGS.dataset == 'mnist':
         opts = configs.config_mnist
-    elif FLAGS.dataset == 'transformed_mnist':
-        opts = configs.config_trans_mnist
+    elif FLAGS.dataset == 'shifted_mnist':
+        opts = configs.config_mnist
+        opts['dataset'] = 'shifted_mnist'
+    elif FLAGS.dataset == 'rotated_mnist':
+        opts = configs.config_mnist
+        opts['dataset'] = 'rotated_mnist'
     elif FLAGS.dataset == 'svhn':
         opts = configs.config_svhn
     elif FLAGS.dataset == 'cifar10':
@@ -103,7 +107,7 @@ def main():
         raise Exception('You must provide a data_dir')
 
     ## exp conf
-    betas = [1,10,50,100]
+    betas = [1,10,100]
     coef_id = (FLAGS.id-1) % len(betas)
     # coef_id = (FLAGS.id-1) % len(exp_config)
     # exp_config = list(itertools.product(lr_decay,gammas, orientations))

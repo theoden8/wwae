@@ -71,17 +71,7 @@ config_mnist['MNIST_data_source_url'] = 'http://yann.lecun.com/exdb/mnist/'
 config_mnist['input_normalize_sym'] = False
 config_mnist['batch_size'] = 100
 # Model set up
-config_mnist['zdim'] = 16
-
-### transformed MNIST config
-config_trans_mnist = config.copy()
-# Data set up
-config_trans_mnist['dataset'] = 'transformed_mnist'
-config_trans_mnist['MNIST_data_source_url'] = 'http://yann.lecun.com/exdb/mnist/'
-config_trans_mnist['input_normalize_sym'] = False
-config_trans_mnist['batch_size'] = 100
-# Model set up
-config_trans_mnist['zdim'] = 16
+config_mnist['zdim'] = 2
 
 ### SVHN config
 config_svhn = config.copy()
