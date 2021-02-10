@@ -86,44 +86,59 @@ def _load_cifar_batch(fpath):
 
 def _transform_mnist_tf(x):
     # padding mnist img
-    paddings = [[2,2], [2,2], [0,0]]
-    x_pad = tf.pad(x, paddings, mode='CONSTANT', constant_values=0.)
-    shape = x_pad.shape.as_list()
-    img = tf.zeros(datashapes['transformed_mnist'],tf.float32)
-
+    # paddings = [[2,2], [2,2], [0,0]]
+    # x_pad = tf.pad(x, paddings, mode='CONSTANT', constant_values=0.)
+    # shape = x_pad.shape.as_list()
+    shape = x.shape.as_list()
+    transformed_shape = datashapes['transformed_mnist']
+    img = tf.zeros(transformed_shape,tf.float32)
     # sample cluster pos
     i = tf.random.uniform([], 0, 2, tf.int32)
-    pos_x = i*int(3*shape[0]/4)
-    pos_y = i*int(3*shape[1]/4)
+    # pos_x = i*int(3*shape[0]/4)
+    # pos_y = i*int(3*shape[1]/4)
+    pos_x = i*int(3*transformed_shape[0]/4-shape[0])
+    pos_y = i*int(3*transformed_shape[1]/4-shape[1])
     # sample shift
-    shift_x = tf.random.uniform([], 0, int(shape[0]/4)+1, tf.int32)
-    shift_y = tf.random.uniform([], 0, int(shape[1]/4)+1, tf.int32)
+    # shift_x = tf.random.uniform([], 0, int(shape[0]/4)+1, tf.int32)
+    # shift_y = tf.random.uniform([], 0, int(shape[1]/4)+1, tf.int32)
+    shift_x = tf.random.uniform([], 0, int(transformed_shape[0]/4)+1, tf.int32)
+    shift_y = tf.random.uniform([], 0, int(transformed_shape[1]/4)+1, tf.int32)
     # create img
-    paddings = [[pos_x+shift_x, shape[0]-pos_x-shift_x],
-                [pos_y+shift_y, shape[1]-pos_y-shift_y],
+    # paddings = [[pos_x+shift_x, shape[0]-pos_x-shift_x],
+    #             [pos_y+shift_y, shape[1]-pos_y-shift_y],
+    #             [tf.zeros([],tf.int32), tf.zeros([],tf.int32)]]
+    paddings = [[pos_x+shift_x, transformed_shape[0]-shape[0] - (pos_x+shift_x)],
+                [pos_y+shift_y, transformed_shape[0]-shape[0] - (pos_y+shift_y)],
                 [tf.zeros([],tf.int32), tf.zeros([],tf.int32)]]
     paddings = tf.stack([tf.stack(t,0) for t in paddings], 0)
-    img = tf.pad(x_pad, paddings, mode='CONSTANT', constant_values=0.)
+    # img = tf.pad(x_pad, paddings, mode='CONSTANT', constant_values=0.)
+    img = tf.pad(x, paddings, mode='CONSTANT', constant_values=0.)
 
-    return tf.reshape(img, datashapes['transformed_mnist'])
+    return tf.reshape(img, transformed_shape)
 
 def _transform_mnist_np(x):
     # padding mnist img
-    paddings = [[2,2], [2,2], [0,0]]
-    x_pad = np.pad(x, paddings, mode='constant', constant_values=0.)
-    shape = x_pad.shape
+    # paddings = [[2,2], [2,2], [0,0]]
+    # x_pad = np.pad(x, paddings, mode='constant', constant_values=0.)
+    # shape = x_pad.shape
+    shape = x.shape
+    transformed_shape = datashapes['transformed_mnist']
     # create img
-    img = np.zeros(datashapes['transformed_mnist'])
+    img = np.zeros(transformed_shape)
     # sample cluster pos
     i = np.random.binomial(1, 0.5)
-    pos_x = i*int(3*shape[0]/4)
-    pos_y = i*int(3*shape[1]/4)
+    # pos_x = i*int(3*shape[0]/4)
+    # pos_y = i*int(3*shape[1]/4)
+    pos_x = i*int(3*transformed_shape[0]/4-shape[0])
+    pos_y = i*int(3*transformed_shape[1]/4-shape[1])
     # sample shift
-    shift_x = np.random.randint(0, int(shape[0]/4)+1)
-    shift_y = np.random.randint(0, int(shape[1]/4)+1)
+    # shift_x = np.random.randint(0, int(shape[0]/4)+1)
+    # shift_y = np.random.randint(0, int(shape[1]/4)+1)
+    shift_x = np.random.randint(0, int(transformed_shape[0]/4)+1)
+    shift_y = np.random.randint(0, int(transformed_shape[1]/4)+1)
     # place digit
-
-    img[pos_x+shift_x:shape[0]+pos_x+shift_x, pos_y+shift_y:shape[1]+pos_y+shift_y] = x_pad
+    # img[pos_x+shift_x:shape[0]+pos_x+shift_x, pos_y+shift_y:shape[1]+pos_y+shift_y] = x_pad
+    img[pos_x+shift_x:shape[0]+pos_x+shift_x, pos_y+shift_y:shape[1]+pos_y+shift_y] = x
 
     return img
 

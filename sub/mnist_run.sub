@@ -8,7 +8,7 @@
 #$ -l tmem=8G
 #$ -l h_rt=3:00:00
 
-#$ -t 1-6
+#$ -t 1-4
 
 #$ -N mnist
 
@@ -19,4 +19,5 @@ source /share/apps/examples/source_files/cuda/cuda-10.0.source
 # python3 array_run.py --num_it 100000 --data_dir ../../data --dataset mnist --out_dir mnist_critic_reg_ablation --model WAE --lr 0.0001 --beta 0 --cost wgan --save_model --id $SGE_TASK_ID
 # python3 beta_array_run.py --num_it 100000 --data_dir ../../data --dataset mnist --out_dir mnist --model WAE --lr 0.001 --net_archi conv  --orientation_num 8 --gamma 100 --lr_decay --fid --id $SGE_TASK_ID --cost wemd
 python3 beta_array_run.py --num_it 100000 --data_dir ../data --dataset transformed_mnist --out_dir trans_mnist --model WAE --lr 0.0005 --net_archi mlp --orientation_num 8 --gamma 100 --lr_decay --fid --id $SGE_TASK_ID --cost wemd --zdim 2
+# python3 beta_array_run.py --num_it 100000 --data_dir ../../data --dataset transformed_mnist --out_dir trans_mnist_test --model WAE --lr 0.0005 --net_archi mlp --orientation_num 8 --gamma 100 --lr_decay --fid --id 1 --cost wemd --zdim 2
 # python3 run_test.py --data_dir ../../data --dataset transformed_mnist --out_dir trans_mnist --model WAE --weights_file trained-WAE-final-100000 --net_archi mlp --cost wemd --res_dir beta_1_gamma_100.0_L_8 --mode plot

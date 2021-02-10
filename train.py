@@ -977,10 +977,11 @@ class Run(object):
         # for n in range(len(anchors_ids)):
         #     while shift_dir[n][0]==0 and shift_dir[n][1]==0:
         #         shift_dir[n] = np.random.randint(-1,2,2)
-        shift_dir = np.random.randint(-1,2,(len(anchors_ids),1))
+        shift_dir = np.random.randint(0,2,(len(anchors_ids),1))
         for n in range(len(anchors_ids)):
-            while shift_dir[n][0]==0:
-                shift_dir[n] = np.random.randint(-1,2,1)
+            shift_dir[n,0] = 2*shift_dir[n,0]-1
+            # while shift_dir[n][0]==0:
+            #     shift_dir[n] = np.random.randint(-1,2,1)
         shift_dir = np.concatenate([shift_dir,shift_dir], axis=-1)
 
         shifted_obs, shifted_rec, shifted_enc = [], [], []
@@ -996,7 +997,7 @@ class Run(object):
         shifted_obs = np.stack(shifted_obs,axis=1)
         shifted_rec = np.stack(shifted_rec,axis=1)
         shifted_enc = np.stack(shifted_enc,axis=1)
-        plot_rec_shift(opts, shifted_obs, shifted_rec, opts['exp_dir']) #TODO
+        plot_rec_shift(opts, shifted_obs, shifted_rec, opts['exp_dir'])
         # plot_embedded_shift(opts, shifted_enc, opts['exp_dir'])
 
     def fid_score(self, load_trained_model=False, MODEL_PATH=None,

@@ -597,12 +597,16 @@ def plot_rec_shift(opts, shifted_obs, shifted_rec, exp_dir):
         else:
             pics.append(shifted_rec[int(r/2)])
     pics = np.array(pics)
+    images = np.split(pics,ncol,axis=1)
+    images = [np.pad(img, ((0,0),(0,0),(0,0),(0,1),(0,0)), mode='constant', constant_values=1.0) for img in images]
+    images = np.concatenate(images,axis=3)
+    images = images[:,0]
+    images = np.split(images,2*nrow,axis=0)
+    images = [np.pad(img, ((0,0),(0,1),(0,0),(0,0)), mode='constant', constant_values=1.0) for img in images]
+    images = np.concatenate(images,axis=1)
+    img = images[0]
     if greyscale:
-        pics = 1.0 - pics
-    pics = np.concatenate(np.split(pics,ncol,axis=1),axis=3)
-    pics = pics[:,0]
-    pics = np.concatenate(np.split(pics,2*nrow,axis=0),axis=1)
-    img = pics[0]
+        img = 1.0 - img
     dpi = 100
     height_pic = img.shape[0]
     width_pic = img.shape[1]
