@@ -830,27 +830,40 @@ class Run(object):
         idx = np.random.choice(np.arange(len(self.data.all_labels)), size=num_encoded, replace=False)
         data_mnist = self.data.all_data[idx]
         label_mnist = self.data.all_labels[idx]
-        # transform data
         batch = np.zeros([num_encoded,] + self.data.data_shape)
         labels = np.zeros(label_mnist.shape, dtype=int)
-        for n, obs in enumerate(data_mnist):
+        if opts['dataset'] == 'shifted_mnist':
+            # shift data
+            for n, obs in enumerate(data_mnist):
+                # padding mnist img
+                paddings = [[2,2], [2,2], [0,0]]
+                obs = np.pad(obs, paddings, mode='constant', constant_values=0.)
+                shape = obs.shape
+                # create img
+                img = np.zeros(self.data.data_shape)
+                # sample cluster pos
+                i = np.random.binomial(1, 0.5)
+                pos_x = i*int(3*shape[0]/8)
+                pos_y = i*int(3*shape[1]/8)
+                # sample shift
+                shift_x = np.random.randint(0, int(shape[0]/8))
+                shift_y = np.random.randint(0, int(shape[1]/8))
+                # place digit
+                img[pos_x+shift_x:shape[0]+pos_x+shift_x, pos_y+shift_y:shape[1]+pos_y+shift_y] = obs
+                batch[n] = img
+                labels[n] = label_mnist[n] + 2*i
+        elif opts['dataset'] == 'rotated_mnist':
+            # rotate the data
             # padding mnist img
-            paddings = [[2,2], [2,2], [0,0]]
-            obs = np.pad(obs, paddings, mode='constant', constant_values=0.)
-            shape = obs.shape
-            # create img
-            img = np.zeros(self.data.data_shape)
-            # sample cluster pos
-            i = np.random.binomial(1, 0.5)
-            pos_x = i*int(3*shape[0]/8)
-            pos_y = i*int(3*shape[1]/8)
-            # sample shift
-            shift_x = np.random.randint(0, int(shape[0]/8))
-            shift_y = np.random.randint(0, int(shape[1]/8))
-            # place digit
-            img[pos_x+shift_x:shape[0]+pos_x+shift_x, pos_y+shift_y:shape[1]+pos_y+shift_y] = obs
-            batch[n] = img
-            labels[n] = label_mnist[n] + 2*i
+            paddings = [[0,0], [2,2], [2,2], [0,0]]
+            x_pad = np.pad(data_mnist, paddings, mode='constant', constant_values=0.)
+            # rot image with 0.5 prob
+            choice = np.random.randint(0,2,num_encoded).reshape([num_encoded,1,1,1])
+            batch = np.where(choice==0, x_pad, np.rot90(x_pad,axes=(1,2)))
+            labels = (label_mnist / 5).astype(np.int64) + 2*choice.reshape([num_encoded,])
+        else:
+            assert False, 'Unknown {} dataset'.format(opts['dataset'])
+
         # encode
         encoded = self.sess.run(self.encoded, feed_dict={
                                     self.inputs_img1: batch,

@@ -462,7 +462,12 @@ def save_test(opts, data, reconstructions, samples, encoded, labels=None, exp_di
     height_pic = 600
     width_pic = 600
     colors = {0:'b', 1:'r', 2:'c', 3:'m'}
-    labels_names = {0:'top-right 0', 1:'top-right 1', 2:'bottom-left 0', 3:'bottom-left 1'}
+    if opts['dataset'] == 'shifted_mnist':
+        labels_names = {0:'top-right 0', 1:'top-right 1', 2:'bottom-left 0', 3:'bottom-left 1'}
+    elif opts['dataset'] == 'rotated_mnist':
+        labels_names = {0:'original 1', 1:'original 5', 2:'rotated 1', 3:'rotated 5'}
+    else:
+        assert False, 'Unknown {} dataset'.format(opts['dataset'])
     fig_height =  height_pic / float(dpi)
     fig_width =  width_pic / float(dpi)
     fig = plt.figure(figsize=(fig_width, fig_height))

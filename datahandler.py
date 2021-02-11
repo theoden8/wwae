@@ -388,9 +388,11 @@ class DataHandler(object):
             te_Y = loaded.reshape((10000,)).astype(np.int64)
         Y = np.concatenate((tr_Y, te_Y), axis=0)
         ones_idx = np.where(Y==1, 1, 0)
-        five_idx = np.where(Y==5, 1, 0)
-        ones_fives_idx = ones_idx + five_idx
-        Y = Y[ones_fives_idx==1]
+        three_idx = np.where(Y==3, 1, 0)
+        seven_idx = np.where(Y==7, 1, 0)
+        eight_idx = np.where(Y==8, 1, 0)
+        all_idx = ones_idx + three_idx + seven_idx + eight_idx
+        Y = Y[all_idx==1]
         # loading images
         tr_X, te_X = None, None
         with gzip.open(os.path.join(self.data_dir, 'train-images-idx3-ubyte.gz')) as fd:
@@ -402,7 +404,7 @@ class DataHandler(object):
             loaded = np.frombuffer(fd.read(10000*28*28*1), dtype=np.uint8)
             te_X = loaded.reshape((10000, 28, 28, 1)).astype(np.float32)
         X = np.concatenate((tr_X, te_X), axis=0)
-        X = X[ones_fives_idx==1]
+        X = X[all_idx==1]
         self.all_data = X / 255.
         self.all_labels = Y
         num_data = len(Y)
