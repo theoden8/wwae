@@ -465,7 +465,8 @@ def save_test(opts, data, reconstructions, samples, encoded, labels=None, exp_di
     if opts['dataset'] == 'shifted_mnist':
         labels_names = {0:'top-right 0', 1:'top-right 1', 2:'bottom-left 0', 3:'bottom-left 1'}
     elif opts['dataset'] == 'rotated_mnist':
-        labels_names = {0:'original 1', 1:'original 5', 2:'rotated 1', 3:'rotated 5'}
+        # labels_names = {0:'original 1', 1:'original 5', 2:'rotated 1', 3:'rotated 5'}
+        labels_names = {1:'1', 3:'3', 7:'7', 8:'8'}
     else:
         assert False, 'Unknown {} dataset'.format(opts['dataset'])
     fig_height =  height_pic / float(dpi)
@@ -477,7 +478,8 @@ def save_test(opts, data, reconstructions, samples, encoded, labels=None, exp_di
         for c in classes:
             idx = np.where(labels==c)
             plt.scatter(embedding[idx, 0], embedding[idx, 1], alpha=0.8, linewidths=0.,
-                        c=colors[c], label=labels_names[c] , s=40)
+                        # c=colors[c],
+                        label=labels_names[c] , s=40)
     else:
         plt.scatter(embedding[:, 0], embedding[:, 1], alpha=0.8, linewidths=0., s=40)
     xmin = np.amin(embedding[:,0])
@@ -557,7 +559,7 @@ def plot_cost_shift(rec_sr, mse_sr, ground_os, mse_os, exp_dir):
             axes[0].plot(list(range(nshift)),y,label=label,color=color,)
         xticks = np.arange(nshift)
         axes[0].set_xticks(xticks[::4])
-        axes[0].set_xticklabels(xticks[::4])
+        axes[0].set_xticklabels(2*xticks[::4])
         axes[0].set_xlabel('pixels shifted')
         axes[0].grid(True, which='major', axis='y')
         axes[0].legend(loc='best')
@@ -570,7 +572,7 @@ def plot_cost_shift(rec_sr, mse_sr, ground_os, mse_os, exp_dir):
             axes[1].plot(list(range(nshift)),y,label=label,color=color,)
         xticks = np.arange(nshift)
         axes[1].set_xticks(xticks[::4])
-        axes[1].set_xticklabels(xticks[::4])
+        axes[1].set_xticklabels(2*xticks[::4])
         axes[1].set_xlabel('pixels shifted')
         axes[1].grid(True, which='major', axis='y')
         axes[1].legend(loc='best')

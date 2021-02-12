@@ -117,7 +117,7 @@ def _shift_mnist_tf(x):
     # img = tf.pad(x_pad, paddings, mode='CONSTANT', constant_values=0.)
     img = tf.pad(x, paddings, mode='CONSTANT', constant_values=0.)
 
-    return tf.reshape(img, datashapes['rotated_mnist'])
+    return tf.reshape(img, datashapes['shifted_mnist'])
 
 def _shift_mnist_np(x):
     # padding mnist img
@@ -190,9 +190,9 @@ class DataHandler(object):
         """
         if self.dataset == 'mnist':
             self._load_mnist(opts)
-        if self.dataset == 'shifted_mnist':
+        elif self.dataset == 'shifted_mnist':
             self._load_shift_mnist(opts)
-        if self.dataset == 'rotated_mnist':
+        elif self.dataset == 'rotated_mnist':
             self._load_rot_mnist(opts)
         elif self.dataset == 'svhn':
             self._load_svhn(opts)

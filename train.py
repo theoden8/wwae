@@ -117,7 +117,7 @@ class Run(object):
                                     is_training=self.is_training,
                                     reuse=True)
         # rec loss
-        self.rec_cost = cost + opts['gamma'] * intensities_reg
+        self.rec_cost = cost# + opts['gamma'] * intensities_reg
         # MSE
         self.rec_mse = self.model.MSE(self.inputs_img1, self.decoded)
 
@@ -127,7 +127,7 @@ class Run(object):
                                     self.inputs_img1,
                                     is_training=self.is_training,
                                     reuse=True)
-        self.ground_cost = tf.reduce_mean(cost + opts['gamma']*intensities_reg)
+        self.ground_cost = tf.reduce_mean(cost) # + opts['gamma']*intensities_reg)
         self.ground_mse = self.model.MSE(self.inputs_img2, self.inputs_img1)
 
         # --- Optimizers, savers, etc
@@ -830,9 +830,9 @@ class Run(object):
         idx = np.random.choice(np.arange(len(self.data.all_labels)), size=num_encoded, replace=False)
         data_mnist = self.data.all_data[idx]
         label_mnist = self.data.all_labels[idx]
-        batch = np.zeros([num_encoded,] + self.data.data_shape)
-        labels = np.zeros(label_mnist.shape, dtype=int)
         if opts['dataset'] == 'shifted_mnist':
+            batch = np.zeros([num_encoded,] + self.data.data_shape)
+            labels = np.zeros(label_mnist.shape, dtype=int)
             # shift data
             for n, obs in enumerate(data_mnist):
                 # padding mnist img
@@ -861,6 +861,7 @@ class Run(object):
             choice = np.random.randint(0,2,num_encoded).reshape([num_encoded,1,1,1])
             batch = np.where(choice==0, x_pad, np.rot90(x_pad,axes=(1,2)))
             labels = (label_mnist / 5).astype(np.int64) + 2*choice.reshape([num_encoded,])
+            labels = label_mnist
         else:
             assert False, 'Unknown {} dataset'.format(opts['dataset'])
 
@@ -928,18 +929,6 @@ class Run(object):
 
         opts = self.opts
 
-        # - Set up
-        npics = opts['plot_num_pics']
-        batches_num = 2 #self.data.test_size//opts['batch_size']
-        # anchors_ids = np.random.choice(npics, 5, replace=True)
-        anchors_ids = [0, 12, 24, 36, 58, 71]
-        nshifts = int(self.data.data_shape[0]/2)
-        # if opts['dataset']=='celebA':
-        #     nshifts = int(self.data.data_shape[0]/4)
-        # else:
-        #     nshifts = int(self.data.data_shape[0]/2)
-        # nshifts = 10
-
         # - Load trained model
         if WEIGHTS_FILE is None:
                 raise Exception("No model/weights provided")
@@ -951,67 +940,140 @@ class Run(object):
                 raise Exception("weights file doesn't exist")
             self.saver.restore(self.sess, WEIGHTS_PATH)
 
-        """
-        # - Rec cost vs shifts
-        rec_cost, mse_cost, ground_cost, ground_mse = [], [], [], []
-        # To add check removing (0,0) dir
-        shift_dir = np.random.randint(-1,2,(opts['batch_size'],2))
-        for n in range(opts['batch_size']):
-            while shift_dir[n][0]==0 and shift_dir[n][1]==0:
-                shift_dir[n] = np.random.randint(-1,2,2)
-        for s in range(nshifts):
-            rc, rm, gc, gm = 0., 0., 0., 0.
+        # - Set up
+        batches_num = 2
+        batch_size = 500
+        anchors_ids = [4, 12, 21, 33, 48, 60]
+        npert = int(self.data.data_shape[0]/4)
+
+        if opts['dataset'] == 'shifted_mnist':
+            # - Rec/MSE/ground cost vs perturbation
+            cost = np.zeros((npert,4))
             for _ in range(batches_num):
-                batch_obs = self.sess.run(self.data.next_element,
-                                    feed_dict={self.data.handle: self.test_handle})
-                batch_shifted = shift(opts, batch_obs, shift_dir, s)
-                test_feed_dict={self.inputs_img2: batch_obs,
-                                self.inputs_img1: batch_shifted,
-                                self.is_training: False}
-                rec_cst, rec_mse, grd_cst, grd_mse = self.sess.run([self.rec_cost,
-                                    self.rec_mse,
-                                    self.ground_cost,
-                                    self.ground_mse],
-                                    feed_dict=test_feed_dict)
-                rc += rec_cst / batches_num
-                rm += rec_mse / batches_num
-                gc += grd_cst / batches_num
-                gm += grd_mse / batches_num
-            rec_cost.append(rc)
-            mse_cost.append(rm)
-            ground_cost.append(gc)
-            ground_mse.append(gm)
-        plot_cost_shift(rec_cost, mse_cost, ground_cost, ground_mse,
+                # get data and label
+                batch_idx = np.random.randint(self.data.test_size,size=batch_size)
+                batch_mnist = self.data.all_data[batch_idx]
+                batch = np.zeros([batch_size,] + self.data.data_shape)
+                pos = np.zeros(batch_size)
+                # creating batch data and label
+                for n, obs in enumerate(batch_mnist):
+                    # padding mnist img
+                    paddings = [[2,2], [2,2], [0,0]]
+                    obs = np.pad(obs, paddings, mode='constant', constant_values=0.)
+                    shape = obs.shape
+                    # create img
+                    img = np.zeros(self.data.data_shape)
+                    # sample cluster pos
+                    i = np.random.binomial(1, 0.5)
+                    pos_x = i*int(3*shape[0]/8)
+                    pos_y = i*int(3*shape[1]/8)
+                    # sample shift
+                    shift_x = np.random.randint(0, int(shape[0]/8))
+                    shift_y = np.random.randint(0, int(shape[1]/8))
+                    # place digit
+                    img[pos_x+shift_x:shape[0]+pos_x+shift_x, pos_y+shift_y:shape[1]+pos_y+shift_y] = obs
+                    batch[n] = img
+                    pos[n] = i
+                # get shifting direction
+                shift_dir = np.stack([2*pos-1,2*pos-1],-1).astype(np.int32)
+                for s in range(npert):
+                    batch_shifted = shift(opts, batch, shift_dir, 2*s)
+                    test_feed_dict={self.inputs_img2: batch,
+                                    self.inputs_img1: batch_shifted,
+                                    self.is_training: False}
+                    c = self.sess.run([self.rec_cost,
+                                        self.rec_mse,
+                                        self.ground_cost,
+                                        self.ground_mse],
+                                        feed_dict=test_feed_dict)
+                    cost[s] += np.array(c) / batches_num
+            rec_cost, mse_cost, ground_cost, ground_mse = np.split(cost,4,-1)
+            plot_cost_shift(rec_cost[:,0], mse_cost[:,0], ground_cost[:,0], ground_mse[:,0],
                                     opts['exp_dir'])
-        """
 
-        # - vizu rec shift
-        # shift_dir = np.random.randint(-1,2,(len(anchors_ids),2))
-        # for n in range(len(anchors_ids)):
-        #     while shift_dir[n][0]==0 and shift_dir[n][1]==0:
-        #         shift_dir[n] = np.random.randint(-1,2,2)
-        shift_dir = np.random.randint(0,2,(len(anchors_ids),1))
-        for n in range(len(anchors_ids)):
-            shift_dir[n,0] = 2*shift_dir[n,0]-1
-            # while shift_dir[n][0]==0:
-            #     shift_dir[n] = np.random.randint(-1,2,1)
-        shift_dir = np.concatenate([shift_dir,shift_dir], axis=-1)
+            # Plot reconstruction of perturbation
+            batch = batch[anchors_ids]
+            shift_dir = shift_dir[anchors_ids]
+            shifted_obs, shifted_rec, shifted_enc = [], [], []
+            for s in range(npert):
+                shifted = shift(opts, batch, shift_dir, 2*s)
+                [rec,enc] = self.sess.run([self.decoded,self.encoded],
+                                        feed_dict={self.inputs_img1: shifted,
+                                                   self.is_training: False})
+                shifted_obs.append(shifted)
+                shifted_rec.append(rec)
+                shifted_enc.append(enc)
+            shifted_obs = np.stack(shifted_obs,axis=1)
+            shifted_rec = np.stack(shifted_rec,axis=1)
+            shifted_enc = np.stack(shifted_enc,axis=1)
+            plot_rec_shift(opts, shifted_obs, shifted_rec, opts['exp_dir'])
+            # plot_embedded_shift(opts, shifted_enc, opts['exp_dir'])
 
-        shifted_obs, shifted_rec, shifted_enc = [], [], []
-        # for s in range(0,nshifts,int(nshifts/8)):
-        for s in range(0,nshifts,max(int(nshifts/16),1)):
-            shifted = shift(opts, self.data.data_vizu[anchors_ids], shift_dir, s)
-            [rec,enc] = self.sess.run([self.decoded,self.encoded],
-                                    feed_dict={self.inputs_img1: shifted,
-                                               self.is_training: False})
-            shifted_obs.append(shifted)
-            shifted_rec.append(rec)
-            shifted_enc.append(enc)
-        shifted_obs = np.stack(shifted_obs,axis=1)
-        shifted_rec = np.stack(shifted_rec,axis=1)
-        shifted_enc = np.stack(shifted_enc,axis=1)
-        plot_rec_shift(opts, shifted_obs, shifted_rec, opts['exp_dir'])
-        # plot_embedded_shift(opts, shifted_enc, opts['exp_dir'])
+        elif opts['dataset'] == 'rotated_mnist':
+            # - Rec/MSE/ground cost vs perturbation
+            cost = np.zeros((npert,4))
+            for _ in range(batches_num):
+                # get data and label
+                batch_idx = np.random.randint(self.data.test_size,size=batch_size)
+                batch_mnist = self.data.all_data[batch_idx]
+                # rotate the data
+                # padding mnist img
+                paddings = [[0,0], [2,2], [2,2], [0,0]]
+                x_pad = np.pad(batch_mnist, paddings, mode='constant', constant_values=0.)
+                # rot image with 0.5 prob
+                choice = np.random.randint(0,2,batch_size).reshape([batch_size,1,1,1])
+                batch = np.where(choice==0, x_pad, np.rot90(x_pad,axes=(1,2)))
+                # labels = (label_mnist / 5).astype(np.int64) + 2*choice.reshape([num_encoded,])
+                labels = label_mnist
+                # get rot direction
+                rot_dir = np.stack([1-2*pos,1-2*pos],-1).astype(np.int32)
+                for s in range(npert):
+                    batch_rotated = rotate(opts, batch, rot_dir, 2*s)
+                    test_feed_dict={self.inputs_img2: batch,
+                                    self.inputs_img1: batch_rotated,
+                                    self.is_training: False}
+                    c = self.sess.run([self.rec_cost,
+                                        self.rec_mse,
+                                        self.ground_cost,
+                                        self.ground_mse],
+                                        feed_dict=test_feed_dict)
+                    cost[s] += np.array(c) / batches_num
+            rec_cost, mse_cost, ground_cost, ground_mse = np.split(cost,4,-1)
+            plot_cost_shift(rec_cost[:,0], mse_cost[:,0], ground_cost[:,0], ground_mse[:,0],
+                                    opts['exp_dir'])
+
+            # Plot reconstruction of perturbation
+            batch = batch[anchors_ids]
+            shift_dir = shift_dir[anchors_ids]
+            shifted_obs, shifted_rec, shifted_enc = [], [], []
+            for s in range(npert):
+                shifted = shift(opts, batch, shift_dir, 2*s)
+                [rec,enc] = self.sess.run([self.decoded,self.encoded],
+                                        feed_dict={self.inputs_img1: shifted,
+                                                   self.is_training: False})
+                shifted_obs.append(shifted)
+                shifted_rec.append(rec)
+                shifted_enc.append(enc)
+            shifted_obs = np.stack(shifted_obs,axis=1)
+            shifted_rec = np.stack(shifted_rec,axis=1)
+            shifted_enc = np.stack(shifted_enc,axis=1)
+            plot_rec_shift(opts, shifted_obs, shifted_rec, opts['exp_dir'])
+            # plot_embedded_shift(opts, shifted_enc, opts['exp_dir'])
+
+
+            # vizu rec rot
+            data_mnist = self.data.all_data[anchors_ids]
+            # rotate the data
+            # padding mnist img
+            paddings = [[0,0], [2,2], [2,2], [0,0]]
+            x_pad = np.pad(data_mnist, paddings, mode='constant', constant_values=0.)
+            # rot image with 0.5 prob
+            choice = np.random.randint(0,2,num_encoded).reshape([num_encoded,1,1,1])
+            batch = np.where(choice==0, x_pad, np.rot90(x_pad,axes=(1,2)))
+            # labels = (label_mnist / 5).astype(np.int64) + 2*choice.reshape([num_encoded,])
+            labels = label_mnist
+        else:
+            assert False, 'Unknown {} dataset'.format(opts['dataset'])
 
     def fid_score(self, load_trained_model=False, MODEL_PATH=None,
                                         WEIGHTS_FILE=None,
