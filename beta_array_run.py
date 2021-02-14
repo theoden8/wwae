@@ -8,10 +8,13 @@ from datahandler import DataHandler
 import utils
 import itertools
 
+from math import exp, log
+
 import tensorflow as tf
 tf.compat.v1.disable_eager_execution()
 print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 import pdb
+
 
 parser = argparse.ArgumentParser()
 # Args for experiment
@@ -84,7 +87,9 @@ FLAGS = parser.parse_args()
 def main():
 
     # Select dataset to use
-    if FLAGS.dataset == 'mnist':
+    if FLAGS.dataset == 'gmm':
+        opts = configs.config_gmm
+    elif FLAGS.dataset == 'mnist':
         opts = configs.config_mnist
     elif FLAGS.dataset == 'shifted_mnist':
         opts = configs.config_mnist
@@ -107,7 +112,7 @@ def main():
         raise Exception('You must provide a data_dir')
 
     ## exp conf
-    betas = [1,10,100]
+    betas = [1,10,100, 1000]
     coef_id = (FLAGS.id-1) % len(betas)
     # coef_id = (FLAGS.id-1) % len(exp_config)
     # exp_config = list(itertools.product(lr_decay,gammas, orientations))

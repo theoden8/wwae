@@ -62,6 +62,15 @@ config['init_bias'] = 0.0
 config['mlp_init'] = 'glorot_uniform' #normal, he, glorot, glorot_he, glorot_uniform, ('uniform', range)
 config['conv_init'] = 'glorot_uniform' #he, glorot, normilized_glorot, truncated_norm
 
+### GMM config
+config_gmm = config.copy()
+# Data set up
+config_gmm['dataset'] = 'gmm'
+config_gmm['input_normalize_sym'] = False
+config_gmm['batch_size'] = 100
+# Model set up
+config_gmm['zdim'] = 1
+
 
 ### MNIST config
 config_mnist = config.copy()

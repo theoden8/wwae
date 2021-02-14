@@ -35,6 +35,7 @@ import pdb
 # data_dir = '../data'
 
 datashapes = {}
+datashapes['gmm'] = [12, 12, 1]
 datashapes['mnist'] = [32, 32, 1]
 datashapes['shifted_mnist'] = [64, 64, 1]
 datashapes['rotated_mnist'] = [32, 32, 1]
@@ -165,6 +166,58 @@ def _rotate_mnist_np(x):
 
     return img
 
+def _gmm_generator(dataset_size):
+
+    logits_shape = [int(datashapes['gmm'][0]/2),int(datashapes['gmm'][1]/2),datashapes['gmm'][2]]
+    zeros = np.zeros(logits_shape)
+    # generate data
+    n = 0
+    while n<dataset_size:
+        # choose mixture
+        mu = zeros
+        choice = np.random.randint(0,2)
+        mu[3*choice:3*choice+3,3*choice:6*choice+3] = np.ones((3,3,1))
+        mu[1+3*choice,1+3*choice] = [1.5]
+        # sample cat. logits
+        logits = np.random.normal(mu,.1,size=logits_shape).reshape((-1))
+        p = np.exp(logits) / np.sum(np.exp(logits))
+        a = np.arange(np.prod(logits_shape))
+        # sample pixel idx
+        idx = np.random.choice(a,size=1,p=p)[0]
+        i = int(idx / 6.)
+        j = idx % 6
+        # generate obs
+        x = np.zeros(datashapes['gmm'])
+        x[2*i:2*i+2,2*i:2*i+2] = np.ones((2,2,1))
+        yield x
+        n+=1
+
+def _sample_gmm(batch_size):
+
+    obs = np.zeros([batch_size,]+datashapes['gmm'])
+    logits_shape = [int(datashapes['gmm'][0]/2),int(datashapes['gmm'][1]/2),datashapes['gmm'][2]]
+    zeros = np.zeros(logits_shape)
+    for n in range(batch_size):
+        # choose mixture
+        mu = zeros
+        choice = np.random.randint(0,2)
+        mu[3*choice:3*choice+3,3*choice:6*choice+3] = np.ones((3,3,1))
+        mu[1+3*choice,1+3*choice] = [1.5]
+        # sample cat. logits
+        logits = np.random.normal(mu,.1,size=logits_shape).reshape((-1))
+        p = np.exp(logits) / np.sum(np.exp(logits))
+        a = np.arange(np.prod(logits_shape))
+        # sample pixel idx
+        idx = np.random.choice(a,size=1,p=p)[0]
+        i = int(idx / 6.)
+        j = idx % 6
+        # generate obs
+        x = np.zeros(datashapes['gmm'])
+        x[2*i:2*i+2,2*i:2*i+2] = np.ones((2,2,1))
+        obs[n] = x
+
+    return obs
+
 
 class DataHandler(object):
     """A class storing and manipulating the dataset.
@@ -188,7 +241,9 @@ class DataHandler(object):
         """Load a dataset and fill all the necessary variables.
 
         """
-        if self.dataset == 'mnist':
+        if self.dataset == 'gmm':
+            self._load_gmm(opts)
+        elif self.dataset == 'mnist':
             self._load_mnist(opts)
         elif self.dataset == 'shifted_mnist':
             self._load_shift_mnist(opts)
@@ -202,6 +257,61 @@ class DataHandler(object):
             self._load_celebA(opts)
         else:
             raise ValueError('Unknown {} dataset' % self.dataset)
+
+    def _load_gmm(self, opts):
+        """Create GMM dataset.
+
+        """
+        # plot set
+        self.data_plot = _sample_gmm(opts['evaluate_num_pics'])
+        # data for vizualisation
+        seed = 123
+        np.random.seed(seed)
+        self.data_vizu = _sample_gmm(opts['plot_num_pics'])
+        # dataset size
+        self.train_size = 10000
+        self.test_size = 5000
+        # datashape
+        self.data_shape = datashapes[self.dataset]
+        # Create tf.dataset
+        dataset_train = tf.data.Dataset.from_generator(_gmm_generator,
+                                output_types=tf.float32,
+                                output_shapes =self.data_shape,
+                                args=[self.train_size])
+        dataset_test = tf.data.Dataset.from_generator(_gmm_generator,
+                                output_types=tf.float32,
+                                output_shapes = self.data_shape,
+                                args=[self.test_size])
+        # normalize data if needed
+        if opts['input_normalize_sym']:
+            dataset_train = dataset_train.map(lambda x: (x - 0.5) * 2.,
+                                num_parallel_calls=tf.data.experimental.AUTOTUNE)
+            dataset_test = dataset_test.map(lambda x: (x - 0.5) * 2.,
+                                num_parallel_calls=tf.data.experimental.AUTOTUNE)
+            self.data_vizu = (self.data_vizu - 0.5) * 2.
+            self.data_plot = (self.data_plot - 0.5) * 2.
+        # Shuffle dataset
+        # dataset_train = dataset_train.shuffle(buffer_size=50*opts['batch_size'])
+        # dataset_test = dataset_test.shuffle(buffer_size=50*opts['batch_size'])
+        # repeat for multiple epochs
+        dataset_train = dataset_train.repeat()
+        dataset_test = dataset_test.repeat()
+        # Random batching
+        dataset_train = dataset_train.batch(batch_size=opts['batch_size'])
+        dataset_test = dataset_test.batch(batch_size=opts['batch_size'])
+        # Prefetch
+        self.dataset_train = dataset_train.prefetch(buffer_size=4*opts['batch_size'])
+        self.dataset_test = dataset_test.prefetch(buffer_size=4*opts['batch_size'])
+        # Iterator for each split
+        self.iterator_train = tf.compat.v1.data.make_initializable_iterator(dataset_train)
+        self.iterator_test = tf.compat.v1.data.make_initializable_iterator(dataset_test)
+
+        # Global iterator
+        self.handle = tf.compat.v1.placeholder(tf.string, shape=[])
+        self.next_element = tf.compat.v1.data.Iterator.from_string_handle(
+                                self.handle,
+                                tf.compat.v1.data.get_output_types(dataset_train),
+                                tf.compat.v1.data.get_output_shapes(dataset_train)).get_next()
 
     def _load_mnist(self, opts):
         """Load data from MNIST or ZALANDO files.
@@ -257,9 +367,9 @@ class DataHandler(object):
         # normalize data if needed
         if opts['input_normalize_sym']:
             dataset_train = dataset_train.map(lambda x: (x - 0.5) * 2.,
-                                    num_parallel_calls=tf.data.experimental.AUTOTUNE)
+                                num_parallel_calls=tf.data.experimental.AUTOTUNE)
             dataset_test = dataset_test.map(lambda x: (x - 0.5) * 2.,
-                                    num_parallel_calls=tf.data.experimental.AUTOTUNE)
+                                num_parallel_calls=tf.data.experimental.AUTOTUNE)
             self.data_vizu = (self.data_vizu - 0.5) * 2.
             self.data_plot = (self.data_plot - 0.5) * 2.
         # Shuffle dataset

@@ -4,6 +4,7 @@ import os
 from math import sqrt, cos, sin, pi, ceil
 import numpy as np
 import tensorflow as tf
+from scipy import ndimage
 #import tensorflow_probability as tfp
 
 import pdb
@@ -131,3 +132,12 @@ def shift(opts, inputs, shift_dir, shift):
     for n in range(ninputs):
         shifted.append(padded[n,start[n,0]:end[n,0],start[n,1]:end[n,1]])
     return np.stack(shifted,axis=0)
+
+def rotate(opts, batch, rot_dir, nangle, base_angle):
+    angle = rot_dir * base_angle * nangle
+    batch_size = batch.shape[0]
+    rotated = []
+    for n in range(batch_size):
+        rotated.append(ndimage.rotate(batch[n], angle[n], reshape=False))
+
+    return np.stack(rotated,axis=0)

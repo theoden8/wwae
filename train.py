@@ -8,10 +8,10 @@ import logging
 
 import numpy as np
 import tensorflow as tf
-from math import ceil
+from math import ceil, pi
 
 import utils
-from sampling_functions import sample_pz, traversals, interpolations, grid, shift
+from sampling_functions import sample_pz, traversals, interpolations, grid, shift, rotate
 from plot_functions import save_train, save_test
 from plot_functions import plot_critic_pretrain_loss
 from plot_functions import plot_interpolation, plot_cost_shift, plot_rec_shift, plot_embedded_shift
@@ -1008,7 +1008,6 @@ class Run(object):
             shifted_enc = np.stack(shifted_enc,axis=1)
             plot_rec_shift(opts, shifted_obs, shifted_rec, opts['exp_dir'])
             # plot_embedded_shift(opts, shifted_enc, opts['exp_dir'])
-
         elif opts['dataset'] == 'rotated_mnist':
             # - Rec/MSE/ground cost vs perturbation
             cost = np.zeros((npert,4))
@@ -1023,12 +1022,10 @@ class Run(object):
                 # rot image with 0.5 prob
                 choice = np.random.randint(0,2,batch_size).reshape([batch_size,1,1,1])
                 batch = np.where(choice==0, x_pad, np.rot90(x_pad,axes=(1,2)))
-                # labels = (label_mnist / 5).astype(np.int64) + 2*choice.reshape([num_encoded,])
-                labels = label_mnist
                 # get rot direction
-                rot_dir = np.stack([1-2*pos,1-2*pos],-1).astype(np.int32)
+                rot_dir = (1-2*choice).astype(np.int32).reshape([batch_size,])
                 for s in range(npert):
-                    batch_rotated = rotate(opts, batch, rot_dir, 2*s)
+                    batch_rotated = rotate(opts, batch, rot_dir, s, 180./2./npert)
                     test_feed_dict={self.inputs_img2: batch,
                                     self.inputs_img1: batch_rotated,
                                     self.is_training: False}
@@ -1044,34 +1041,21 @@ class Run(object):
 
             # Plot reconstruction of perturbation
             batch = batch[anchors_ids]
-            shift_dir = shift_dir[anchors_ids]
-            shifted_obs, shifted_rec, shifted_enc = [], [], []
+            rot_dir = rot_dir[anchors_ids]
+            rotated_obs, rotated_rec, rotated_enc = [], [], []
             for s in range(npert):
-                shifted = shift(opts, batch, shift_dir, 2*s)
+                rotated = rotate(opts, batch, rot_dir, s, 180./2./npert)
                 [rec,enc] = self.sess.run([self.decoded,self.encoded],
-                                        feed_dict={self.inputs_img1: shifted,
+                                        feed_dict={self.inputs_img1: rotated,
                                                    self.is_training: False})
-                shifted_obs.append(shifted)
-                shifted_rec.append(rec)
-                shifted_enc.append(enc)
-            shifted_obs = np.stack(shifted_obs,axis=1)
-            shifted_rec = np.stack(shifted_rec,axis=1)
-            shifted_enc = np.stack(shifted_enc,axis=1)
-            plot_rec_shift(opts, shifted_obs, shifted_rec, opts['exp_dir'])
-            # plot_embedded_shift(opts, shifted_enc, opts['exp_dir'])
-
-
-            # vizu rec rot
-            data_mnist = self.data.all_data[anchors_ids]
-            # rotate the data
-            # padding mnist img
-            paddings = [[0,0], [2,2], [2,2], [0,0]]
-            x_pad = np.pad(data_mnist, paddings, mode='constant', constant_values=0.)
-            # rot image with 0.5 prob
-            choice = np.random.randint(0,2,num_encoded).reshape([num_encoded,1,1,1])
-            batch = np.where(choice==0, x_pad, np.rot90(x_pad,axes=(1,2)))
-            # labels = (label_mnist / 5).astype(np.int64) + 2*choice.reshape([num_encoded,])
-            labels = label_mnist
+                rotated_obs.append(rotated)
+                rotated_rec.append(rec)
+                rotated_enc.append(enc)
+            rotated_obs = np.stack(rotated_obs,axis=1)
+            rotated_rec = np.stack(rotated_rec,axis=1)
+            rotated_enc = np.stack(rotated_enc,axis=1)
+            plot_rec_shift(opts, rotated_obs, rotated_rec, opts['exp_dir'])
+            # plot_embedded_shift(opts, rotated_enc, opts['exp_dir'])
         else:
             assert False, 'Unknown {} dataset'.format(opts['dataset'])
 
