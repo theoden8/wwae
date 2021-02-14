@@ -196,10 +196,9 @@ def _sample_gmm(batch_size):
 
     obs = np.zeros([batch_size,]+datashapes['gmm'])
     logits_shape = [int(datashapes['gmm'][0]/2),int(datashapes['gmm'][1]/2),datashapes['gmm'][2]]
-    zeros = np.zeros(logits_shape)
     for n in range(batch_size):
         # choose mixture
-        mu = zeros
+        mu = np.zeros(logits_shape)
         choice = np.random.randint(0,2)
         mu[3*choice:3*choice+3,3*choice:6*choice+3] = np.ones((3,3,1))
         mu[1+3*choice,1+3*choice] = [1.5]

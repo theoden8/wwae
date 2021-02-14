@@ -446,75 +446,78 @@ def save_test(opts, data, reconstructions, samples, encoded, labels=None, exp_di
         gen = 1. - gen
 
     ### Embedding plots
-    if np.shape(encoded)[-1]==2:
-        embedding = encoded
-    else:
-        if opts['embedding']=='pca':
-            embedding = PCA(n_components=2).fit_transform(encoded)
-        elif opts['embedding']=='umap':
-            embedding = umap.UMAP(n_neighbors=15,
-                                    min_dist=0.2,
-                                    metric='correlation').fit_transform(encoded)
+    if np.shape(encoded)[-1]>1:
+        if np.shape(encoded)[-1]==3:
+            embedding = encoded
         else:
-            assert False, 'Unknown %s method for embedgins vizu' % opts['embedding']
-    # Creating a pyplot fig
-    dpi = 100
-    height_pic = 600
-    width_pic = 600
-    colors = {0:'b', 1:'r', 2:'c', 3:'m'}
-    if opts['dataset'] == 'shifted_mnist':
-        labels_names = {0:'top-right 0', 1:'top-right 1', 2:'bottom-left 0', 3:'bottom-left 1'}
-    elif opts['dataset'] == 'rotated_mnist':
-        # labels_names = {0:'original 1', 1:'original 5', 2:'rotated 1', 3:'rotated 5'}
-        labels_names = {1:'1', 3:'3', 7:'7', 8:'8'}
-    else:
-        assert False, 'Unknown {} dataset'.format(opts['dataset'])
-    fig_height =  height_pic / float(dpi)
-    fig_width =  width_pic / float(dpi)
-    fig = plt.figure(figsize=(fig_width, fig_height))
-    if labels is not None:
-        classes = np.unique(labels)
-        classes = [classes[i] for i in range(len(classes))]
-        for c in classes:
-            idx = np.where(labels==c)
-            plt.scatter(embedding[idx, 0], embedding[idx, 1], alpha=0.8, linewidths=0.,
-                        # c=colors[c],
-                        label=labels_names[c] , s=40)
-    else:
-        plt.scatter(embedding[:, 0], embedding[:, 1], alpha=0.8, linewidths=0., s=40)
-    xmin = np.amin(embedding[:,0])
-    xmax = np.amax(embedding[:,0])
-    magnify = 0.05
-    width = abs(xmax - xmin)
-    xmin = xmin - width * magnify
-    xmax = xmax + width * magnify
-    ymin = np.amin(embedding[:,1])
-    ymax = np.amax(embedding[:,1])
-    width = abs(ymin - ymax)
-    ymin = ymin - width * magnify
-    ymax = ymax + width * magnify
-    plt.xlim(xmin, xmax)
-    plt.ylim(ymin, ymax)
-    if labels is not None:
-        plt.legend(loc='best')
-    # plt.text(0.47, 1., 'UMAP vizu', ha="center", va="bottom",
-    #                                         size=20, transform=ax.transAxes)
-    if np.shape(encoded)[-1]==2:
-        plt.title('latent codes')
-    else:
-        plt.title(opts['embedding'] + ' vizualisation of latent codes')
-    # Removing ticks if needed
-    if opts['embedding']=='umap':
-        # plt.tick_params(axis='both',which='both',bottom=False,top=False,left=False,right=False)
-        plt.xticks([])
-        plt.yticks([])
-    ### Saving plot
-    save_path = os.path.join(exp_dir,'test_plots')
-    utils.create_dir(save_path)
-    filename = opts['cost'] + '_embedded.png'
-    fig.savefig(utils.o_gfile((save_path, filename),'wb'),
-                dpi=dpi, cformat='png',bbox_inches='tight',pad_inches=0.05)
-    plt.close()
+            if opts['embedding']=='pca':
+                embedding = PCA(n_components=2).fit_transform(encoded)
+            elif opts['embedding']=='umap':
+                embedding = umap.UMAP(n_neighbors=15,
+                                        min_dist=0.2,
+                                        metric='correlation').fit_transform(encoded)
+            else:
+                assert False, 'Unknown %s method for embedgins vizu' % opts['embedding']
+        # Creating a pyplot fig
+        dpi = 100
+        height_pic = 600
+        width_pic = 600
+        colors = {0:'b', 1:'r', 2:'c', 3:'m'}
+        if opts['dataset'] == 'shifted_mnist':
+            labels_names = {0:'top-right 0', 1:'top-right 1', 2:'bottom-left 0', 3:'bottom-left 1'}
+        elif opts['dataset'] == 'rotated_mnist':
+            # labels_names = {0:'original 1', 1:'original 5', 2:'rotated 1', 3:'rotated 5'}
+            labels_names = {1:'1', 3:'3', 7:'7', 8:'8'}
+        elif opts['dataset'] == 'gmm':
+            labels_names = {0:'top-left', 1:'bottom-right'}
+        else:
+            assert False, 'Unknown {} dataset'.format(opts['dataset'])
+        fig_height =  height_pic / float(dpi)
+        fig_width =  width_pic / float(dpi)
+        fig = plt.figure(figsize=(fig_width, fig_height))
+        if labels is not None:
+            classes = np.unique(labels)
+            classes = [classes[i] for i in range(len(classes))]
+            for c in classes:
+                idx = np.where(labels==c)
+                plt.scatter(embedding[idx, 0], embedding[idx, 1], alpha=0.8, linewidths=0.,
+                            # c=colors[c],
+                            label=labels_names[c] , s=40)
+        else:
+            plt.scatter(embedding[:, 0], embedding[:, 1], alpha=0.8, linewidths=0., s=40)
+        xmin = np.amin(embedding[:,0])
+        xmax = np.amax(embedding[:,0])
+        magnify = 0.05
+        width = abs(xmax - xmin)
+        xmin = xmin - width * magnify
+        xmax = xmax + width * magnify
+        ymin = np.amin(embedding[:,1])
+        ymax = np.amax(embedding[:,1])
+        width = abs(ymin - ymax)
+        ymin = ymin - width * magnify
+        ymax = ymax + width * magnify
+        plt.xlim(xmin, xmax)
+        plt.ylim(ymin, ymax)
+        if labels is not None:
+            plt.legend(loc='best')
+        # plt.text(0.47, 1., 'UMAP vizu', ha="center", va="bottom",
+        #                                         size=20, transform=ax.transAxes)
+        if np.shape(encoded)[-1]==2:
+            plt.title('latent codes')
+        else:
+            plt.title(opts['embedding'] + ' vizualisation of latent codes')
+        # Removing ticks if needed
+        if opts['embedding']=='umap':
+            # plt.tick_params(axis='both',which='both',bottom=False,top=False,left=False,right=False)
+            plt.xticks([])
+            plt.yticks([])
+        ### Saving plot
+        save_path = os.path.join(exp_dir,'test_plots')
+        utils.create_dir(save_path)
+        filename = opts['cost'] + '_embedded.png'
+        fig.savefig(utils.o_gfile((save_path, filename),'wb'),
+                    dpi=dpi, cformat='png',bbox_inches='tight',pad_inches=0.05)
+        plt.close()
 
 
     ### Creating plot

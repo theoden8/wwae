@@ -827,9 +827,10 @@ class Run(object):
 
         # - Visualization of embeddedings
         num_encoded = 500
-        idx = np.random.choice(np.arange(len(self.data.all_labels)), size=num_encoded, replace=False)
-        data_mnist = self.data.all_data[idx]
-        label_mnist = self.data.all_labels[idx]
+        if opts['dataset'][-5:]=='mnist':
+            idx = np.random.choice(np.arange(len(self.data.all_labels)), size=num_encoded, replace=False)
+            data_mnist = self.data.all_data[idx]
+            label_mnist = self.data.all_labels[idx]
         if opts['dataset'] == 'shifted_mnist':
             batch = np.zeros([num_encoded,] + self.data.data_shape)
             labels = np.zeros(label_mnist.shape, dtype=int)
@@ -862,6 +863,29 @@ class Run(object):
             batch = np.where(choice==0, x_pad, np.rot90(x_pad,axes=(1,2)))
             labels = (label_mnist / 5).astype(np.int64) + 2*choice.reshape([num_encoded,])
             labels = label_mnist
+        elif opts['dataset'] == 'gmm':
+            batch = np.zeros([num_encoded,]+self.data.data_shape)
+            labels = np.zeros([num_encoded,], dtype=int)
+            logits_shape = [int(datashapes['gmm'][0]/2),int(datashapes['gmm'][1]/2),datashapes['gmm'][2]]
+            for n in range(num_encoded):
+                # choose mixture
+                mu = np.zeros(logits_shape)
+                choice = np.random.randint(0,2)
+                mu[3*choice:3*choice+3,3*choice:6*choice+3] = np.ones((3,3,1))
+                mu[1+3*choice,1+3*choice] = [1.5]
+                # sample cat. logits
+                logits = np.random.normal(mu,.1,size=logits_shape).reshape((-1))
+                p = np.exp(logits) / np.sum(np.exp(logits))
+                a = np.arange(np.prod(logits_shape))
+                # sample pixel idx
+                idx = np.random.choice(a,size=1,p=p)[0]
+                i = int(idx / 6.)
+                j = idx % 6
+                # generate obs
+                x = np.zeros(datashapes['gmm'])
+                x[2*i:2*i+2,2*i:2*i+2] = np.ones((2,2,1))
+                batch[n] = x
+                labels[n] = choice
         else:
             assert False, 'Unknown {} dataset'.format(opts['dataset'])
 
