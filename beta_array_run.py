@@ -112,7 +112,7 @@ def main():
         raise Exception('You must provide a data_dir')
 
     ## exp conf
-    betas = [1,10,100, 1000]
+    betas = [0, 0.1, 1,10,100, 1000]
     coef_id = (FLAGS.id-1) % len(betas)
     # coef_id = (FLAGS.id-1) % len(exp_config)
     # exp_config = list(itertools.product(lr_decay,gammas, orientations))
