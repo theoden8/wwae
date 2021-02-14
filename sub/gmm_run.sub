@@ -15,6 +15,6 @@
 source /share/apps/examples/source_files/python/python-3.6.4.source
 source /share/apps/examples/source_files/cuda/cuda-10.0.source
 
-python3 beta_array_run.py --num_it 10000 --data_dir ../data --dataset gmm --out_dir gmm --model WAE --lr 0.0005 --net_archi mlp --orientation_num 8 --gamma 100 --lr_decay --fid --id $SGE_TASK_ID --cost wemd --zdim 2
+python3 beta_array_run.py --num_it 20000 --data_dir ../data --dataset gmm --out_dir gmm --model WAE --lr 0.0005 --net_archi mlp --orientation_num 8 --gamma 100 --lr_decay --fid --id $SGE_TASK_ID --cost wemd --zdim 2
 # python3 beta_array_run.py --num_it 1000 --data_dir ../../data --dataset gmm --out_dir gmm --model WAE --lr 0.001 --net_archi mlp --orientation_num 8 --gamma 100 --lr_decay --fid --id $SGE_TASK_ID --cost wemd --zdim 2
 # python3 run_test.py --data_dir ../../data --dataset gmm --out_dir gmm --model WAE --weights_file trained-WAE-final-10000 --net_archi mlp --cost wemd --res_dir beta_1_gamma_100.0_L_8 --mode plot
