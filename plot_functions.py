@@ -560,6 +560,18 @@ def plot_cost_shift(rec_sr, mse_sr, ground_os, mse_os, exp_dir):
                             [('ground','b'),
                             ('MSE','r')]):
             axes[0].plot(list(range(nshift)),y,label=label,color=color,)
+        # add linear reg for ground cost
+        deg = 1
+        npoints_to_fit = 3
+        x = np.arange(npoints_to_fit)
+        p = np.polyfit(x,ground_os[:npoints_to_fit],deg)
+        npoints_to_plot = max(int(len(ground_os)/4),3)
+        x = np.arange(npoints_to_plot)
+        reg = np.zeros(npoints_to_plot)
+        for n in range(deg+1):
+            reg += p[n]*x**(deg-n)
+        axes[0].plot(x, reg, c='y', linestyle='--', alpha=0.8)
+
         xticks = np.arange(nshift)
         axes[0].set_xticks(xticks[::4])
         axes[0].set_xticklabels(2*xticks[::4])
@@ -573,6 +585,17 @@ def plot_cost_shift(rec_sr, mse_sr, ground_os, mse_os, exp_dir):
                             [('rec','b'),
                             ('MSE','r')]):
             axes[1].plot(list(range(nshift)),y,label=label,color=color,)
+        # add linear reg for ground cost
+        deg = 1
+        npoints_to_fit = 3
+        x = np.arange(npoints_to_fit)
+        p = np.polyfit(x,rec_sr[:npoints_to_fit],deg)
+        npoints_to_plot =  max(int(len(rec_sr)/4),3)
+        x = np.arange(npoints_to_plot)
+        reg = np.zeros(npoints_to_plot)
+        for n in range(deg+1):
+            reg += p[n]*x**(deg-n)
+        axes[1].plot(x, reg, c='y', linestyle='--', alpha=0.8)
         xticks = np.arange(nshift)
         axes[1].set_xticks(xticks[::4])
         axes[1].set_xticklabels(2*xticks[::4])
