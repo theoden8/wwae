@@ -82,10 +82,10 @@ def wemd(opts, x1, x2):
     mod = tf.reduce_sum(mod, axis=[-3,-2,-1]) #(b,c,J)
     # coef for putting different weights to different scales as in the paper
     # coef = tf.convert_to_tensor([2**(j/2) for j in range(J-1,-1,-1)],dtype=tf.float32)
-    coef = tf.convert_to_tensor([2**(j) for j in range(J-1,-1,-1)],dtype=tf.float32)
-    coef = tf.reshape(coef,[1,1,J])
+#    coef = tf.convert_to_tensor([2**(j) for j in range(J-1,-1,-1)],dtype=tf.float32)
+#    coef = tf.reshape(coef,[1,1,J])
     # wemd
-    wemd = tf.reduce_sum(coef*mod, axis=-1) #(b,c)
+    wemd = tf.reduce_sum(mod, axis=-1) #(b,c)
     # intensities reg
     diff_m = (1. - tf.reshape(mass2/mass1, [-1,c]))**2 #(b,c)
 
