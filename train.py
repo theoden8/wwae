@@ -968,11 +968,11 @@ class Run(object):
         batches_num = 2
         batch_size = 500
         anchors_ids = [4, 12, 21, 33, 48, 60]
-        npert = int(self.data.data_shape[0]/4)
+        npert = int(self.data.data_shape[0]/2)
+        cost = np.zeros((npert,4))
 
         if opts['dataset'] == 'shifted_mnist':
             # - Rec/MSE/ground cost vs perturbation
-            cost = np.zeros((npert,4))
             for _ in range(batches_num):
                 # get data and label
                 batch_idx = np.random.randint(self.data.test_size,size=batch_size)
@@ -1034,7 +1034,6 @@ class Run(object):
             # plot_embedded_shift(opts, shifted_enc, opts['exp_dir'])
         elif opts['dataset'] == 'rotated_mnist':
             # - Rec/MSE/ground cost vs perturbation
-            cost = np.zeros((npert,4))
             for _ in range(batches_num):
                 # get data and label
                 batch_idx = np.random.randint(self.data.test_size,size=batch_size)
@@ -1080,6 +1079,66 @@ class Run(object):
             rotated_enc = np.stack(rotated_enc,axis=1)
             plot_rec_shift(opts, rotated_obs, rotated_rec, opts['exp_dir'])
             # plot_embedded_shift(opts, rotated_enc, opts['exp_dir'])
+        elif opts['dataset'] == 'gmm':
+            # - Rec/MSE/ground cost vs perturbation
+            for _ in range(batches_num):
+                    # get data and label
+                batch = np.zeros([batch_size,]+self.data.data_shape)
+                labels = np.zeros([batch_size,], dtype=int)
+                logits_shape = [int(self.data.data_shape[0]/2),int(self.data.data_shape[1]/2),self.data.data_shape[2]]
+                for n in range(batch_size):
+                    # choose mixture
+                    mu = np.zeros(logits_shape)
+                    choice = np.random.randint(0,2)
+                    mu[3*choice:3*choice+3,3*choice:6*choice+3] = np.ones((3,3,1))
+                    mu[1+3*choice,1+3*choice] = [1.5]
+                    # sample cat. logits
+                    logits = np.random.normal(mu,.1,size=logits_shape).reshape((-1))
+                    p = np.exp(logits) / np.sum(np.exp(logits))
+                    a = np.arange(np.prod(logits_shape))
+                    # sample pixel idx
+                    i, j = 0, 0
+                    while i==0 or j==0 or i==logits_shape[0]-1 or j==logits_shape[1]-1:
+                        idx = np.random.choice(a,size=1,p=p)[0]
+                        i = int(idx / 6.)
+                        j = idx % 6
+                    # generate obs
+                    x = np.zeros(datashapes['gmm'])
+                    x[2*i:2*i+2,2*i:2*i+2] = np.ones((2,2,1))
+                    batch[n] = x
+                    labels[n] = choice
+                # get shifting direction
+                shift_dir = np.stack([2*labels-1,2*labels-1],-1).astype(np.int32)
+                for s in range(npert):
+                    batch_shifted = shift(opts, batch, shift_dir, s)
+                    test_feed_dict={self.inputs_img2: batch,
+                                    self.inputs_img1: batch_shifted,
+                                    self.is_training: False}
+                    c = self.sess.run([self.rec_cost,
+                                        self.rec_mse,
+                                        self.ground_cost,
+                                        self.ground_mse],
+                                        feed_dict=test_feed_dict)
+                    cost[s] += np.array(c) / batches_num
+            rec_cost, mse_cost, ground_cost, ground_mse = np.split(cost,4,-1)
+            plot_cost_shift(rec_cost[:,0], mse_cost[:,0], ground_cost[:,0], ground_mse[:,0],
+                                    opts['exp_dir'])
+            # Plot reconstruction of perturbation
+            batch = batch[anchors_ids]
+            shift_dir = shift_dir[anchors_ids]
+            shifted_obs, shifted_rec, shifted_enc = [], [], []
+            for s in range(npert):
+                shifted = shift(opts, batch, shift_dir, s)
+                [rec,enc] = self.sess.run([self.decoded,self.encoded],
+                                        feed_dict={self.inputs_img1: shifted,
+                                                   self.is_training: False})
+                shifted_obs.append(shifted)
+                shifted_rec.append(rec)
+                shifted_enc.append(enc)
+            shifted_obs = np.stack(shifted_obs,axis=1)
+            shifted_rec = np.stack(shifted_rec,axis=1)
+            shifted_enc = np.stack(shifted_enc,axis=1)
+            plot_rec_shift(opts, shifted_obs, shifted_rec, opts['exp_dir'])
         else:
             assert False, 'Unknown {} dataset'.format(opts['dataset'])
 
