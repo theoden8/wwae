@@ -58,7 +58,7 @@ parser.add_argument('--save_model', action='store_false', default=True,
                     help='save final model weights [True/False]')
 parser.add_argument("--save_data", action='store_false', default=True,
                     help='save training data')
-parser.add_argument("--fid", action='store_false', default=True,
+parser.add_argument("--fid",  action='store_false', default=False,
                     help='compute fid')
 parser.add_argument("--weights_file")
 ## wgan cost

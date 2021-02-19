@@ -43,7 +43,7 @@ def Conv2d(opts, input, input_dim, output_dim, filter_size, stride=1, padding='S
             filter_values = custom_uniform(
                 filters_stdev,
                 (filter_size, filter_size, input_dim, output_dim))
-            w = tf.get_variable(
+            w = tf.compat.v1.get_variable(
                 'filter', initializer=filter_values)
         elif init=='truncated_norm':
             w = tf.compat.v1.get_variable(
