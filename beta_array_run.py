@@ -94,6 +94,9 @@ def main():
     elif FLAGS.dataset == 'shifted_mnist':
         opts = configs.config_mnist
         opts['dataset'] = 'shifted_mnist'
+    elif FLAGS.dataset == 'shifted_3pos_mnist':
+        opts = configs.config_mnist
+        opts['dataset'] = 'shifted_3pos_mnist'
     elif FLAGS.dataset == 'rotated_mnist':
         opts = configs.config_mnist
         opts['dataset'] = 'rotated_mnist'

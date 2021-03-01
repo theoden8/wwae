@@ -465,6 +465,8 @@ def save_test(opts, data, reconstructions, samples, encoded, labels=None, exp_di
         colors = {0:'b', 1:'r', 2:'c', 3:'m'}
         if opts['dataset'] == 'shifted_mnist':
             labels_names = {0:'top-right 0', 1:'top-right 1', 2:'bottom-left 0', 3:'bottom-left 1'}
+        elif opts['dataset'] == 'shifted_3pos_mnist':
+            label_names = {1:'top-right', 2:'middle', 3:'top-left'}
         elif opts['dataset'] == 'rotated_mnist':
             # labels_names = {0:'original 1', 1:'original 5', 2:'rotated 1', 3:'rotated 5'}
             labels_names = {1:'1', 3:'3', 7:'7', 8:'8'}
