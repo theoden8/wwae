@@ -131,6 +131,7 @@ def shift(opts, inputs, shift_dir, shift):
     shifted = []
     for n in range(ninputs):
         shifted.append(padded[n,start[n,0]:end[n,0],start[n,1]:end[n,1]])
+        print(shifted[-1].shape)
     return np.stack(shifted,axis=0)
 
 def rotate(opts, batch, rot_dir, nangle, base_angle):

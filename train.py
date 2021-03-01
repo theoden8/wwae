@@ -801,10 +801,10 @@ class Run(object):
         if WEIGHTS_FILE is None:
                 raise Exception("No model/weights provided")
         else:
-            if not tf.gfile.IsDirectory(opts['exp_dir']):
+            if not tf.compat.v1.gfile.IsDirectory(opts['exp_dir']):
                 raise Exception("model doesn't exist")
             WEIGHTS_PATH = os.path.join(opts['exp_dir'],'checkpoints', WEIGHTS_FILE)
-            if not tf.gfile.Exists(WEIGHTS_PATH+".meta"):
+            if not tf.compat.v1.gfile.Exists(WEIGHTS_PATH+".meta"):
                 raise Exception("weights file doesn't exist")
             self.saver.restore(self.sess, WEIGHTS_PATH)
 
@@ -976,10 +976,10 @@ class Run(object):
         if WEIGHTS_FILE is None:
                 raise Exception("No model/weights provided")
         else:
-            if not tf.gfile.IsDirectory(opts['exp_dir']):
+            if not tf.compat.v1.gfile.IsDirectory(opts['exp_dir']):
                 raise Exception("model doesn't exist")
             WEIGHTS_PATH = os.path.join(opts['exp_dir'],'checkpoints', WEIGHTS_FILE)
-            if not tf.gfile.Exists(WEIGHTS_PATH+".meta"):
+            if not tf.compat.v1.gfile.Exists(WEIGHTS_PATH+".meta"):
                 raise Exception("weights file doesn't exist")
             self.saver.restore(self.sess, WEIGHTS_PATH)
 
