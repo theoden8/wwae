@@ -853,6 +853,25 @@ class Run(object):
                 img[pos_x+shift_x:shape[0]+pos_x+shift_x, pos_y+shift_y:shape[1]+pos_y+shift_y] = obs
                 batch[n] = img
                 labels[n] = label_mnist[n] + 2*i
+        elif opts['dataset'] == 'shifted_3pos_mnist':
+            batch = np.zeros([num_encoded,] + self.data.data_shape)
+            labels = np.zeros(label_mnist.shape, dtype=int)
+            # shift data
+            for n, obs in enumerate(data_mnist):
+                # padding mnist img
+                paddings = [[2,2], [2,2], [0,0]]
+                obs = np.pad(obs, paddings, mode='constant', constant_values=0.)
+                shape = obs.shape
+                # create img
+                img = np.zeros(self.data.data_shape)
+                # sample cluster pos
+                i = np.random.randint(3)
+                pos_x = i*int(shape[0]/2)
+                pos_y = i*int(shape[1]/2)
+                # place digit
+                img[pos_x:shape[0]+pos_x, pos_y:shape[1]+pos_y] = obs
+                batch[n] = img
+                labels[n] = label_mnist[n] + i
         elif opts['dataset'] == 'rotated_mnist':
             # rotate the data
             # padding mnist img
@@ -996,6 +1015,64 @@ class Run(object):
                     shift_y = np.random.randint(0, int(shape[1]/8))
                     # place digit
                     img[pos_x+shift_x:shape[0]+pos_x+shift_x, pos_y+shift_y:shape[1]+pos_y+shift_y] = obs
+                    batch[n] = img
+                    pos[n] = i
+                # get shifting direction
+                shift_dir = np.stack([2*pos-1,2*pos-1],-1).astype(np.int32)
+                for s in range(npert):
+                    batch_shifted = shift(opts, batch, shift_dir, 2*s)
+                    test_feed_dict={self.inputs_img2: batch,
+                                    self.inputs_img1: batch_shifted,
+                                    self.is_training: False}
+                    c = self.sess.run([self.rec_cost,
+                                        self.rec_mse,
+                                        self.ground_cost,
+                                        self.ground_mse],
+                                        feed_dict=test_feed_dict)
+                    cost[s] += np.array(c) / batches_num
+            rec_cost, mse_cost, ground_cost, ground_mse = np.split(cost,4,-1)
+            plot_cost_shift(rec_cost[:,0], mse_cost[:,0], ground_cost[:,0], ground_mse[:,0],
+                                    opts['exp_dir'])
+
+            # Plot reconstruction of perturbation
+            batch = batch[anchors_ids]
+            shift_dir = shift_dir[anchors_ids]
+            shifted_obs, shifted_rec, shifted_enc = [], [], []
+            for s in range(npert):
+                shifted = shift(opts, batch, shift_dir, 2*s)
+                [rec,enc] = self.sess.run([self.decoded,self.encoded],
+                                        feed_dict={self.inputs_img1: shifted,
+                                                   self.is_training: False})
+                shifted_obs.append(shifted)
+                shifted_rec.append(rec)
+                shifted_enc.append(enc)
+            shifted_obs = np.stack(shifted_obs,axis=1)
+            shifted_rec = np.stack(shifted_rec,axis=1)
+            shifted_enc = np.stack(shifted_enc,axis=1)
+            plot_rec_shift(opts, shifted_obs, shifted_rec, opts['exp_dir'])
+            # plot_embedded_shift(opts, shifted_enc, opts['exp_dir'])
+        if opts['dataset'] == 'shifted_3pos_mnist':
+            # - Rec/MSE/ground cost vs perturbation
+            for _ in range(batches_num):
+                # get data and label
+                batch_idx = np.random.randint(self.data.test_size,size=batch_size)
+                batch_mnist = self.data.all_data[batch_idx]
+                batch = np.zeros([batch_size,] + self.data.data_shape)
+                pos = np.zeros(batch_size)
+                # creating batch data and label
+                for n, obs in enumerate(batch_mnist):
+                    # padding mnist img
+                    paddings = [[2,2], [2,2], [0,0]]
+                    obs = np.pad(obs, paddings, mode='constant', constant_values=0.)
+                    shape = obs.shape
+                    # create img
+                    img = np.zeros(self.data.data_shape)
+                    # sample cluster pos
+                    i = np.random.randint(3)
+                    pos_x = i*int(shape[0]/2)
+                    pos_y = i*int(shape[1]/2)
+                    # place digit
+                    img[pos_x:shape[0]+pos_x, pos_y:shape[1]+pos_y] = obs
                     batch[n] = img
                     pos[n] = i
                 # get shifting direction
