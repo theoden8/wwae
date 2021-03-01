@@ -73,10 +73,11 @@ class BetaVAE(Model):
         rec_loss = cross_entropy_loss(self.opts, inputs, mean, sigma)
         return tf.reduce_mean(rec_loss)
 
-    def loss(self, inputs, is_training):
+    def loss(self, inputs, is_training, reuse=False):
 
         _, enc_mean, enc_Sigma, _, dec_mean, dec_Sigma = self.forward_pass(inputs=inputs,
-                                              is_training=is_training)
+                                              is_training=is_training,
+                                              reuse=reuse)
 
         rec = self.reconstruction_loss(inputs, dec_mean, dec_Sigma)
         kl = self.kl_penalty(self.pz_mean, self.pz_sigma, enc_mean, enc_Sigma)

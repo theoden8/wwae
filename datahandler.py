@@ -330,9 +330,6 @@ class DataHandler(object):
         X = np.concatenate((tr_X, te_X), axis=0)
         self.all_data = X / 255.
         num_data = X.shape[0]
-        # plot set
-        idx = np.random.randint(self.all_data.shape[0],size=opts['evaluate_num_pics'])
-        self.data_plot = self._sample_observations(idx)
         # data for vizualisation
         seed = 123
         np.random.seed(seed)
@@ -370,7 +367,6 @@ class DataHandler(object):
             dataset_test = dataset_test.map(lambda x: (x - 0.5) * 2.,
                                 num_parallel_calls=tf.data.experimental.AUTOTUNE)
             self.data_vizu = (self.data_vizu - 0.5) * 2.
-            self.data_plot = (self.data_plot - 0.5) * 2.
         # Shuffle dataset
         dataset_train = dataset_train.shuffle(buffer_size=50*opts['batch_size'])
         dataset_test = dataset_test.shuffle(buffer_size=50*opts['batch_size'])

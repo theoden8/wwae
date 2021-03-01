@@ -968,7 +968,7 @@ class Run(object):
         batches_num = 2
         batch_size = 500
         anchors_ids = [4, 12, 21, 33, 48, 60]
-        npert = int(self.data.data_shape[0]/2)
+        npert = int(self.data.data_shape[0]/4)
         cost = np.zeros((npert,4))
 
         if opts['dataset'] == 'shifted_mnist':
