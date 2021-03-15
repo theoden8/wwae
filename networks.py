@@ -2,12 +2,6 @@ import numpy as np
 import tensorflow as tf
 from math import pi
 
-import ops.linear
-import ops.conv2d
-import ops.deconv2d
-import ops.batchnorm
-import ops.layernorm
-import ops._ops
 from datahandler import datashapes
 from sampling_functions import sample_gaussian
 from net_archi import net_archi , critic_archi
