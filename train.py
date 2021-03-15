@@ -859,15 +859,22 @@ class Run(object):
             # shift data
             for n, obs in enumerate(data_mnist):
                 # padding mnist img
-                paddings = [[2,2], [2,2], [0,0]]
-                obs = np.pad(obs, paddings, mode='constant', constant_values=0.)
+                #paddings = [[2,2], [2,2], [0,0]]
+                #obs = np.pad(obs, paddings, mode='constant', constant_values=0.)
                 shape = obs.shape
                 # create img
                 img = np.zeros(self.data.data_shape)
                 # sample cluster pos
                 i = np.random.randint(3)
-                pos_x = i*int(shape[0]/2)
-                pos_y = i*int(shape[1]/2)
+#                pos_x = i*int(self.data.data_shape[0]/4)
+#                pos_y = i*int(self.data.data_shape[1]/4)
+                if i==0:
+                    pos_x = 8; pos_y = 8
+                elif i==1:
+                    pos_x = 16; pos_y = 16
+                else:
+                    pos_x = 24; pos_y = 24
+
                 # place digit
                 img[pos_x:shape[0]+pos_x, pos_y:shape[1]+pos_y] = obs
                 batch[n] = img

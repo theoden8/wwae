@@ -126,16 +126,23 @@ def _shift_mnist_tf(x):
 
 def _shift_mnist_3pos_tf(x):
     # padding mnist img
-    # paddings = [[2,2], [2,2], [0,0]]
-    # x_pad = tf.pad(x, paddings, mode='CONSTANT', constant_values=0.)
-    # shape = x_pad.shape.as_list()
+#    paddings = [[2,2], [2,2], [0,0]]
+#    x_pad = tf.pad(x, paddings, mode='CONSTANT', constant_values=0.)
     shape = x.shape.as_list()
+    #shape = x.shape.as_list()
     transformed_shape = datashapes['shifted_mnist']
     img = tf.zeros(transformed_shape,tf.float32)
     # sample cluster pos
     i = tf.random.uniform([], 0, 3, tf.int32)
-    pos_x = i*int(transformed_shape[0]/4)
-    pos_y = i*int(transformed_shape[1]/4)
+#    pos_x = i*int(transformed_shape[0]/4)
+#    pos_y = i*int(transformed_shape[1]/4)
+    if i==0:
+        pos_x = 8; pos_y = 8
+    elif i==1:
+        pos_x = 16; pos_y = 16
+    else:
+        pos_x = 24; pos_y = 24
+
     paddings = [[pos_x, transformed_shape[0]-shape[0] - (pos_x)],
                 [pos_y, transformed_shape[0]-shape[0] - (pos_y)],
                 [tf.zeros([],tf.int32), tf.zeros([],tf.int32)]]
@@ -183,8 +190,14 @@ def _shift_mnist_3pos_np(x):
     img = np.zeros(transformed_shape)
     # sample cluster pos
     i = np.random.randint(3)
-    pos_x = i*int(transformed_shape[0]/4)
-    pos_y = i*int(transformed_shape[1]/4)
+#    pos_x = i*int(transformed_shape[0]/4)
+#    pos_y = i*int(transformed_shape[1]/4)
+    if i==0:
+        pos_x = 8; pos_y = 8
+    elif i==1:
+        pos_x = 16; pos_y = 16
+    else:
+        pos_x = 24; pos_y = 24
     # place digit
     # img[pos_x+shift_x:shape[0]+pos_x+shift_x, pos_y+shift_y:shape[1]+pos_y+shift_y] = x_pad
     img[pos_x:shape[0]+pos_x, pos_y:shape[1]+pos_y] = x
