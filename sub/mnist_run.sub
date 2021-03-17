@@ -8,7 +8,7 @@
 #$ -l tmem=8G
 #$ -l h_rt=4:00:00
 
-#$ -t 1-4
+#$ -t 1-1
 
 #$ -N wemdshiftmnist
 
@@ -24,5 +24,5 @@ python3 beta_array_run.py --num_it 100000 --data_dir ../data --dataset shifted_3
 # testing
 # python3 beta_array_run.py --num_it 100000 --data_dir ../../data --dataset shifted_mnist --out_dir shift_mnist_test --model WAE --lr 0.001 --net_archi mlp --orientation_num 8 --gamma 100 --lr_decay --fid --id 1 --cost wemd --zdim 2
 # python3 beta_array_run.py --num_it 100000 --data_dir ../../data --dataset shifted_3pos_mnist --out_dir shifted_3pos_mnist --model WAE --lr 0.001 --net_archi mlp --orientation_num 8 --gamma 0 --lr_decay --fid --id 1 --cost wemd --zdim 2
-# python3 run_test.py --data_dir ../../data --dataset rotated_mnist --out_dir rot_mnist --model WAE --weights_file trained-WAE-final-100000 --net_archi mlp --cost wemd --res_dir beta_0_gamma_100.0_L_8 --mode perturbation
+# python3 run_test.py --data_dir ../../data --dataset shifted_3pos_mnist --out_dir shifted_3pos_mnist --model WAE --weights_file trained-WAE-final-100000 --net_archi mlp --mode plot --zdim 2 --cost wemd --res_dir beta_0.5_gamma_0.0_L_8
 # python3 run_test.py --data_dir ../../data --dataset shifted_mnist --out_dir shift_mnist --model WAE --weights_file trained-WAE-final-100000 --net_archi mlp --cost wemd --res_dir beta_10_gamma_100.0_L_8 --mode perturbation
