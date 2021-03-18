@@ -17,6 +17,8 @@ parser = argparse.ArgumentParser()
 # Args for experiment
 parser.add_argument("--model", default='WAE',
                     help='model to train [WAE/BetaVAE/...]')
+parser.add_argument('--zdim', type=int, default=2,
+                    help='latent dimension')
 parser.add_argument("--decoder", default='det',
                     help='decoder typ [det/gauss]')
 parser.add_argument("--mode", default='plot',
@@ -33,8 +35,6 @@ parser.add_argument("--net_archi", default='conv',
                     help='networks architecture [mlp/conv]')
 parser.add_argument("--batch_size", type=int,
                     help='batch size')
-parser.add_argument("--lr", type=float,
-                    help='learning rate size')
 parser.add_argument("--beta", type=float, default=0.,
                     help='beta')
 parser.add_argument("--gamma", type=float, default=1.,
@@ -70,32 +70,23 @@ def main():
     # Select dataset to use
     if FLAGS.dataset == 'gmm':
         opts = configs.config_gmm
-        opts['zdim'] = 2
     elif FLAGS.dataset == 'mnist':
         opts = configs.config_mnist
-        opts['zdim'] = 2
     elif FLAGS.dataset == 'shifted_mnist':
         opts = configs.config_mnist
         opts['dataset'] = 'shifted_mnist'
-        opts['zdim'] = 2
     elif FLAGS.dataset == 'shifted_3pos_mnist':
         opts = configs.config_mnist
         opts['dataset'] = 'shifted_3pos_mnist'
-        opts['zdim'] = 2
     elif FLAGS.dataset == 'rotated_mnist':
         opts = configs.config_mnist
         opts['dataset'] = 'rotated_mnist'
-        opts['zdim'] = 2
     elif FLAGS.dataset == 'svhn':
         opts = configs.config_svhn
-        opts['zdim'] = 16
     elif FLAGS.dataset == 'cifar10':
         opts = configs.config_cifar10
-        opts['zdim'] = 128
     elif FLAGS.dataset == 'celebA':
         opts = configs.config_celeba
-        opts['zdim'] = 64
-        opts['plot_num_pics'] = 6*6
     else:
         assert False, 'Unknown dataset'
     # set data_dir
@@ -106,15 +97,14 @@ def main():
 
     ## Model set up
     opts['model'] = FLAGS.model
+    if FLAGS.zdim:
+        opts['zdim'] = FLAGS.zdim
     opts['decoder'] = FLAGS.decoder
     opts['net_archi'] = FLAGS.net_archi
     if opts['model'][-3:]=='VAE':
         opts['input_normalize_sym'] = False
     if FLAGS.batch_size:
         opts['batch_size'] = FLAGS.batch_size
-    if FLAGS.lr:
-        opts['lr'] = FLAGS.lr
-    opts['lr_decay'] = False
     opts['beta'] = FLAGS.beta
 
     ## ground cost config
@@ -176,8 +166,8 @@ def main():
 
     # Training/testing/vizu
     if FLAGS.mode=="test":
-        assert False, 'Test nnot implemented yet.'
-        # run.test()
+        assert False, 'Test not implemented yet.'
+        run.test()
     elif FLAGS.mode=="plot":
         run.plot(FLAGS.weights_file)
     elif FLAGS.mode=="perturbation":
