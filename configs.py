@@ -34,7 +34,7 @@ config['adam_beta2'] = 0.999
 config['lr'] = 0.001
 config['lr_decay'] = False
 config['lr_adv'] = 1e-08
-config['normalization'] = 'batchnorm' #batchnorm, layernorm, none
+config['normalization'] = 'none' #batchnorm, layernorm, none
 config['batch_norm_eps'] = 1e-05
 config['batch_norm_momentum'] = 0.99
 # Objective set up
