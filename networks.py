@@ -26,8 +26,14 @@ def encoder(opts, input, output_dim, scope=None,
     mean, logSigma = tf.split(outputs,2,axis=-1)
     logSigma = tf.clip_by_value(logSigma, -20, 500)
     Sigma = tf.nn.softplus(logSigma)
-    mean = tf.compat.v1.layers.flatten(mean)
-    Sigma = tf.compat.v1.layers.flatten(Sigma)
+    # mean = tf.compat.v1.layers.flatten(mean)
+    # Sigma = tf.compat.v1.layers.flatten(Sigma)
+    # mean = tf.keras.layers.Flatten(mean)
+    # Sigma = tf.keras.layers.Flatten(Sigma)
+    mean_shape = mean.get_shape().as_list()[1:]
+    mean = tf.reshape(mean, [-1,np.prod(mean_shape)])
+    Sigma_shape = Sigma.get_shape().as_list()[1:]
+    Sigma = tf.reshape(Sigma, [-1,np.prod(Sigma_shape)])
 
     if opts['encoder'] == 'det':
         z = mean
@@ -57,9 +63,15 @@ def decoder(opts, input, output_dim, scope=None,
     mean, logSigma = tf.split(outputs,2,axis=-1)
     logSigma = tf.clip_by_value(logSigma, -20, 500)
     Sigma = tf.nn.softplus(logSigma)
+    # mean = tf.compat.v1.layers.flatten(mean)
+    # Sigma = tf.compat.v1.layers.flatten(Sigma)
+    # mean = tf.keras.layers.Flatten(mean)
+    # Sigma = tf.keras.layers.Flatten(Sigma)
+    mean_shape = mean.get_shape().as_list()[1:]
+    mean = tf.reshape(mean, [-1,np.prod(mean_shape)])
+    Sigma_shape = Sigma.get_shape().as_list()[1:]
+    Sigma = tf.reshape(Sigma, [-1,np.prod(Sigma_shape)])
 
-    mean = tf.compat.v1.layers.flatten(mean)
-    Sigma = tf.compat.v1.layers.flatten(Sigma)
     # sampling from gaussian if needed
     if opts['decoder']=='gaussian':
         x = sample_gaussian(tf.tf.concat([mean,Sigma], axis=-1), typ='tensorflow')

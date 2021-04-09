@@ -38,6 +38,8 @@ parser.add_argument("--num_it", type=int, default=300000,
                     help='iteration number')
 parser.add_argument("--net_archi", default='conv',
                     help='networks architecture [mlp/conv]')
+parser.add_argument("--batchnorm", default='batchnorm',
+                    help='batchnormalization')
 parser.add_argument("--batch_size", type=int,
                     help='batch size')
 parser.add_argument("--lr", type=float,
@@ -134,6 +136,7 @@ def main():
         opts['input_normalize_sym'] = False
     if FLAGS.batch_size:
         opts['batch_size'] = FLAGS.batch_size
+    opts['normalization'] = FLAGS.batchnorm
     if FLAGS.lr:
         opts['lr'] = FLAGS.lr
     opts['lr_decay'] = FLAGS.lr_decay

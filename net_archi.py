@@ -661,7 +661,8 @@ net_archi = {'mlp': {'encoder': mlp_encoder, 'decoder': mlp_decoder},
 
 ######### mlp #########
 def mlp_critic(opts, inputs, scope=None, is_training=False, reuse=False):
-    layer_x = tf.compat.v1.layers.flatten(inputs)
+    # layer_x = tf.compat.v1.layers.flatten(inputs)
+    layer_x = tf.keras.layers.Flatten(inputs)
     in_shape = inputs.get_shape().as_list()[1:]
     with tf.compat.v1.variable_scope(scope, reuse=reuse):
         # hidden 0
