@@ -1,5 +1,6 @@
 import numpy as np
-import tensorflow as tf
+# import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import math
 
 from networks import encoder, decoder
@@ -170,7 +171,8 @@ class WAE(Model):
                                                 is_training=is_training,
                                                 reuse=reuse)
         cost, intensities_reg, critic_reg = self.reconstruction_loss(inputs, recon_x, is_training=is_training, reuse=reuse)
-        noise = tf.compat.v1.random_normal(shape=tf.shape(enc_z))
+        # noise = tf.compat.v1.random_normal(shape=tf.shape(enc_z))
+        noise = tf.random_normal(shape=tf.shape(enc_z))
         pz_sample = tf.add(self.pz_mean, (noise * self.pz_sigma))
         reg = self.mmd_penalty(enc_z, pz_sample)
 

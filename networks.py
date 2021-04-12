@@ -1,5 +1,6 @@
 import numpy as np
-import tensorflow as tf
+# import tensorflow as tf
+import tensorflow.compat.v1 as tf
 from math import pi
 
 from datahandler import datashapes
@@ -12,7 +13,8 @@ import pdb
 def encoder(opts, input, output_dim, scope=None,
                                     reuse=False,
                                     is_training=False):
-    with tf.compat.v1.variable_scope(scope, reuse=reuse):
+    # with tf.compat.v1.variable_scope(scope, reuse=reuse):
+    with tf.variable_scope(scope, reuse=reuse):
         if opts['net_archi'] == 'mlp':
             encoder = net_archi['mlp']['encoder']
         elif opts['net_archi'] == 'conv' or opts['net_archi'] == 'resnet':
@@ -26,10 +28,6 @@ def encoder(opts, input, output_dim, scope=None,
     mean, logSigma = tf.split(outputs,2,axis=-1)
     logSigma = tf.clip_by_value(logSigma, -20, 500)
     Sigma = tf.nn.softplus(logSigma)
-    # mean = tf.compat.v1.layers.flatten(mean)
-    # Sigma = tf.compat.v1.layers.flatten(Sigma)
-    # mean = tf.keras.layers.Flatten(mean)
-    # Sigma = tf.keras.layers.Flatten(Sigma)
     mean_shape = mean.get_shape().as_list()[1:]
     mean = tf.reshape(mean, [-1,np.prod(mean_shape)])
     Sigma_shape = Sigma.get_shape().as_list()[1:]
@@ -49,7 +47,8 @@ def encoder(opts, input, output_dim, scope=None,
 def decoder(opts, input, output_dim, scope=None,
                                     reuse=False,
                                     is_training=False):
-    with tf.compat.v1.variable_scope(scope, reuse=reuse):
+    # with tf.compat.v1.variable_scope(scope, reuse=reuse):
+    with tf.variable_scope(scope, reuse=reuse):
         if opts['net_archi'] == 'mlp':
             decoder = net_archi['mlp']['decoder']
         elif opts['net_archi'] == 'conv' or opts['net_archi'] == 'resnet':
@@ -63,10 +62,6 @@ def decoder(opts, input, output_dim, scope=None,
     mean, logSigma = tf.split(outputs,2,axis=-1)
     logSigma = tf.clip_by_value(logSigma, -20, 500)
     Sigma = tf.nn.softplus(logSigma)
-    # mean = tf.compat.v1.layers.flatten(mean)
-    # Sigma = tf.compat.v1.layers.flatten(Sigma)
-    # mean = tf.keras.layers.Flatten(mean)
-    # Sigma = tf.keras.layers.Flatten(Sigma)
     mean_shape = mean.get_shape().as_list()[1:]
     mean = tf.reshape(mean, [-1,np.prod(mean_shape)])
     Sigma_shape = Sigma.get_shape().as_list()[1:]
@@ -97,11 +92,13 @@ def critic(opts, inputs, scope=None, is_training=False, reuse=False):
     in_shape = inputs.get_shape().as_list()[1:]
     if opts['wgan_critic_archi']=='coef':
         layer_x = inputs
-        with tf.compat.v1.variable_scope(scope, reuse=reuse):
-            coef = tf.compat.v1.get_variable("W", in_shape, tf.float32,
-                    tf.random_normal_initializer(stddev=opts['init_std']))
-            # element-wise multi
-            outputs = layer_x*coef
+        # with tf.compat.v1.variable_scope(scope, reuse=reuse):
+        with tf.variable_scope(scope, reuse=reuse):
+                # coef = tf.compat.v1.get_variable("W", in_shape, tf.float32,
+                coef = tf.get_variable("W", in_shape, tf.float32,
+                        tf.random_normal_initializer(stddev=opts['init_std']))
+                # element-wise multi
+                outputs = layer_x*coef
     else:
         critic = critic_archi[opts['wgan_critic_archi']]
         outputs = critic(opts, inputs, scope, is_training, reuse)

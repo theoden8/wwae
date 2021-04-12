@@ -12,7 +12,8 @@ import random
 import logging
 import gzip
 import zipfile
-import tensorflow as tf
+# import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import numpy as np
 from six.moves import cPickle
 import urllib.request
@@ -361,15 +362,22 @@ class DataHandler(object):
         self.dataset_train = dataset_train.prefetch(buffer_size=4*opts['batch_size'])
         self.dataset_test = dataset_test.prefetch(buffer_size=4*opts['batch_size'])
         # Iterator for each split
-        self.iterator_train = tf.compat.v1.data.make_initializable_iterator(dataset_train)
-        self.iterator_test = tf.compat.v1.data.make_initializable_iterator(dataset_test)
+        # self.iterator_train = tf.compat.v1.data.make_initializable_iterator(dataset_train)
+        # self.iterator_test = tf.compat.v1.data.make_initializable_iterator(dataset_test)
+        self.iterator_train = tf.data.make_initializable_iterator(dataset_train)
+        self.iterator_test = tf.data.make_initializable_iterator(dataset_test)
 
         # Global iterator
-        self.handle = tf.compat.v1.placeholder(tf.string, shape=[])
-        self.next_element = tf.compat.v1.data.Iterator.from_string_handle(
+        # self.handle = tf.compat.v1.placeholder(tf.string, shape=[])
+        self.handle = tf.placeholder(tf.string, shape=[])
+        # self.next_element = tf.compat.v1.data.Iterator.from_string_handle(
+        #                         self.handle,
+        #                         tf.compat.v1.data.get_output_types(dataset_train),
+        #                         tf.compat.v1.data.get_output_shapes(dataset_train)).get_next()
+        self.next_element = tf.data.Iterator.from_string_handle(
                                 self.handle,
-                                tf.compat.v1.data.get_output_types(dataset_train),
-                                tf.compat.v1.data.get_output_shapes(dataset_train)).get_next()
+                                tf.data.get_output_types(dataset_train),
+                                tf.data.get_output_shapes(dataset_train)).get_next()
 
     def _load_mnist(self, opts):
         """Load data from MNIST or ZALANDO files.
@@ -439,13 +447,22 @@ class DataHandler(object):
         self.dataset_train = dataset_train.prefetch(buffer_size=4*opts['batch_size'])
         self.dataset_test = dataset_test.prefetch(buffer_size=4*opts['batch_size'])
         # Iterator for each split
-        self.iterator_train = tf.compat.v1.data.make_initializable_iterator(dataset_train)
-        self.iterator_test = tf.compat.v1.data.make_initializable_iterator(dataset_test)
+        # self.iterator_train = tf.compat.v1.data.make_initializable_iterator(dataset_train)
+        # self.iterator_test = tf.compat.v1.data.make_initializable_iterator(dataset_test)
+        self.iterator_train = tf.data.make_initializable_iterator(dataset_train)
+        self.iterator_test = tf.data.make_initializable_iterator(dataset_test)
 
         # Global iterator
-        self.handle = tf.compat.v1.placeholder(tf.string, shape=[])
-        self.next_element = tf.compat.v1.data.Iterator.from_string_handle(
-            self.handle, tf.compat.v1.data.get_output_types(dataset_train), tf.compat.v1.data.get_output_shapes(dataset_train)).get_next()
+        # self.handle = tf.compat.v1.placeholder(tf.string, shape=[])
+        self.handle = tf.placeholder(tf.string, shape=[])
+        # self.next_element = tf.compat.v1.data.Iterator.from_string_handle(
+        #                         self.handle,
+        #                         tf.compat.v1.data.get_output_types(dataset_train),
+        #                         tf.compat.v1.data.get_output_shapes(dataset_train)).get_next()
+        self.next_element = tf.data.Iterator.from_string_handle(
+                                self.handle,
+                                tf.data.get_output_types(dataset_train),
+                                tf.data.get_output_shapes(dataset_train)).get_next()
 
     def _load_shift_mnist(self, opts):
         """Load 0s and 1s digits from MNIST and
@@ -526,13 +543,22 @@ class DataHandler(object):
         self.dataset_train = dataset_train.prefetch(buffer_size=4*opts['batch_size'])
         self.dataset_test = dataset_test.prefetch(buffer_size=4*opts['batch_size'])
         # Iterator for each split
-        self.iterator_train = tf.compat.v1.data.make_initializable_iterator(dataset_train)
-        self.iterator_test = tf.compat.v1.data.make_initializable_iterator(dataset_test)
+        # self.iterator_train = tf.compat.v1.data.make_initializable_iterator(dataset_train)
+        # self.iterator_test = tf.compat.v1.data.make_initializable_iterator(dataset_test)
+        self.iterator_train = tf.data.make_initializable_iterator(dataset_train)
+        self.iterator_test = tf.data.make_initializable_iterator(dataset_test)
 
         # Global iterator
-        self.handle = tf.compat.v1.placeholder(tf.string, shape=[])
-        self.next_element = tf.compat.v1.data.Iterator.from_string_handle(
-            self.handle, tf.compat.v1.data.get_output_types(dataset_train), tf.compat.v1.data.get_output_shapes(dataset_train)).get_next()
+        # self.handle = tf.compat.v1.placeholder(tf.string, shape=[])
+        self.handle = tf.placeholder(tf.string, shape=[])
+        # self.next_element = tf.compat.v1.data.Iterator.from_string_handle(
+        #                         self.handle,
+        #                         tf.compat.v1.data.get_output_types(dataset_train),
+        #                         tf.compat.v1.data.get_output_shapes(dataset_train)).get_next()
+        self.next_element = tf.data.Iterator.from_string_handle(
+                                self.handle,
+                                tf.data.get_output_types(dataset_train),
+                                tf.data.get_output_shapes(dataset_train)).get_next()
 
     def _load_shift_3pos_mnist(self, opts):
         """Load 1s digits from MNIST and
@@ -610,13 +636,22 @@ class DataHandler(object):
         self.dataset_train = dataset_train.prefetch(buffer_size=4*opts['batch_size'])
         self.dataset_test = dataset_test.prefetch(buffer_size=4*opts['batch_size'])
         # Iterator for each split
-        self.iterator_train = tf.compat.v1.data.make_initializable_iterator(dataset_train)
-        self.iterator_test = tf.compat.v1.data.make_initializable_iterator(dataset_test)
+        # self.iterator_train = tf.compat.v1.data.make_initializable_iterator(dataset_train)
+        # self.iterator_test = tf.compat.v1.data.make_initializable_iterator(dataset_test)
+        self.iterator_train = tf.data.make_initializable_iterator(dataset_train)
+        self.iterator_test = tf.data.make_initializable_iterator(dataset_test)
 
         # Global iterator
-        self.handle = tf.compat.v1.placeholder(tf.string, shape=[])
-        self.next_element = tf.compat.v1.data.Iterator.from_string_handle(
-            self.handle, tf.compat.v1.data.get_output_types(dataset_train), tf.compat.v1.data.get_output_shapes(dataset_train)).get_next()
+        # self.handle = tf.compat.v1.placeholder(tf.string, shape=[])
+        self.handle = tf.placeholder(tf.string, shape=[])
+        # self.next_element = tf.compat.v1.data.Iterator.from_string_handle(
+        #                         self.handle,
+        #                         tf.compat.v1.data.get_output_types(dataset_train),
+        #                         tf.compat.v1.data.get_output_shapes(dataset_train)).get_next()
+        self.next_element = tf.data.Iterator.from_string_handle(
+                                self.handle,
+                                tf.data.get_output_types(dataset_train),
+                                tf.data.get_output_shapes(dataset_train)).get_next()
 
 
 
@@ -701,13 +736,22 @@ class DataHandler(object):
         self.dataset_train = dataset_train.prefetch(buffer_size=4*opts['batch_size'])
         self.dataset_test = dataset_test.prefetch(buffer_size=4*opts['batch_size'])
         # Iterator for each split
-        self.iterator_train = tf.compat.v1.data.make_initializable_iterator(dataset_train)
-        self.iterator_test = tf.compat.v1.data.make_initializable_iterator(dataset_test)
+        # self.iterator_train = tf.compat.v1.data.make_initializable_iterator(dataset_train)
+        # self.iterator_test = tf.compat.v1.data.make_initializable_iterator(dataset_test)
+        self.iterator_train = tf.data.make_initializable_iterator(dataset_train)
+        self.iterator_test = tf.data.make_initializable_iterator(dataset_test)
 
         # Global iterator
-        self.handle = tf.compat.v1.placeholder(tf.string, shape=[])
-        self.next_element = tf.compat.v1.data.Iterator.from_string_handle(
-            self.handle, tf.compat.v1.data.get_output_types(dataset_train), tf.compat.v1.data.get_output_shapes(dataset_train)).get_next()
+        # self.handle = tf.compat.v1.placeholder(tf.string, shape=[])
+        self.handle = tf.placeholder(tf.string, shape=[])
+        # self.next_element = tf.compat.v1.data.Iterator.from_string_handle(
+        #                         self.handle,
+        #                         tf.compat.v1.data.get_output_types(dataset_train),
+        #                         tf.compat.v1.data.get_output_shapes(dataset_train)).get_next()
+        self.next_element = tf.data.Iterator.from_string_handle(
+                                self.handle,
+                                tf.data.get_output_types(dataset_train),
+                                tf.data.get_output_shapes(dataset_train)).get_next()
 
     def _load_svhn(self, opts):
         """Load data from SVHN files.
