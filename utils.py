@@ -8,6 +8,8 @@ Various utilities.
 
 # import tensorflow as tf
 import tensorflow.compat.v1 as tf
+# tf.compat.v1.disable_v2_behavior()
+tf.disable_v2_behavior()
 import os
 import sys
 import copy

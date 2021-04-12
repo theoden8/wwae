@@ -14,6 +14,8 @@ import gzip
 import zipfile
 # import tensorflow as tf
 import tensorflow.compat.v1 as tf
+# tf.compat.v1.disable_v2_behavior()
+tf.disable_v2_behavior()
 import numpy as np
 from six.moves import cPickle
 import urllib.request

@@ -9,6 +9,8 @@ import logging
 import numpy as np
 # import tensorflow as tf
 import tensorflow.compat.v1 as tf
+# tf.compat.v1.disable_v2_behavior()
+tf.disable_v2_behavior()
 from math import ceil, pi
 
 import utils
@@ -24,8 +26,6 @@ from datahandler import datashapes
 from fid.fid import calculate_frechet_distance
 
 import pdb
-# tf.compat.v1.disable_v2_behavior()
-tf.disable_v2_behavior()
 class Run(object):
 
     def __init__(self, opts, data):
@@ -239,11 +239,11 @@ class Run(object):
         opt = self.optimizer(lr, self.lr_decay)
         # encoder_vars = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
         #                                     scope='encoder')
-        encoder_vars = tf.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
+        encoder_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                             scope='encoder')
         # decoder_vars = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
         #                                     scope='decoder')
-        decoder_vars = tf.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
+        decoder_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                             scope='decoder')
         with tf.control_dependencies(self.extra_update_ops):
             self.opt = opt.minimize(loss=self.objective, var_list=encoder_vars + decoder_vars)
