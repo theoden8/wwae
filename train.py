@@ -23,7 +23,7 @@ from datahandler import datashapes
 from fid.fid import calculate_frechet_distance
 
 import pdb
-
+tf.compat.v1.disable_v2_behavior()
 class Run(object):
 
     def __init__(self, opts, data):
