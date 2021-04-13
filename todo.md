@@ -6,7 +6,7 @@
 
 - mnist experiments
   - [ ] 3 diagonal positions of digit '1'
-  - [ ] compare results depending on the spacing between positions in the diagonal: 
+  - [ ] compare results depending on the spacing between positions in the diagonal:
   if the 3 positions are close/afar from each other, does it transcribe on the embedding?
   - [ ] add perturbation to the positions in the diagonal
   - [ ] subsample mnist digits: possibility to have more positions or add padding to remove periodic border effect from fft
@@ -14,3 +14,7 @@
   - [ ] 4 or + diagonal positions for a single digit
   - [ ] 3 diagonal positions for more than one digit
   - [ ] more complex positions than diagonal
+
+- kirill
+  - [ ] run experiments in mnist (3 datasets) to make sure everything is working. See the sub/mnist_run.sub for the command line.
+  - [ ] get started with the cluster and try running exp: https://hpc.cs.ucl.ac.uk (usr/pwd: hpc/comic)
