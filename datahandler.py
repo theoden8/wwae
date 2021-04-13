@@ -399,11 +399,6 @@ class DataHandler(object):
         X = np.concatenate((tr_X, te_X), axis=0)
         self.all_data = X / 255.
         num_data = X.shape[0]
-        # data for vizualisation
-        seed = 123
-        np.random.seed(seed)
-        idx = np.random.randint(self.test_size, size=opts['plot_num_pics'])
-        self.data_vizu = self._sample_observations(idx)
         # shuffling data
         np.random.seed()
         idx_random = np.random.permutation(num_data)
@@ -416,6 +411,11 @@ class DataHandler(object):
         # dataset size
         self.train_size = data_train.shape[0]
         self.test_size = data_test.shape[0]
+        # data for vizualisation
+        seed = 123
+        np.random.seed(seed)
+        idx = np.random.randint(self.test_size, size=opts['plot_num_pics'])
+        self.data_vizu = self._sample_observations(idx)
         # datashape
         self.data_shape = datashapes[self.dataset]
         # Create tf.dataset
