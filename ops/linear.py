@@ -1,5 +1,8 @@
 import numpy as np
-import tensorflow as tf
+# import tensorflow as tf
+import tensorflow.compat.v1 as tf
+# tf.compat.v1.disable_v2_behavior()
+tf.disable_v2_behavior()
 
 import pdb
 
@@ -33,45 +36,45 @@ def Linear(opts, input, input_dim, output_dim, scope=None, init=None, reuse=None
         # dimensional vectors
         input = tf.reshape(input, [-1, input_dim])
 
-    with tf.compat.v1.variable_scope(scope or "lin", reuse=reuse):
+    with tf.variable_scope(scope or "lin", reuse=reuse):
         if init == 'normal' or init == None:
-            matrix = tf.compat.v1.get_variable(
+            matrix = tf.get_variable(
                 "W", [input_dim, output_dim], tf.float32,
                 tf.random_normal_initializer(stddev=stddev))
         elif init == 'glorot':
             weight_values = custom_uniform(
                 np.sqrt(2./(input_dim+output_dim)),
                 (input_dim, output_dim))
-            matrix = tf.compat.v1.get_variable(
+            matrix = tf.get_variable(
                 "W", initializer=weight_values, dtype=tf.float32)
         elif init == 'he':
             weight_values = custom_uniform(
                 np.sqrt(2./input_dim),
                 (input_dim, output_dim))
-            matrix = tf.compat.v1.get_variable(
+            matrix = tf.get_variable(
                 "W", initializer=weight_values, dtype=tf.float32)
         elif init == 'glorot_he':
             weight_values = custom_uniform(
                 np.sqrt(4./(input_dim+output_dim)),
                 (input_dim, output_dim))
-            matrix = tf.compat.v1.get_variable(
+            matrix = tf.get_variable(
                 "W", initializer=weight_values, dtype=tf.float32)
         elif init == 'glorot_uniform':
-            matrix = tf.compat.v1.get_variable(
+            matrix = tf.get_variable(
                 "W", [input_dim, output_dim], tf.float32,
-                tf.compat.v1.glorot_uniform_initializer())
+                tf.glorot_uniform_initializer())
         elif init[0] == 'uniform':
-            matrix = tf.compat.v1.get_variable(
+            matrix = tf.get_variable(
                 "W", [input_dim, output_dim], tf.float32,
-                tf.compat.v1.random_uniform_initializer(
+                tf.random_uniform_initializer(
                     minval=-initialization[1],
                     maxval=initialization[1]))
         else:
             raise Exception('Invalid %s mlp initialization!' % opts['mlp_init'])
 
-        bias = tf.compat.v1.get_variable(
+        bias = tf.get_variable(
             "b", [output_dim],
-            initializer=tf.compat.v1.constant_initializer(bias_start))
+            initializer=tf.constant_initializer(bias_start))
 
 
     return tf.matmul(input, matrix) + bias

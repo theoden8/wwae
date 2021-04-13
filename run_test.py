@@ -8,8 +8,10 @@ from datahandler import DataHandler
 import utils
 import itertools
 
-import tensorflow as tf
-tf.compat.v1.disable_eager_execution()
+# import tensorflow as tf
+import tensorflow.compat.v1 as tf
+# tf.compat.v1.disable_eager_execution()
+tf.disable_eager_execution()
 print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 import pdb
 
@@ -33,6 +35,8 @@ parser.add_argument("--res_dir", type=str,
                     help='directory in which exp. res are saved')
 parser.add_argument("--net_archi", default='conv',
                     help='networks architecture [mlp/conv]')
+parser.add_argument("--batchnorm", default='batchnorm',
+                    help='batchnormalization')
 parser.add_argument("--batch_size", type=int,
                     help='batch size')
 parser.add_argument("--beta", type=float, default=0.,
@@ -105,6 +109,7 @@ def main():
         opts['input_normalize_sym'] = False
     if FLAGS.batch_size:
         opts['batch_size'] = FLAGS.batch_size
+    opts['normalization'] = FLAGS.batchnorm
     opts['beta'] = FLAGS.beta
 
     ## ground cost config

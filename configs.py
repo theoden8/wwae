@@ -35,7 +35,7 @@ config['lr'] = 0.001
 config['lr_decay'] = False
 config['lr_adv'] = 1e-08
 config['normalization'] = 'none' #batchnorm, layernorm, none
-config['batch_norm_eps'] = 1e-05
+config['batch_norm_eps'] = 1e-03
 config['batch_norm_momentum'] = 0.99
 # Objective set up
 config['cost'] = 'l2sq' #l2, l2sq, l2sq_norm, l1, xentropy
