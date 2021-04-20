@@ -125,7 +125,6 @@ def _shift_mnist_tf(x):
 
     return tf.reshape(img, datashapes['shifted_mnist'])
 
-
 def _shift_mnist_3pos_tf(x):
     # padding mnist img
 #    paddings = [[2,2], [2,2], [0,0]]
@@ -153,7 +152,6 @@ def _shift_mnist_3pos_tf(x):
     img = tf.pad(x, paddings, mode='CONSTANT', constant_values=0.)
 
     return tf.reshape(img, datashapes['shifted_mnist'])
-
 
 def _shift_mnist_np(x):
     # padding mnist img
@@ -399,6 +397,9 @@ class DataHandler(object):
         X = np.concatenate((tr_X, te_X), axis=0)
         self.all_data = X / 255.
         num_data = X.shape[0]
+        # plot set
+        idx = np.random.randint(num_data,size=opts['evaluate_num_pics'])
+        self.data_plot = self._sample_observations(idx)
         # shuffling data
         np.random.seed()
         idx_random = np.random.permutation(num_data)
