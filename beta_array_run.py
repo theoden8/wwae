@@ -209,8 +209,8 @@ def main():
     assert data.train_size >= opts['batch_size'], 'Training set too small'
 
     opts['it_num'] = FLAGS.num_it
-    opts['print_every'] = int(opts['it_num'] / 10.)
-    opts['evaluate_every'] = int(opts['it_num'] / 20.)
+    opts['print_every'] = 10 #int(opts['it_num'] / 10.)
+    opts['evaluate_every'] = 10 #int(opts['it_num'] / 20.)
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
     opts['save_train_data'] = FLAGS.save_data
