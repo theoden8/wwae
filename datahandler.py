@@ -135,18 +135,9 @@ def _shift_mnist_3pos_tf(x):
     img = tf.zeros(transformed_shape,tf.float32)
     # sample cluster pos
     i = tf.random.uniform([], 0, 3, tf.int32)
-#    i = np.random.randint(3)
-#    pos_x = i*int(transformed_shape[0]/4)
-#    pos_y = i*int(transformed_shape[1]/4)
-#    if int(i)==0:
-#        pos_x = 8; pos_y = 8
-#    elif int(i)==1:
-#        pos_x = 16; pos_y = 16
-#    else:
-#        pos_x = 24; pos_y = 24
-    pos_x = 8 + 8*i
-    pos_y = 8 + 8*i
-    
+    pos_x = 8*(i + 1)
+    pos_y = pos_x
+
     paddings = [[pos_x, transformed_shape[0]-shape[0] - (pos_x)],
                 [pos_y, transformed_shape[0]-shape[0] - (pos_y)],
                 [tf.zeros([],tf.int32), tf.zeros([],tf.int32)]]
