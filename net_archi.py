@@ -1,8 +1,5 @@
 import numpy as np
-# import tensorflow as tf
 import tensorflow.compat.v1 as tf
-# tf.compat.v1.disable_v2_behavior()
-tf.disable_v2_behavior()
 
 from ops.linear import Linear
 from ops.batchnorm import Batchnorm_layers
@@ -666,7 +663,6 @@ net_archi = {'mlp': {'encoder': mlp_encoder, 'decoder': mlp_decoder},
 def mlp_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     layer_x = tf.keras.layers.Flatten(inputs)
     in_shape = inputs.get_shape().as_list()[1:]
-    # with tf.compat.v1.variable_scope(scope, reuse=reuse):
     with tf.variable_scope(scope, reuse=reuse):
         # hidden 0
         layer_x = Linear(opts, layer_x, np.prod(layer_x.get_shape().as_list()[1:]),
@@ -700,7 +696,6 @@ def mlp_critic(opts, inputs, scope=None, is_training=False, reuse=False):
 def singleconv_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     layer_x = inputs
     in_shape = inputs.get_shape().as_list()[1:]
-    # with tf.compat.v1.variable_scope(scope, reuse=reuse):
     with tf.variable_scope(scope, reuse=reuse):
         # conv
         outputs = Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
@@ -713,7 +708,6 @@ def singleconv_critic(opts, inputs, scope=None, is_training=False, reuse=False):
 def conv_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     layer_x = inputs
     in_shape = inputs.get_shape().as_list()[1:]
-    # with tf.compat.v1.variable_scope(scope, reuse=reuse):
     with tf.variable_scope(scope, reuse=reuse):
         # hidden 0
         layer_x = Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
@@ -738,7 +732,6 @@ def conv_critic(opts, inputs, scope=None, is_training=False, reuse=False):
 def conv_v2_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     layer_x = inputs
     in_shape = inputs.get_shape().as_list()[1:]
-    # with tf.compat.v1.variable_scope(scope, reuse=reuse):
     with tf.variable_scope(scope, reuse=reuse):
         # hidden 0
         layer_x = Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
@@ -763,7 +756,6 @@ def conv_v2_critic(opts, inputs, scope=None, is_training=False, reuse=False):
 def conv_v3_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     layer_x = inputs
     in_shape = inputs.get_shape().as_list()[1:]
-    # with tf.compat.v1.variable_scope(scope, reuse=reuse):
     with tf.variable_scope(scope, reuse=reuse):
         # hidden 0
         layer_x = Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
@@ -788,7 +780,6 @@ def conv_v3_critic(opts, inputs, scope=None, is_training=False, reuse=False):
 def conv_v4_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     layer_x = inputs
     in_shape = inputs.get_shape().as_list()[1:]
-    # with tf.compat.v1.variable_scope(scope, reuse=reuse):
     with tf.variable_scope(scope, reuse=reuse):
         # hidden 0
         layer_x = Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
@@ -825,7 +816,6 @@ def conv_v4_critic(opts, inputs, scope=None, is_training=False, reuse=False):
 def conv_v5_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     layer_x = inputs
     in_shape = inputs.get_shape().as_list()[1:]
-    # with tf.compat.v1.variable_scope(scope, reuse=reuse):
     with tf.variable_scope(scope, reuse=reuse):
         # hidden 0
         layer_x = Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
@@ -857,7 +847,6 @@ def conv_v5_critic(opts, inputs, scope=None, is_training=False, reuse=False):
 def convdeconv_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     batch_size, in_shape =  tf.shape(inputs)[0], inputs.get_shape().as_list()[1:]
     layer_x = inputs
-    # with tf.compat.v1.variable_scope(scope, reuse=reuse):
     with tf.variable_scope(scope, reuse=reuse):
         # hidden 0
         layer_x = Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
@@ -883,7 +872,6 @@ def convdeconv_critic(opts, inputs, scope=None, is_training=False, reuse=False):
 def convdeconv_v2_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     batch_size, in_shape =  tf.shape(inputs)[0], inputs.get_shape().as_list()[1:]
     layer_x = inputs
-    # with tf.compat.v1.variable_scope(scope, reuse=reuse):
     with tf.variable_scope(scope, reuse=reuse):
         # hidden 0
         layer_x = Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
@@ -909,7 +897,6 @@ def convdeconv_v2_critic(opts, inputs, scope=None, is_training=False, reuse=Fals
 def convdeconv_v3_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     batch_size, in_shape =  tf.shape(inputs)[0], inputs.get_shape().as_list()[1:]
     layer_x = inputs
-    # with tf.compat.v1.variable_scope(scope, reuse=reuse):
     with tf.variable_scope(scope, reuse=reuse):
         # hidden 0
         layer_x = Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
@@ -935,7 +922,6 @@ def convdeconv_v3_critic(opts, inputs, scope=None, is_training=False, reuse=Fals
 def resnet_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     layer_x = inputs
     in_shape = inputs.get_shape().as_list()[1:]
-    # with tf.compat.v1.variable_scope(scope, reuse=reuse):
     with tf.variable_scope(scope, reuse=reuse):
         # hidden 0
         layer_x = Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],
@@ -963,7 +949,6 @@ def resnet_critic(opts, inputs, scope=None, is_training=False, reuse=False):
 def resnet_v2_critic(opts, inputs, scope=None, is_training=False, reuse=False):
     layer_x = inputs
     in_shape = inputs.get_shape().as_list()[1:]
-    # with tf.compat.v1.variable_scope(scope, reuse=reuse):
     with tf.variable_scope(scope, reuse=reuse):
         # hidden 0
         layer_x = Conv2d(opts, layer_x, layer_x.get_shape().as_list()[-1],

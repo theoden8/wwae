@@ -7,10 +7,7 @@ import sys
 import logging
 
 import numpy as np
-# import tensorflow as tf
 import tensorflow.compat.v1 as tf
-# tf.compat.v1.disable_v2_behavior()
-tf.disable_v2_behavior()
 from math import ceil, pi
 
 import utils
@@ -103,7 +100,6 @@ class Run(object):
             self.inception_layer = self._get_inception_layer()
 
         # --- Get batchnorm ops for training only
-        # self.extra_update_ops = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)
         self.extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
         # --- encode & decode pass for vizu
@@ -137,29 +133,14 @@ class Run(object):
         self.add_optimizers()
 
         # --- Init iteratorssess, saver and load trained weights if needed, else init variables
-        # self.sess = tf.compat.v1.Session()
         self.sess = tf.Session()
         self.train_handle, self.test_handle = self.data.init_iterator(self.sess)
-        # self.saver = tf.compat.v1.train.Saver(max_to_keep=10)
         self.saver = tf.train.Saver(max_to_keep=10)
-        # self.initializer = tf.compat.v1.global_variables_initializer()
         self.initializer = tf.global_variables_initializer()
         self.sess.graph.finalize()
 
 
     def add_ph(self):
-        # self.lr_decay = tf.compat.v1.placeholder(tf.float32, name='rate_decay_ph')
-        # self.is_training = tf.compat.v1.placeholder(tf.bool, name='is_training_ph')
-        # self.pz_samples = tf.compat.v1.placeholder(tf.float32,
-        #                                  [None] + [self.opts['zdim'],],
-        #                                  name='noise_ph')
-        # self.inputs_img1 = tf.compat.v1.placeholder(tf.float32,
-        #                                  [None] + self.data.data_shape,
-        #                                  name='point1_ph')
-        # self.inputs_img2 = tf.compat.v1.placeholder(tf.float32,
-        #                                  [None] + self.data.data_shape,
-        #                                  name='point2_ph')
-        # self.beta = tf.compat.v1.placeholder(tf.float32, name='beta_ph')
         self.lr_decay = tf.placeholder(tf.float32, name='rate_decay_ph')
         self.is_training = tf.placeholder(tf.bool, name='is_training_ph')
         self.pz_samples = tf.placeholder(tf.float32,
@@ -221,7 +202,6 @@ class Run(object):
         if opts['optimizer'] == 'sgd':
             return tf.train.GradientDescentOptimizer(lr)
         elif opts['optimizer'] == 'adam':
-            # return tf.compat.v1.train.AdamOptimizer(lr, beta1=opts['adam_beta1'], beta2=opts['adam_beta2'])
             return tf.train.AdamOptimizer(lr, beta1=opts['adam_beta1'], beta2=opts['adam_beta2'])
         else:
             assert False, 'Unknown optimizer.'
@@ -237,12 +217,8 @@ class Run(object):
         # Encoder/decoder optimizer
         lr = opts['lr']
         opt = self.optimizer(lr, self.lr_decay)
-        # encoder_vars = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
-        #                                     scope='encoder')
         encoder_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                             scope='encoder')
-        # decoder_vars = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
-        #                                     scope='decoder')
         decoder_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                             scope='decoder')
         with tf.control_dependencies(self.extra_update_ops):
@@ -819,11 +795,9 @@ class Run(object):
         if WEIGHTS_FILE is None:
                 raise Exception("No model/weights provided")
         else:
-            # if not tf.compat.v1.gfile.IsDirectory(opts['exp_dir']):
             if not tf.gfile.IsDirectory(opts['exp_dir']):
                 raise Exception("model doesn't exist")
             WEIGHTS_PATH = os.path.join(opts['exp_dir'],'checkpoints', WEIGHTS_FILE)
-            # if not tf.compat.v1.gfile.Exists(WEIGHTS_PATH+".meta"):
             if not tf.gfile.Exists(WEIGHTS_PATH+".meta"):
                 raise Exception("weights file doesn't exist")
             self.saver.restore(self.sess, WEIGHTS_PATH)
@@ -1003,11 +977,9 @@ class Run(object):
         if WEIGHTS_FILE is None:
                 raise Exception("No model/weights provided")
         else:
-            # if not tf.compat.v1.gfile.IsDirectory(opts['exp_dir']):
             if not tf.gfile.IsDirectory(opts['exp_dir']):
                 raise Exception("model doesn't exist")
             WEIGHTS_PATH = os.path.join(opts['exp_dir'],'checkpoints', WEIGHTS_FILE)
-            # if not tf.compat.v1.gfile.Exists(WEIGHTS_PATH+".meta"):
             if not tf.gfile.Exists(WEIGHTS_PATH+".meta"):
                 raise Exception("weights file doesn't exist")
             self.saver.restore(self.sess, WEIGHTS_PATH)

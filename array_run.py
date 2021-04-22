@@ -10,12 +10,8 @@ import itertools
 
 from math import exp, log
 
-# import tensorflow as tf
 import tensorflow.compat.v1 as tf
-# tf.compat.v1.disable_v2_behavior()
-tf.disable_v2_behavior()
 
-# tf.compat.v1.disable_eager_execution()
 tf.disable_eager_execution()
 print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 import pdb
@@ -216,7 +212,6 @@ def main():
     opts['fid'] = FLAGS.fid
 
     #Reset tf graph
-    # tf.compat.v1.reset_default_graph()
     tf.reset_default_graph()
 
     # Loading the dataset

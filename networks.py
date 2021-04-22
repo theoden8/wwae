@@ -1,8 +1,5 @@
 import numpy as np
-# import tensorflow as tf
 import tensorflow.compat.v1 as tf
-# tf.compat.v1.disable_v2_behavior()
-tf.disable_v2_behavior()
 
 from math import pi
 
@@ -16,7 +13,6 @@ import pdb
 def encoder(opts, input, output_dim, scope=None,
                                     reuse=False,
                                     is_training=False):
-    # with tf.compat.v1.variable_scope(scope, reuse=reuse):
     with tf.variable_scope(scope, reuse=reuse):
         if opts['net_archi'] == 'mlp':
             encoder = net_archi['mlp']['encoder']
@@ -50,7 +46,6 @@ def encoder(opts, input, output_dim, scope=None,
 def decoder(opts, input, output_dim, scope=None,
                                     reuse=False,
                                     is_training=False):
-    # with tf.compat.v1.variable_scope(scope, reuse=reuse):
     with tf.variable_scope(scope, reuse=reuse):
         if opts['net_archi'] == 'mlp':
             decoder = net_archi['mlp']['decoder']
@@ -95,9 +90,7 @@ def critic(opts, inputs, scope=None, is_training=False, reuse=False):
     in_shape = inputs.get_shape().as_list()[1:]
     if opts['wgan_critic_archi']=='coef':
         layer_x = inputs
-        # with tf.compat.v1.variable_scope(scope, reuse=reuse):
         with tf.variable_scope(scope, reuse=reuse):
-                # coef = tf.compat.v1.get_variable("W", in_shape, tf.float32,
                 coef = tf.get_variable("W", in_shape, tf.float32,
                         tf.random_normal_initializer(stddev=opts['init_std']))
                 # element-wise multi
