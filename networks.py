@@ -35,8 +35,7 @@ def encoder(opts, input, output_dim, scope=None,
     if opts['encoder'] == 'det':
         z = mean
     elif opts['encoder'] == 'gauss':
-        qz_params = tf.concat((mean, Sigma), axis=-1)
-        z = sample_gaussian(qz_params, 'tensorflow')
+        z = sample_gaussian(mean, Sigma, type='tensorflow')
     else:
         assert False, 'Unknown encoder %s' % opts['encoder']
 
@@ -67,7 +66,7 @@ def decoder(opts, input, output_dim, scope=None,
 
     # sampling from gaussian if needed
     if opts['decoder']=='gaussian':
-        x = sample_gaussian(tf.tf.concat([mean,Sigma], axis=-1), typ='tensorflow')
+        x = sample_gaussian(mean, Sigma, type='tensorflow')
     else:
         x = mean
     # normalise to [0,1] or [-1,1]

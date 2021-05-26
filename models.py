@@ -2,8 +2,9 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 import math
 
-from networks import encoder, decoder
 from datahandler import datashapes
+from sampling_functions import sample_pz
+from networks import encoder, decoder
 from loss_functions import wae_ground_cost, cross_entropy_loss
 import utils
 
@@ -11,14 +12,12 @@ import pdb
 
 class Model(object):
 
-    def __init__(self, opts):
+    def __init__(self, opts, pz_mean, pz_Sigma):
         self.opts = opts
-
         self.output_dim = datashapes[self.opts['dataset']][:-1] \
                           + [2 * datashapes[self.opts['dataset']][-1], ]
-
-        self.pz_mean = np.zeros(opts['zdim'], dtype='float32')      # TODO don't hardcode this
-        self.pz_sigma = np.ones(opts['zdim'], dtype='float32')
+        self.pz_mean = pz_mean
+        self.pz_Sigma = pz_Sigma
 
 
     def forward_pass(self, inputs, is_training, reuse=False):
@@ -53,24 +52,24 @@ class Model(object):
 
 class BetaVAE(Model):
 
-    def __init__(self, opts):
-        super().__init__(opts)
+    def __init__(self, opts, pz_mean, pz_Sigma):
+        super().__init__(opts, pz_mean, pz_Sigma)
 
-    def kl_penalty(self, pz_mean, pz_sigma, encoded_mean, encoded_sigma): # To check implementation
+    def kl_penalty(self, pz_mean, pz_Sigma, encoded_mean, encoded_Sigma):
         """
         Compute KL divergence between prior and variational distribution
         """
-        kl = encoded_sigma / pz_sigma \
-            + tf.square(pz_mean - encoded_mean) / pz_sigma - 1. \
-            + tf.math.log(pz_sigma) - tf.math.log(encoded_sigma)
+        kl = encoded_Sigma / pz_Sigma \
+            + tf.square(pz_mean - encoded_mean) / pz_Sigma - 1. \
+            + tf.math.log(pz_Sigma) - tf.math.log(encoded_Sigma)
         kl = 0.5 * tf.reduce_sum(kl, axis=-1)
         return tf.reduce_mean(kl)
 
-    def reconstruction_loss(self, inputs, mean, sigma):
+    def reconstruction_loss(self, inputs, mean, Sigma):
         """
         Compute VAE rec. loss
         """
-        rec_loss = cross_entropy_loss(self.opts, inputs, mean, sigma)
+        rec_loss = cross_entropy_loss(self.opts, inputs, mean, Sigma)
         return tf.reduce_mean(rec_loss)
 
     def loss(self, inputs, is_training, reuse=False):
@@ -80,7 +79,7 @@ class BetaVAE(Model):
                                               reuse=reuse)
 
         rec = self.reconstruction_loss(inputs, dec_mean, dec_Sigma)
-        kl = self.kl_penalty(self.pz_mean, self.pz_sigma, enc_mean, enc_Sigma)
+        kl = self.kl_penalty(self.pz_mean, self.pz_Sigma, enc_mean, enc_Sigma)
         reg = kl
 
         return rec, reg, None, None
@@ -88,8 +87,8 @@ class BetaVAE(Model):
 
 class WAE(Model):
 
-    def __init__(self, opts):
-        super().__init__(opts)
+    def __init__(self, opts, pz_mean, pz_Sigma):
+        super().__init__(opts, pz_mean, pz_Sigma)
 
     def square_dist(self, sample_x, sample_y):
         """
@@ -102,18 +101,18 @@ class WAE(Model):
                         - 2. * tf.matmul(sample_x,sample_y,transpose_b=True)
         return tf.nn.relu(squared_dist)
 
-    def mmd_penalty(self, sample_qz, sample_pz):
+    def mmd_penalty(self, qz_sample, pz_sample):
         opts = self.opts
         sigma2_p = opts['pz_scale'] ** 2
         kernel = opts['mmd_kernel']
-        n = utils.get_batch_size(sample_qz)
+        n = utils.get_batch_size(qz_sample)
         n = tf.cast(n, tf.int32)
         nf = tf.cast(n, tf.float32)
         half_size = tf.cast((n * n - n) / 2,tf.int32)
 
-        distances_pz = self.square_dist(sample_pz, sample_pz)
-        distances_qz = self.square_dist(sample_qz, sample_qz)
-        distances = self.square_dist(sample_qz, sample_pz)
+        distances_pz = self.square_dist(pz_sample, pz_sample)
+        distances_qz = self.square_dist(qz_sample, qz_sample)
+        distances = self.square_dist(qz_sample, pz_sample)
 
         if opts['mmd_kernel'] == 'RBF':
             # Median heuristic for the sigma^2 of Gaussian kernel
@@ -170,8 +169,7 @@ class WAE(Model):
                                                 is_training=is_training,
                                                 reuse=reuse)
         cost, intensities_reg, critic_reg = self.reconstruction_loss(inputs, recon_x, is_training=is_training, reuse=reuse)
-        noise = tf.random_normal(shape=tf.shape(enc_z))
-        pz_sample = tf.add(self.pz_mean, (noise * self.pz_sigma))
+        pz_sample = sample_pz(self.opts, self.pz_mean, self.pz_Sigma, self.opts['batch_size'])
         reg = self.mmd_penalty(enc_z, pz_sample)
 
         return cost, reg, intensities_reg, critic_reg

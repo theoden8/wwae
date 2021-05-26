@@ -8,33 +8,58 @@ from scipy import ndimage
 
 import pdb
 
-def sample_pz(opts,pz_params,batch_size=100):
+def sample_pz(opts, means, Sigma, batch_size=100):
     if opts['prior']=='gaussian' or opts['prior']=='implicit':
-        noise = sample_gaussian(pz_params, 'numpy', batch_size)
+        noise = sample_gaussian(means, Sigma, batch_size, 'numpy')
+    elif opts['prior']=='gmm':
+        noise = sample_gmm(opts['pz_nmix'], means, Sigma, batch_size)
     elif opts['prior']=='dirichlet':
-        noise = sample_dirichlet(pz_params, batch_size)
+        noise = sample_dirichlet(means, batch_size)
     else:
         assert False, 'Unknown prior %s' % opts['prior']
     return noise
 
-def sample_gaussian(params, typ='numpy', batch_size=100):
+def sample_gaussian(means, Sigma, batch_size=100, type='numpy'):
     """
     Sample noise from gaussian distribution with parameters
     means and covs
     """
-    if typ =='tensorflow':
-        means, covs = tf.split(params,2,axis=-1)
+    if type =='tensorflow':
         shape = tf.shape(means)
         eps = tf.random_normal(shape, dtype=tf.float32)
-        noise = means + tf.multiply(eps,tf.sqrt(1e-10+covs))
-    elif typ =='numpy':
-        means, covs = np.split(params,2,axis=-1)
+        noise = means + tf.multiply(eps, tf.sqrt(1e-10+Sigma))
+    elif type =='numpy':
         if len(np.shape(means))<2:
             shape = (batch_size,)+np.shape(means)
         else:
             shape = np.shape(means)
-        eps = np.random.normal(0.,1.,shape).astype(np.float32)
-        noise = means + np.multiply(eps,np.sqrt(1e-10+covs))
+        eps = np.random.normal(0., 1., shape).astype(np.float32)
+        noise = means + np.multiply(eps, np.sqrt(1e-10+Sigma))
+    return noise
+
+def sample_gmm(nmix, means, Sigma, batch_size=100):
+    """
+    Sample prior noise according to sampling_mode
+    """
+
+    noises = sample_all_gmm(means, Sigma, batch_size)
+    mixtures_id = np.random.randint(nmix, size=batch_size)
+    samples = noises[np.arange(batch_size), mixtures_id]
+
+    return samples
+
+def sample_all_gmm(means, Sigma, batch_size=100):
+    """
+    Sample for each component of the gmm
+
+    means: [K,zdim]
+    Sigma: [zdim]
+    """
+
+    shape = means.shape
+    eps = np.random.normal(0.,1.,(batch_size,)+shape).astype(np.float32)
+    noise = means + np.multiply(eps,np.sqrt(1e-10+Sigma))
+
     return noise
 
 def sample_dirichlet(alpha, batch_size=100):

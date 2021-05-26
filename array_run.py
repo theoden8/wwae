@@ -23,6 +23,8 @@ parser.add_argument("--model", default='WAE',
                     help='model to train [WAE/BetaVAE/...]')
 parser.add_argument('--zdim', type=int, default=2,
                     help='latent dimension')
+parser.add_argument('--prior', type=str, default='gaussian',
+                    help='latent dimension')
 parser.add_argument("--decoder", default='det',
                     help='decoder typ [det/gauss]')
 parser.add_argument("--mode", default='train',
@@ -129,6 +131,8 @@ def main():
     opts['model'] = FLAGS.model
     if FLAGS.zdim:
         opts['zdim'] = FLAGS.zdim
+    if FLAGS.prior:
+        opts['prior'] = FLAGS.prior
     opts['decoder'] = FLAGS.decoder
     opts['net_archi'] = FLAGS.net_archi
     if opts['model'][-3:]=='VAE':
@@ -203,8 +207,8 @@ def main():
     assert data.train_size >= opts['batch_size'], 'Training set too small'
 
     opts['it_num'] = FLAGS.num_it
-    opts['print_every'] = int(opts['it_num'] / 10.)
-    opts['evaluate_every'] = int(opts['it_num'] / 20.)
+    opts['print_every'] = 5 #int(opts['it_num'] / 10.)
+    opts['evaluate_every'] = 5 #int(opts['it_num'] / 20.)
     opts['save_every'] = 10000000000
     opts['save_final'] = FLAGS.save_model
     opts['save_train_data'] = FLAGS.save_data

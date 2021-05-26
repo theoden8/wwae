@@ -11,6 +11,7 @@ import tensorflow.compat.v1 as tf
 from math import ceil, pi
 
 import utils
+from priors import init_prior
 from sampling_functions import sample_pz, traversals, interpolations, grid, shift, rotate
 from plot_functions import save_train, save_test
 from plot_functions import plot_critic_pretrain_loss
@@ -35,18 +36,16 @@ class Run(object):
         self.data = data
 
         # --- Initialize prior parameters
-        mean = np.zeros(opts['zdim'], dtype='float32')
-        Sigma = np.ones(opts['zdim'], dtype='float32')
-        self.pz_params = np.concatenate([mean, Sigma], axis=0)
+        self.pz_mean, self.pz_Sigma = init_prior(opts)
 
         # --- Placeholders
         self.add_ph()
 
         # --- Instantiate Model
         if opts['model'] == 'BetaVAE':
-            self.model = models.BetaVAE(opts)
+            self.model = models.BetaVAE(opts, self.pz_mean, self.pz_Sigma)
         elif opts['model'] == 'WAE':
-            self.model = models.WAE(opts)
+            self.model = models.WAE(opts, self.pz_mean, self.pz_Sigma)
         else:
             raise NotImplementedError()
 
@@ -260,7 +259,7 @@ class Run(object):
                                             int(train_size/self.opts['batch_size']),
                                             self.opts['it_num']))
         npics = self.opts['plot_num_pics']
-        fixed_noise = sample_pz(self.opts, self.pz_params, npics)
+        fixed_noise = sample_pz(self.opts, self.pz_mean, self.pz_Sigma, npics)
         # anchors_ids = np.random.choice(npics, 5, replace=True)
         anchors_ids = [0, 4, 6, 12, 39]
 
@@ -607,183 +606,6 @@ class Run(object):
             np.savez(os.path.join(save_path, name),
                     fid_rec=np.array(FID_rec), fid_gen=np.array(FID_gen))
 
-    def test(self, MODEL_PATH=None, WEIGHTS_FILE=None):
-        """
-        Test model and save different metrics
-        """
-
-        opts = self.opts
-
-        # - Load trained weights
-        if not tf.gfile.Exists(WEIGHTS_PATH+".meta"):
-            raise Exception("weights file doesn't exist")
-        self.saver.restore(self.sess, WEIGHTS_PATH)
-
-        # - Set up
-        test_size = data.test_size
-        batch_size_te = min(test_size,1000)
-        batches_num_te = int(test_size/batch_size_te)+1
-        # - Init all monitoring variables
-        Loss, Loss_rec, MSE = 0., 0., 0.
-        Divergences = []
-        MIG, factorVAE, SAP = 0., 0., 0.
-        real_blurr, blurr, fid_scores = 0., 0., 0.
-        if opts['true_gen_model']:
-            codes, codes_mean = np.zeros((batches_num_te*batch_size_te,opts['zdim'])), np.zeros((batches_num_te*batch_size_te,opts['zdim']))
-            labels = np.zeros((batches_num_te*batch_size_te,len(data.factor_indices)))
-        # - Testing loop
-        for it_ in range(batches_num_te):
-            # Sample batches of data points
-            data_ids = np.random.choice(test_size, batch_size_te, replace=True)
-            batch_images_test = data.get_batch_img(data_ids, 'test').astype(np.float32)
-            batch_pz_samples_test = sample_pz(opts, self.pz_params, batch_size_te)
-            test_feed_dict = {self.batch: batch_images_test,
-                              self.samples_pz: batch_pz_samples_test,
-                              self.obj_fn_coeffs: opts['obj_fn_coeffs'],
-                              self.is_training: False}
-            [loss, l_rec, mse, divergences, z, z_mean, samples] = self.sess.run([self.objective,
-                                             self.loss_reconstruct,
-                                             self.mse,
-                                             self.divergences,
-                                             self.z_samples,
-                                             self.z_mean,
-                                             self.generated_x],
-                                            feed_dict=test_feed_dict)
-            Loss += loss / batches_num_te
-            Loss_rec += l_rec / batches_num_te
-            MSE += mse / batches_num_te
-            if len(Divergences)>0:
-                Divergences[-1] += np.array(divergences) / batches_num_te
-            else:
-                Divergences.append(np.array(divergences) / batches_num_te)
-            # storing labels and factors
-            if opts['true_gen_model']:
-                    codes[batch_size_te*it_:batch_size_te*(it_+1)] = z
-                    codes_mean[batch_size_te*it_:batch_size_te*(it_+1)] = z_mean
-                    labels[batch_size_te*it_:batch_size_te*(it_+1)] = data.get_batch_label(data_ids,'test')[:,data.factor_indices]
-            # fid score
-            if opts['fid']:
-                # Load inception mean samples for train set
-                trained_stats = os.path.join(inception_path, 'fid_stats.npz')
-                # Load trained stats
-                f = np.load(trained_stats)
-                self.mu_train, self.sigma_train = f['mu'][:], f['sigma'][:]
-                f.close()
-                # Compute bluriness of real data
-                real_blurriness = self.sess.run(self.blurriness,
-                                            feed_dict={ self.batch: batch_images_test})
-                real_blurr += np.mean(real_blurriness) / batches_num_te
-                # Compute gen blur
-                gen_blurr = self.sess.run(self.blurriness,
-                                            feed_dict={self.batch: samples})
-                blurr += np.mean(gen_blurr) / batches_num_te
-                # Compute FID score
-                # First convert to RGB
-                if np.shape(samples)[-1] == 1:
-                    # We have greyscale
-                    samples = self.sess.run(tf.image.grayscale_to_rgb(samples))
-                preds_incep = self.inception_sess.run(self.inception_layer,
-                              feed_dict={'FID_Inception_Net/ExpandDims:0': samples})
-                preds_incep = preds_incep.reshape((batch_size_te,-1))
-                mu_gen = np.mean(preds_incep, axis=0)
-                sigma_gen = np.cov(preds_incep, rowvar=False)
-                fid_score = fid.calculate_frechet_distance(mu_gen, sigma_gen,
-                                            self.mu_train,
-                                            self.sigma_train,
-                                            eps=1e-6)
-                fid_scores += fid_score / batches_num_te
-        # - Compute disentanglment metrics
-        if opts['true_gen_model']:
-            MIG.append(self.compute_mig(codes_mean, labels))
-            factorVAE.append(self.compute_factorVAE(data, codes))
-            SAP.append(self.compute_SAP(data))
-
-        # - Printing various loss values
-        if verbose=='high':
-            debug_str = 'Testing done.'
-            logging.error(debug_str)
-            if opts['true_gen_model']:
-                debug_str = 'MIG=%.3f, factorVAE=%.3f, SAP=%.3f' % (
-                                            MIG,
-                                            factorVAE,
-                                            SAP)
-                logging.error(debug_str)
-            if opts['fid']:
-                debug_str = 'Real blurr=%10.3e, blurr=%10.3e, FID=%.3f \n ' % (
-                                            real_blurr,
-                                            blurr,
-                                            fid_scores)
-                logging.error(debug_str)
-
-            if opts['model'] == 'BetaVAE':
-                debug_str = 'LOSS=%.3f, REC=%.3f, MSE=%.3f, beta*KL=%10.3e \n '  % (
-                                            Loss,
-                                            Loss_rec,
-                                            MSE,
-                                            Divergences)
-                logging.error(debug_str)
-            elif opts['model'] == 'BetaTCVAE':
-                debug_str = 'LOSS=%.3f, REC=%.3f, MSE=%.3f, b*TC=%10.3e, KL=%10.3e \n '  % (
-                                            Loss,
-                                            Loss_rec,
-                                            MSE,
-                                            Divergences[0],
-                                            Divergences[1])
-                logging.error(debug_str)
-            elif opts['model'] == 'FactorVAE':
-                debug_str = 'LOSS=%.3f, REC=%.3f, MSE=%.3f, b*KL=%10.3e, g*TC=%10.3e, \n '  % (
-                                            Loss,
-                                            Loss_rec,
-                                            MSE,
-                                            Divergences[0],
-                                            Divergences[1])
-                logging.error(debug_str)
-            elif opts['model'] == 'WAE':
-                debug_str = 'LOSS=%.3f, REC=%.3f, MSE=%.3f, b*MMD=%10.3e \n ' % (
-                                            Loss,
-                                            Loss_rec,
-                                            MSE,
-                                            Divergences)
-                logging.error(debug_str)
-            elif opts['model'] == 'disWAE':
-                debug_str = 'LOSS=%.3f, REC=%.3f, MSE=%.3f, b*HSIC=%10.3e, g*DIMWISE=%10.3e, WAE=%10.3e' % (
-                                            Loss,
-                                            Loss_rec,
-                                            MSE,
-                                            Divergences[0],
-                                            Divergences[1],
-                                            Divergences[2])
-                logging.error(debug_str)
-            elif opts['model'] == 'TCWAE_MWS' or opts['model'] == 'TCWAE_GAN':
-                debug_str = 'LOSS=%.3f, REC=%.3f,l1*TC=%10.3e, MSE=%.3f, l2*DIMWISE=%10.3e, WAE=%10.3e' % (
-                                            Loss,
-                                            Loss_rec,
-                                            MSE,
-                                            Divergences[0],
-                                            Divergences[1],
-                                            Divergences[2])
-                logging.error(debug_str)
-            else:
-                raise NotImplementedError('Model type not recognised')
-
-
-        # - save testing data
-        data_dir = 'test_data'
-        save_path = os.path.join(opts['exp_dir'], data_dir)
-        utils.create_dir(save_path)
-        name = 'res_test_final'
-        np.savez(os.path.join(save_path, name),
-                loss=np.array(Loss),
-                loss_rec=np.array(Loss_rec),
-                mse = np.array(MSE),
-                divergences=Divergences,
-                mig=np.array(MIG),
-                factorVAE=np.array(factorVAE),
-                sap=np.array(SAP),
-                real_blurr=np.array(real_blurr),
-                blurr=np.array(blurr),
-                fid=np.array(fid_scores))
-
     def plot(self, WEIGHTS_FILE=None):
         """
         Plots reconstructions, latent transversals and model samples
@@ -807,7 +629,7 @@ class Run(object):
         num_pics = opts['plot_num_pics']
         num_steps = 20
         enc_var = np.ones(opts['zdim'])
-        fixed_noise = sample_pz(opts, self.pz_params, num_pics)
+        fixed_noise = sample_pz(opts, self.pz_mean, self.pz_Sigma, num_pics)
         anchors_ids = np.arange(0,num_pics,int(num_pics/12))
         # anchors_ids = [0, 4, 6, 12, 24, 35] # 39, 53, 60, 73, 89]
         # anchors_ids = list(np.arange(0,100,5))
@@ -1311,7 +1133,7 @@ class Run(object):
         elif fid_inputs == 'samples':
             preds_list = []
             for n in range(batch_num):
-                batch = sample_pz(opts, self.pz_params, batch_size)
+                batch = sample_pz(opts, self.pz_mean, self.pz_Sigma, batch_size)
                 samples = self.sess.run(self.generated, feed_dict={
                                         self.pz_samples: batch,
                                         self.is_training: False})

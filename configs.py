@@ -51,6 +51,8 @@ config['sw_proj_type'] = 'det'  # det for deterministic, or 'uniform'
 # Model set up
 config['pz_scale'] = 1.
 config['prior'] = 'gaussian' # dirichlet, gaussian
+config['pz_sigma'] = 0.1
+config['pz_nmix'] = 4
 config['encoder'] = 'gauss' # deterministic, gaussian
 config['decoder'] = 'det' # deterministic, gaussian
 # beta set up
