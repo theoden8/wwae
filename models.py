@@ -46,7 +46,7 @@ class Model(object):
                                               is_training=False)
         return sample_x
 
-    def MSE(self, inputs, reconstructions):
+    def MSE(self, inputs: tf.Tensor, reconstructions: tf.Tensors):
         # compute MSE between inputs and reconstruction
         square_dist = tf.reduce_sum(tf.square(inputs - reconstructions),axis=[1,2,3])
         return tf.reduce_mean(square_dist)
@@ -90,7 +90,7 @@ class BetaVAE(Model):
 
 class WAE(Model):
 
-    def __init__(self, opts: dict, pz_mean: tf.Tensor, pz_Sigma: tf.Tensor):
+    def __init__(self, opts: dict, pz_mean: tf.Tensor, pz_Sigma: tf.Tensor) -> None:
         super().__init__(opts, pz_mean, pz_Sigma)
 
     def square_dist(self, sample_x: tf.Tensor, sample_y: tf.Tensor) -> tf.Tensor:

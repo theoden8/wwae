@@ -143,7 +143,7 @@ def grid(nsteps: int, zdim: int) -> np.ndarray:
 
     return grid
 
-def shift(opts, inputs: np.ndarray, shift_dir: np.ndarray, shift: float) -> np.array:
+def shift(opts, inputs: np.ndarray, shift_dir: np.ndarray, shift: float) -> np.ndarray:
     ninputs = inputs.shape[0]
     in_shape = np.array(inputs.shape[1:-1])
     # padded = np.pad(inputs, ((0,0),(shift,shift),(shift,shift),(0,0)), mode='edge')
