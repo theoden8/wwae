@@ -812,7 +812,7 @@ class DataHandler(object):
         self.iterator_test = dataset_test.make_initializable_iterator()
 
         # Global iterator
-        self.handle = tfv1.placeholder(tf.string, shape=[])
+        self.handle = tf.placeholder(tf.string, shape=[])
         self.next_element = tf.data.Iterator.from_string_handle(
             self.handle, dataset_train.output_types, dataset_train.output_shapes).get_next()
 
