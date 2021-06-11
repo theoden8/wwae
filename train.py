@@ -25,6 +25,7 @@ from fid.fid import calculate_frechet_distance
 
 import pdb
 import typing
+import tqdm
 from datahandler import DataHandler
 
 
@@ -319,7 +320,7 @@ class Run(object):
 
 
         # - Training
-        for it in range(self.opts['it_num'], desc='training'):
+        for it in range(self.opts['it_num']):
             # Saver
             if it > 0 and it % self.opts['save_every'] == 0:
                 self.saver.save(self.sess,
@@ -546,7 +547,7 @@ class Run(object):
         MSE.append(losses[-1])
         # Test losses
         loss, monitoring, mse = 0., np.zeros(5), 0.
-        for it_ in range(test_it_num, desc='test losses'):
+        for it_ in range(test_it_num):
             test_feed_dict={self.data.handle: self.test_handle,
                             self.beta: self.opts['beta'],
                             self.is_training: False}
