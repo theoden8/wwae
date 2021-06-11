@@ -25,7 +25,6 @@ from fid.fid import calculate_frechet_distance
 
 import pdb
 import typing
-import tqdm
 from datahandler import DataHandler
 
 
