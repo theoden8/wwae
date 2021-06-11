@@ -23,6 +23,7 @@ from loss_functions import wae_ground_cost
 from datahandler import datashapes
 from fid.fid import calculate_frechet_distance
 
+import tqdm
 import pdb
 import typing
 from datahandler import DataHandler
