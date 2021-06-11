@@ -46,7 +46,7 @@ class Model(object):
                                               is_training=False)
         return sample_x
 
-    def MSE(self, inputs: tf.Tensor, reconstructions: tf.Tensors):
+    def MSE(self, inputs: tf.Tensor, reconstructions: tf.Tensor):
         # compute MSE between inputs and reconstruction
         square_dist = tf.reduce_sum(tf.square(inputs - reconstructions),axis=[1,2,3])
         return tf.reduce_mean(square_dist)
