@@ -341,8 +341,14 @@ def plot_embedded_shift(opts: dict, encoded: np.ndarray, exp_dir: str) -> None:
     utils.create_dir(save_path)
     filename = opts['cost'] + '_embedded_shifted.png'
     fig.savefig(utils.o_gfile((save_path, filename),'wb'),
-                dpi=dpi, cformat='png',bbox_inches='tight',pad_inches=0.05)
+                dpi=dpi, bbox_inches='tight',pad_inches=0.05)
     plt.close()
+
+
+def plot_embedded(opts, encoded, *args, **kwargs):
+    eshape = encoded.shape
+    eshape = [eshape[0]] + [1] + list(eshape[1:])
+    return plot_embedded_shift(opts, encoded.reshape(eshape), *args, **kwargs)
 
 
 def plot_interpolation(opts: dict, interpolations: np.ndarray, exp_dir: str, filename: str, train=True) -> None:

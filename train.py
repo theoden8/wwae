@@ -15,7 +15,7 @@ from priors import init_prior
 from sampling_functions import sample_pz, traversals, interpolations, grid, shift, rotate
 from plot_functions import save_train, save_test
 from plot_functions import plot_critic_pretrain_loss
-from plot_functions import plot_interpolation, plot_cost_shift, plot_rec_shift, plot_embedded_shift
+from plot_functions import plot_interpolation, plot_cost_shift, plot_rec_shift, plot_embedded, plot_embedded_shift
 import models
 # from networks import theta_discriminator
 from wgan import wgan, wgan_v2
@@ -23,6 +23,7 @@ from loss_functions import wae_ground_cost
 from datahandler import datashapes
 from fid.fid import calculate_frechet_distance
 
+import tqdm
 import pdb
 import typing
 from datahandler import DataHandler
@@ -292,9 +293,9 @@ class Run(object):
             if WEIGHTS_FILE is None:
                     raise Exception("No model/weights provided")
             else:
-                if not tf.gfile.IsDirectory(opts['exp_dir']):
+                if not tf.gfile.IsDirectory(self.opts['exp_dir']):
                     raise Exception("model doesn't exist")
-                WEIGHTS_PATH = os.path.join(opts['exp_dir'],'checkpoints', WEIGHTS_FILE)
+                WEIGHTS_PATH = os.path.join(self.opts['exp_dir'],'checkpoints', WEIGHTS_FILE)
                 if not tf.gfile.Exists(WEIGHTS_FILE+".meta"):
                     raise Exception("weights file doesn't exist")
                 self.saver.restore(self.sess, WEIGHTS_FILE)
@@ -319,7 +320,7 @@ class Run(object):
 
 
         # - Training
-        for it in range(self.opts['it_num'], desc='training'):
+        for it in tqdm.trange(self.opts['it_num'], desc='training'):
             # Saver
             if it > 0 and it % self.opts['save_every'] == 0:
                 self.saver.save(self.sess,
@@ -477,6 +478,11 @@ class Run(object):
                     plot_interpolation(self.opts, inter_anchors,
                                             exp_dir, 'inter_it%07d.png' % (it))
 
+                if self.opts['vizu_embedded']:
+                    print('latents_vizu shape', latents_vizu.shape)
+                    plot_embedded(self.opts, encoded=latents_vizu, exp_dir=exp_dir)
+
+
                 # - Non linear proj is gsw
                 if self.opts['cost']=='sw' and self.opts['sw_proj_type']=='max-gsw':
                     proj = self.sess.run(self.projections,
@@ -546,7 +552,7 @@ class Run(object):
         MSE.append(losses[-1])
         # Test losses
         loss, monitoring, mse = 0., np.zeros(5), 0.
-        for it_ in range(test_it_num, desc='test losses'):
+        for it_ in tqdm.trange(test_it_num, desc='test losses'):
             test_feed_dict={self.data.handle: self.test_handle,
                             self.beta: self.opts['beta'],
                             self.is_training: False}
