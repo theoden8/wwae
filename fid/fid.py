@@ -38,7 +38,7 @@ def create_inception_graph(pth: str) -> None:
 
 # code for handling inception net derived from
 #   https://github.com/openai/improved-gan/blob/master/inception_score/model.py
-def _get_inception_layer(sess: tf.Session) -> typing.Any:
+def _get_inception_layer(sess: tf.Session) -> tf.Tensor:
     """Prepares inception net for batched usage and returns pool_3 layer. """
     layername = 'FID_Inception_Net/pool_3:0'
     pool3 = sess.graph.get_tensor_by_name(layername)
