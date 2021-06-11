@@ -64,6 +64,9 @@ parser.add_argument("--save_data", action='store_false', default=True,
 parser.add_argument("--fid",  action='store_false', default=True,
                     help='compute fid')
 parser.add_argument("--weights_file")
+## priors
+parser.add_argument('--prior', default='gaussian',
+                    help='prior for the latent space')
 ## wgan cost
 parser.add_argument("--disc_freq", type=int, default=1,
                     help='discriminator update frequency for aversarial sw')
@@ -146,6 +149,8 @@ def main():
     ## ground cost config
     opts['cost'] = FLAGS.cost
     opts['gamma'] = FLAGS.gamma
+    # priors
+    opts['prior'] = FLAGS.prior
     # wgan ground cost
     opts['pretrain_critic'] = FLAGS.critic_pretrain
     opts['d_updt_it'] = FLAGS.disc_it
