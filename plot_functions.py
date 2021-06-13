@@ -292,7 +292,7 @@ def plot_critic_pretrain_loss(opts, loss, exp_dir,filename):
     plt.close()
 
 
-def embedding_preprocess(opts: dict, codes: np.ndarray, **kwargs) -> typing.Any:
+def embed_codes_for_plotting(opts: dict, codes: np.ndarray, **kwargs) -> typing.Any:
     if np.shape(codes)[-1]==2:
         embedding = codes
     else:
@@ -307,11 +307,11 @@ def embedding_preprocess(opts: dict, codes: np.ndarray, **kwargs) -> typing.Any:
     return embedding
 
 
-def plot_embedded_shift(opts: dict, encoded: np.ndarray, exp_dir: str) -> None:
+def plot_embedded_shift(opts: dict, encoded: np.ndarray, exp_dir: str, fname='embedded_shift') -> None:
     nobs, nshift = np.shape(encoded)[:2]
     codes = encoded.reshape([nobs*nshift,-1])
     labels = np.repeat(np.arange(nobs),nshift)
-    embedding = embedding_preprocess(opts, codes)
+    embedding = embed_codes_for_plotting(opts, codes)
     # Creating a pyplot fig
     dpi = 100
     height_pic = 500
@@ -346,7 +346,7 @@ def plot_embedded_shift(opts: dict, encoded: np.ndarray, exp_dir: str) -> None:
     ### Saving plot
     save_path = os.path.join(exp_dir,'test_plots')
     utils.create_dir(save_path)
-    filename = opts['cost'] + '_embedded_shifted.png'
+    filename = opts['cost'] + f'_{fname}.png'
     fig.savefig(utils.o_gfile((save_path, filename),'wb'),
                 dpi=dpi, bbox_inches='tight',pad_inches=0.05)
     plt.close()
@@ -358,11 +358,11 @@ def plot_embedded(opts: dict, encoded: np.ndarray, *args, **kwargs):
     return plot_embedded_shift(opts, encoded.reshape(eshape), *args, **kwargs)
 
 
-def plot_embedded_shift_imscatter(opts: dict, encoded: np.ndarray, recon: np.ndarray, exp_dir: str):
+def plot_embedded_shift_imscatter(opts: dict, encoded: np.ndarray, recon: np.ndarray, exp_dir: str, fname='embedded_shifted_imscatter'):
     nobs, nshift = np.shape(encoded)[:2]
     codes = encoded.reshape([nobs*nshift,-1])
     labels = np.repeat(np.arange(nobs),nshift)
-    embedding = embedding_preprocess(opts, codes)
+    embedding = embed_codes_for_plotting(opts, codes)
     # Creating a pyplot fig
     dpi = 100
     height_pic = 500
@@ -398,7 +398,7 @@ def plot_embedded_shift_imscatter(opts: dict, encoded: np.ndarray, recon: np.nda
     ### Saving plot
     save_path = os.path.join(exp_dir,'test_plots')
     utils.create_dir(save_path)
-    filename = opts['cost'] + '_embedded_shifted_imscatter.png'
+    filename = opts['cost'] + f'_{fname}.png'
     fig.savefig(utils.o_gfile((save_path, filename),'wb'),
                 dpi=dpi, bbox_inches='tight',pad_inches=0.05)
     plt.close()
