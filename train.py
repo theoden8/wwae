@@ -481,9 +481,9 @@ class Run(object):
 
                 if self.opts['vizu_embedded']:
                     print('latents_vizu shape', latents_vizu.shape)
-                    plot_embedded(self.opts, encoded=latents_vizu, exp_dir=exp_dir, fname='embedded_it%007d.png' % (it))
+                    plot_embedded(self.opts, encoded=latents_vizu, exp_dir=exp_dir, fname='embedded_it%007d' % (it))
                     plot_embedded_imscatter(self.opts, encoded=latents_vizu, recon=reconstructions_vizu, exp_dir=exp_dir,
-                                            fname='embedded_imscatter_it%007d.png' % (it))
+                                            fname='embedded_imscatter_it%007d' % (it))
 
 
                 # - Non linear proj is gsw
