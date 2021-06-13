@@ -16,6 +16,7 @@ from sampling_functions import sample_pz, traversals, interpolations, grid, shif
 from plot_functions import save_train, save_test
 from plot_functions import plot_critic_pretrain_loss
 from plot_functions import plot_interpolation, plot_cost_shift, plot_rec_shift, plot_embedded, plot_embedded_shift
+from plot_functions import plot_embedded_imscatter, plot_embedded_shift_imscatter
 import models
 # from networks import theta_discriminator
 from wgan import wgan, wgan_v2
@@ -481,6 +482,7 @@ class Run(object):
                 if self.opts['vizu_embedded']:
                     print('latents_vizu shape', latents_vizu.shape)
                     plot_embedded(self.opts, encoded=latents_vizu, exp_dir=exp_dir)
+                    plot_embedded_imscatter(self.opts, encoded=latents_vizu, recon=reconstructions_vizu, exp_dir=exp_dir)
 
 
                 # - Non linear proj is gsw

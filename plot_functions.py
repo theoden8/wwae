@@ -6,6 +6,7 @@ from math import sqrt
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.colors
 import umap
@@ -14,6 +15,7 @@ from sklearn.manifold import TSNE
 
 import utils
 
+import tqdm
 import typing
 
 
@@ -290,10 +292,7 @@ def plot_critic_pretrain_loss(opts, loss, exp_dir,filename):
     plt.close()
 
 
-def plot_embedded_shift(opts: dict, encoded: np.ndarray, exp_dir: str) -> None:
-    nobs, nshift = np.shape(encoded)[:2]
-    codes = encoded.reshape([nobs*nshift,-1])
-    labels = np.repeat(np.arange(nobs),nshift)
+def embedding_preprocess(opts: dict, codes: np.ndarray, **kwargs) -> typing.Any:
     if np.shape(codes)[-1]==2:
         embedding = codes
     else:
@@ -305,6 +304,14 @@ def plot_embedded_shift(opts: dict, encoded: np.ndarray, exp_dir: str) -> None:
                                     metric='correlation').fit_transform(codes)
         else:
             assert False, 'Unknown %s method for embedgins vizu' % opts['embedding']
+    return embedding
+
+
+def plot_embedded_shift(opts: dict, encoded: np.ndarray, exp_dir: str) -> None:
+    nobs, nshift = np.shape(encoded)[:2]
+    codes = encoded.reshape([nobs*nshift,-1])
+    labels = np.repeat(np.arange(nobs),nshift)
+    embedding = embedding_preprocess(opts, codes)
     # Creating a pyplot fig
     dpi = 100
     height_pic = 500
@@ -345,10 +352,79 @@ def plot_embedded_shift(opts: dict, encoded: np.ndarray, exp_dir: str) -> None:
     plt.close()
 
 
-def plot_embedded(opts, encoded, *args, **kwargs):
+def plot_embedded(opts: dict, encoded: np.ndarray, *args, **kwargs):
     eshape = encoded.shape
     eshape = [eshape[0]] + [1] + list(eshape[1:])
     return plot_embedded_shift(opts, encoded.reshape(eshape), *args, **kwargs)
+
+
+def plot_embedded_shift_imscatter(opts: dict, encoded: np.ndarray, recon: np.ndarray, exp_dir: str):
+    nobs, nshift = np.shape(encoded)[:2]
+    codes = encoded.reshape([nobs*nshift,-1])
+    labels = np.repeat(np.arange(nobs),nshift)
+    embedding = embedding_preprocess(opts, codes)
+    # Creating a pyplot fig
+    dpi = 100
+    height_pic = 500
+    width_pic = 500
+    fig_height =  height_pic / float(dpi)
+    fig_width =  width_pic / float(dpi)
+    fig = plt.figure(figsize=(fig_width, fig_height))
+    for i in range(len(encoded)):
+        img = recon[i]
+        imscatter(x=embedding[i, 0], y=embedding[i, 1], image=img, zoom=.5, ax=plt.gca())
+    xmin = np.amin(embedding[:,0])
+    xmax = np.amax(embedding[:,0])
+    magnify = 0.05
+    width = abs(xmax - xmin)
+    xmin = xmin - width * magnify
+    xmax = xmax + width * magnify
+    ymin = np.amin(embedding[:,1])
+    ymax = np.amax(embedding[:,1])
+    width = abs(ymin - ymax)
+    ymin = ymin - width * magnify
+    ymax = ymax + width * magnify
+    plt.xlim(xmin, xmax)
+    plt.ylim(ymin, ymax)
+    # plt.legend(loc='best')
+    # plt.text(0.47, 1., 'UMAP vizu', ha="center", va="bottom",
+    #                                         size=20, transform=ax.transAxes)
+    plt.title(opts['embedding'] + ' vizualisation of the shifted latent codes')
+    # Removing ticks if needed
+    if opts['embedding']=='umap':
+        # plt.tick_params(axis='both',which='both',bottom=False,top=False,left=False,right=False)
+        plt.xticks([])
+        plt.yticks([])
+    ### Saving plot
+    save_path = os.path.join(exp_dir,'test_plots')
+    utils.create_dir(save_path)
+    filename = opts['cost'] + '_embedded_shifted_imscatter.png'
+    fig.savefig(utils.o_gfile((save_path, filename),'wb'),
+                dpi=dpi, bbox_inches='tight',pad_inches=0.05)
+    plt.close()
+
+
+def imscatter(x: float, y: float, image, ax=None, zoom=1) -> list:
+    if ax is None:
+        ax = plt.gca()
+    if type(image) == str:
+        image = plt.imread(image)
+    from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+    im = OffsetImage(image, zoom=zoom, cmap=plt.cm.gray)
+    x_1d, y_1d = np.atleast_1d(x, y)
+    artists = []
+    for x0, y0 in zip(x_1d, y_1d):
+        ab = AnnotationBbox(im, (x0, y0), xycoords='data', frameon=False)
+        artists.append(ax.add_artist(ab))
+    ax.update_datalim(np.column_stack([x, y]))
+    ax.autoscale()
+    return artists
+
+
+def plot_embedded_imscatter(opts: dict, encoded: np.ndarray, recon: np.ndarray, *args, **kwargs):
+    eshape = encoded.shape
+    eshape = [eshape[0]] + [1] + list(eshape[1:])
+    return plot_embedded_shift_imscatter(opts, encoded.reshape(eshape), recon, *args, **kwargs)
 
 
 def plot_interpolation(opts: dict, interpolations: np.ndarray, exp_dir: str, filename: str, train=True) -> None:
