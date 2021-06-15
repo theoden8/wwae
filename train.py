@@ -482,7 +482,9 @@ class Run(object):
                 if self.opts['vizu_embedded']:
                     print('latents_vizu shape', latents_vizu.shape)
                     plot_embedded(self.opts, encoded=latents_vizu, exp_dir=exp_dir, fname='embedded_it%007d' % (it))
-                    plot_embedded_imscatter(self.opts, encoded=latents_vizu, recon=reconstructions_vizu, exp_dir=exp_dir,
+                    plot_embedded_imscatter(self.opts,
+                                            self.pz_mean, self.pz_Sigma,
+                                            encoded=latents_vizu, recon=reconstructions_vizu, exp_dir=exp_dir,
                                             fname='embedded_imscatter_it%007d' % (it))
 
 
@@ -945,7 +947,8 @@ class Run(object):
             shifted_rec = np.stack(shifted_rec,axis=1)
             shifted_enc = np.stack(shifted_enc,axis=1)
             plot_rec_shift(opts, shifted_obs, shifted_rec, opts['exp_dir'])
-            # plot_embedded_shift(opts, shifted_enc, opts['exp_dir'])
+            plot_embedded_shift(opts, shifted_enc, opts['exp_dir'])
+            plot_embedded_shift_imscatter(opts, self.pz_mean, self.pz_Sigma, shifted_enc, shifted_rec, opts['exp_dir'])
         elif opts['dataset'] == 'rotated_mnist':
             # - Rec/MSE/ground cost vs perturbation
             for _ in range(batches_num):
@@ -992,7 +995,8 @@ class Run(object):
             rotated_rec = np.stack(rotated_rec,axis=1)
             rotated_enc = np.stack(rotated_enc,axis=1)
             plot_rec_shift(opts, rotated_obs, rotated_rec, opts['exp_dir'])
-            # plot_embedded_shift(opts, rotated_enc, opts['exp_dir'])
+            plot_embedded_shift(opts, rotated_enc, opts['exp_dir'])
+            plot_embedded_shift_imscatter(opts, self.pz_mean, self.pz_Sigma, rotated_enc, rotated_rec, opts['exp_dir'])
         elif opts['dataset'] == 'gmm':
             # - Rec/MSE/ground cost vs perturbation
             for _ in range(batches_num):
@@ -1053,6 +1057,8 @@ class Run(object):
             shifted_rec = np.stack(shifted_rec,axis=1)
             shifted_enc = np.stack(shifted_enc,axis=1)
             plot_rec_shift(opts, shifted_obs, shifted_rec, opts['exp_dir'])
+            plot_embedded_shift(opts, shifted_enc, opts['exp_dir'])
+            plot_embedded_shift_imscatter(opts, self.pz_mean, self.pz_Sigma, shifted_enc, shifted_rec, opts['exp_dir'])
         else:
             assert False, 'Unknown {} dataset'.format(opts['dataset'])
 

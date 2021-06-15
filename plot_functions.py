@@ -1,6 +1,5 @@
 import os
 import re
-import pdb
 
 from math import sqrt
 import numpy as np
@@ -9,14 +8,17 @@ matplotlib.use("Agg")
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.colors
+import seaborn as sns
 import umap
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 
+from sampling_functions import sample_pz
 import utils
 
 import tqdm
 import typing
+import pdb
 
 
 def save_train(opts: dict, data_train: np.ndarray, data_test: np.ndarray,
@@ -358,11 +360,11 @@ def plot_embedded(opts: dict, encoded: np.ndarray, *args, **kwargs):
     return plot_embedded_shift(opts, encoded.reshape(eshape), *args, **kwargs)
 
 
-def plot_embedded_shift_imscatter(opts: dict, encoded: np.ndarray, recon: np.ndarray, exp_dir: str, fname='embedded_shifted_imscatter'):
+def plot_embedded_shift_imscatter(opts: dict, means: np.ndarray, sigma: np.ndarray, encoded: np.ndarray,
+                                  recon: np.ndarray, exp_dir: str, fname='embedded_shifted_imscatter'):
     nobs, nshift = np.shape(encoded)[:2]
     codes = encoded.reshape([nobs*nshift,-1])
     labels = np.repeat(np.arange(nobs),nshift)
-    embedding = embed_codes_for_plotting(opts, codes)
     # Creating a pyplot fig
     dpi = 100
     height_pic = 500
@@ -370,6 +372,13 @@ def plot_embedded_shift_imscatter(opts: dict, encoded: np.ndarray, recon: np.nda
     fig_height =  height_pic / float(dpi)
     fig_width =  width_pic / float(dpi)
     fig = plt.figure(figsize=(fig_width, fig_height))
+    # plot pz first
+    samples = sample_pz(opts, means=means, Sigma=sigma, batch_size=int(2e4))
+    all_points = np.vstack((codes, samples))
+    embedding = all_points[:len(codes)]
+    samples = all_points[len(codes):]
+    sns.kdeplot(x=samples[:, 0], y=samples[:, 1], cmap='Reds', shade=True, bw_adjust=.5, ax=plt.gca())
+    # plot reconstructions
     for i in range(len(encoded)):
         img = recon[i]
         imscatter(x=embedding[i, 0], y=embedding[i, 1], image=img, zoom=.5, ax=plt.gca())
@@ -421,10 +430,10 @@ def imscatter(x: float, y: float, image, ax=None, zoom=1) -> list:
     return artists
 
 
-def plot_embedded_imscatter(opts: dict, encoded: np.ndarray, recon: np.ndarray, *args, **kwargs):
+def plot_embedded_imscatter(opts: dict, means: np.ndarray, sigma: np.ndarray, encoded: np.ndarray, recon: np.ndarray, **kwargs):
     eshape = encoded.shape
     eshape = [eshape[0]] + [1] + list(eshape[1:])
-    return plot_embedded_shift_imscatter(opts, encoded.reshape(eshape), recon, *args, **kwargs)
+    return plot_embedded_shift_imscatter(opts, means=means, sigma=sigma, encoded=encoded.reshape(eshape), recon=recon, **kwargs)
 
 
 def plot_interpolation(opts: dict, interpolations: np.ndarray, exp_dir: str, filename: str, train=True) -> None:
