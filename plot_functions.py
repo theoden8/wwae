@@ -294,16 +294,23 @@ def plot_critic_pretrain_loss(opts, loss, exp_dir,filename):
     plt.close()
 
 
-def embed_codes_for_plotting(opts: dict, codes: np.ndarray, **kwargs) -> typing.Any:
+def embed_codes_for_plotting(opts: dict, codes: np.ndarray, pz_samples=None, **kwargs) -> np.ndarray:
+    all_points = codes
+    if pz_samples is not None:
+        all_points = np.vstack((codes, pz_samples))
     if np.shape(codes)[-1]==2:
-        embedding = codes
+        embedding = all_points
     else:
         if opts['embedding']=='pca':
-            embedding = PCA(n_components=2).fit_transform(codes)
+            pca = PCA(n_components=2)
+            pca.fit(codes)
+            embedding = pca.transform(all_points)
         elif opts['embedding']=='umap':
-            embedding = umap.UMAP(n_neighbors=15,
+            umap_fit = umap.UMAP(n_neighbors=15,
                                     min_dist=0.2,
-                                    metric='correlation').fit_transform(codes)
+                                    metric='correlation')
+            umap_fit.fit(codes)
+            embedding = umap_fit.transform(all_points)
         else:
             assert False, 'Unknown %s method for embedgins vizu' % opts['embedding']
     return embedding
@@ -323,17 +330,18 @@ def plot_embedded_shift(opts: dict, encoded: np.ndarray, exp_dir: str, fname='em
     fig = plt.figure(figsize=(fig_width, fig_height))
     plt.scatter(embedding[:, 0], embedding[:, 1], alpha=0.8, linewidths=0.,
                 c=labels, s=40, cmap=discrete_cmap(10, base_cmap='tab10'))
-    xmin = np.amin(embedding[:,0])
-    xmax = np.amax(embedding[:,0])
     magnify = 0.05
-    width = abs(xmax - xmin)
-    xmin = xmin - width * magnify
-    xmax = xmax + width * magnify
-    ymin = np.amin(embedding[:,1])
-    ymax = np.amax(embedding[:,1])
-    width = abs(ymin - ymax)
-    ymin = ymin - width * magnify
-    ymax = ymax + width * magnify
+    xslim = embedding[:,0]
+    xslim = xslim[~np.isnan(xslim)]
+    magnify = 0.05
+    width = abs(xslim.max() - xslim.min())
+    xmin = xslim.min() - width * magnify
+    xmax = xslim.max() + width * magnify
+    yslim = embedding[:,1]
+    yslim = yslim[~np.isnan(yslim)]
+    height = abs(yslim.min() - yslim.max())
+    ymin = yslim.min() - height * magnify
+    ymax = yslim.max() + height * magnify
     plt.xlim(xmin, xmax)
     plt.ylim(ymin, ymax)
     # plt.legend(loc='best')
@@ -364,35 +372,41 @@ def plot_embedded_shift_imscatter(opts: dict, means: np.ndarray, sigma: np.ndarr
                                   recon: np.ndarray, exp_dir: str, fname='embedded_shifted_imscatter'):
     nobs, nshift = np.shape(encoded)[:2]
     codes = encoded.reshape([nobs*nshift,-1])
+    codes = np.array([
+        code for code in codes
+            if np.all(~np.isnan(code))
+    ])
     labels = np.repeat(np.arange(nobs),nshift)
     # Creating a pyplot fig
-    dpi = 100
-    height_pic = 500
-    width_pic = 500
-    fig_height =  height_pic / float(dpi)
-    fig_width =  width_pic / float(dpi)
+    dpi = 300
+    height_pic = 3200
+    width_pic = 3200
+    fig_height = height_pic / float(dpi)
+    fig_width = width_pic / float(dpi)
     fig = plt.figure(figsize=(fig_width, fig_height))
-    # plot pz first
-    samples = sample_pz(opts, means=means, Sigma=sigma, batch_size=int(2e4))
-    all_points = np.vstack((codes, samples))
-    embedding = all_points[:len(codes)]
-    samples = all_points[len(codes):]
-    sns.kdeplot(x=samples[:, 0], y=samples[:, 1], cmap='Reds', shade=True, bw_adjust=.5, ax=plt.gca())
+    # sample points from the prior
+    pz_samples = sample_pz(opts, means=means, Sigma=sigma, batch_size=int(2e4))
+    # embed both kinds of points, apply embedding with respect to codes only
+    embedding = embed_codes_for_plotting(opts, codes=codes, pz_samples=pz_samples)
+    # plot prior distribution
+    sns.kdeplot(x=embedding[len(codes):,0], y=embedding[len(codes):,1], cmap='Blues', shade=True, bw_adjust=.5, ax=plt.gca())
     # plot reconstructions
-    for i in range(len(encoded)):
+    for i in range(len(codes)):
         img = recon[i]
-        imscatter(x=embedding[i, 0], y=embedding[i, 1], image=img, zoom=.5, ax=plt.gca())
-    xmin = np.amin(embedding[:,0])
-    xmax = np.amax(embedding[:,0])
+        imscatter(x=embedding[i, 0], y=embedding[i, 1], image=img, imsize=4., ax=plt.gca())
     magnify = 0.05
+    xslim = embedding[len(codes):,0]
+    xslim = xslim[~np.isnan(xslim)]
+    xmin, xmax = xslim.min(), xslim.max()
     width = abs(xmax - xmin)
     xmin = xmin - width * magnify
     xmax = xmax + width * magnify
-    ymin = np.amin(embedding[:,1])
-    ymax = np.amax(embedding[:,1])
-    width = abs(ymin - ymax)
-    ymin = ymin - width * magnify
-    ymax = ymax + width * magnify
+    yslim = embedding[len(codes):,1]
+    yslim = yslim[~np.isnan(yslim)]
+    ymin, ymax = yslim.min(), yslim.max()
+    height = abs(ymin - ymax)
+    ymin = yslim.min() - height * magnify
+    ymax = yslim.max() + height * magnify
     plt.xlim(xmin, xmax)
     plt.ylim(ymin, ymax)
     # plt.legend(loc='best')
@@ -413,13 +427,15 @@ def plot_embedded_shift_imscatter(opts: dict, means: np.ndarray, sigma: np.ndarr
     plt.close()
 
 
-def imscatter(x: float, y: float, image, ax=None, zoom=1) -> list:
+def imscatter(x: float, y: float, image, imsize: float, ax=None) -> list:
     if ax is None:
         ax = plt.gca()
     if type(image) == str:
         image = plt.imread(image)
     from matplotlib.offsetbox import OffsetImage, AnnotationBbox
-    im = OffsetImage(image, zoom=zoom, cmap=plt.cm.gray)
+    #imzoom = np.mean(imsize / np.array(image.shape))
+    imzoom = .5
+    im = OffsetImage(image, zoom=imzoom, cmap=plt.cm.gray)
     x_1d, y_1d = np.atleast_1d(x, y)
     artists = []
     for x0, y0 in zip(x_1d, y_1d):
